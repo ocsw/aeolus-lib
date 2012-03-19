@@ -1,0 +1,1035 @@
+####################################################
+# configuration file for Aeolus, by Daniel Malament
+# run 'aeolus license' for license info
+####################################################
+
+
+###############
+# housekeeping
+###############
+
+#
+# search path for executables
+# (see usage note on portability)
+#
+# typical safe value:
+# usepath="/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin"
+#
+# * can be blank or unset, for the system default
+#
+###usepath=
+
+#
+# umask value
+#
+# generally 077 (more secure, but less accessible), or 022 (more accessible,
+# but less secure; not necessarily a good idea); 077 is strongly recommended
+#
+# * can be blank or unset, for the system default
+#
+###useumask=
+
+#
+# in order to use a non-0 runevery or ifrunning (see below), your system
+# must support one of:
+#   "find":       find . -mmin +N
+#   "date-r":     date -r fileref +%s
+#   "date-d":     date -d "N minutes ago" "+%Y%m%d%H%M.%S"
+#   "awk"/"gawk": awk/gawk with strftime() and systime()
+#
+# "date-d", "awk", and "gawk" also require touch -t timestamp and
+# find . -newer fileref, but those should usually be available
+#
+# * must have a value, but is currently only used if runevery is not 0
+#   and/or ifrunning is not 0
+# * if blank or unset, defaults to "find"
+#
+###timecomptype=
+
+#
+# which of "cmp" and "diff" to use for file comparisons
+# (used in contexts in which either should be ok)
+#
+# * must have a value, but is currently only actually used if
+#   [dbms]_dodump="yes" and either [dbms]_dbmode="all" and
+#   [dbms]_splitdbs="yes", or [dbms]_dbmode="exclude", for some DBMS
+# * if blank or unset, defaults to "cmp"
+#
+###filecomptype=
+
+#
+# debug the script ("yes" or "no")?
+#
+# currently, turns on shell tracing (set -vx)
+#
+# * if blank or unset, defaults to "no"
+#
+###debugme=
+
+#
+# how to handle various errors
+#
+# possible options include:
+#   "ignore" = silently ignore the error and continue (not recommended)
+#   "warn" = send/log a warning, but continue
+#   "db" = warn and skip to the next DB
+#   "phase" = warn and skip to the next phase of the backup
+#             (i.e., the next DBMS or rsync)
+#   "exit" = exit the script with an error
+# (abbreviated below, but the full names must be used in the settings)
+#
+# error       | explanation
+# -------------------------
+#   ssherr    | error opening SSH tunnel
+#   dblisterr | error getting DB list
+#   dbcharerr | problem with contents of DB list (e.g., unsafe characters)
+#   dbduplerr | DB dumpfile already exists
+#   dumperr   | error dumping DB
+#   ziperr    | error compressing DB dump
+#
+# error       | allowed vals   | default
+# --------------------------------------
+#   ssherr    |          ph ex | "phase"
+#   dblisterr |          ph ex | "phase"
+#   dbcharerr |          ph ex | "phase"
+#   dbduplerr | ig wa db ph ex | "db"
+#   dumperr   |       db ph ex | "db"
+#   ziperr    |       db ph ex | "db"
+#
+# note:
+#   -= dbduplerr does not apply in single/singledir modes (it is always
+#      ignored)
+#   -= ssherr applies to all tunnels, including for rsync
+#   -= however, there is no rsyncerr, because a) there isn't really anything
+#      to skip to, and b) rsync errors are always treated as warnings since
+#      they're usually caused by non-fatal problems like files being deleted
+#      during the backup
+#
+###on_ssherr=
+###on_dblisterr=
+###on_dbcharerr=
+###on_dbduplerr=
+###on_dumperr=
+###on_ziperr=
+
+
+#####################
+# checks and logging
+#####################
+
+#
+# how often to actually run a backup, in minutes
+#
+# if runevery="0", no check will be performed, and a backup
+# will be attempted every time the script is run
+#
+# otherwise, a backup will only be attempted if this amount of time has
+# passed since the last backup was started (see startedfile, below)
+#
+# * if blank or unset, defaults to "0"
+#
+###runevery=
+
+#
+# path to the backup-started timestamp file
+#
+# the timestamp is updated when a backup actually starts
+#
+# the script uses this for the runevery check, and it can also be used
+# by other scripts (e.g., to check if backups haven't been run for a while)
+#
+# * _not_ ignored, even if runevery=0
+# * if blank or unset, defaults to "/var/run/aeolus/started"
+#
+###startedfile=
+
+#
+# if the script has passed the runevery check, but the previous backup
+# is still running or was interrupted (i.e., the lockfile is still present):
+#
+# -= it will send an alert to the mailto address(es)
+# -= it will send further alerts every ifrunning minutes, unless
+#    ifrunning="0" or the alerts are silenced
+#    (run "aeolus usage" for more information on silencing alerts)
+# -= either way, it will send an alert when it next successfully starts,
+#    so you know that the previous backup finally finished, and the next one
+#    has begun
+#
+# * if blank or unset, defaults to "120" (2 hours)
+#
+###ifrunning=
+
+#
+# path to the lock file
+#
+# (actually a directory for technical reasons, and since we have it, we can
+# put temp files in it)
+#
+# * if blank or unset, defaults to "/var/run/aeolus/lock"
+#
+###lockfile=
+
+#
+# suppress email ("yes" or "no")?
+# (see usage note on output)
+#
+# * if blank or unset, defaults to "no"
+#
+###suppressemail=
+
+#
+# where to send alerts and errors
+#
+# one or more email addresses, separated by spaces
+#
+# * ignored if suppressmail="yes"
+# * if blank or unset, defaults to "root@HOSTNAME" (where HOSTNAME is the
+#   name of the local host as reported by the 'hostname' utility), or
+#   "root@localhost" if the 'hostname' utility is not found
+#
+###mailto=
+
+#
+# subject line of alert/error emails
+#
+# * ignored if suppressmail="yes"
+# * if blank or unset, defaults to "Aeolus alert on HOSTNAME" (where
+#   HOSTNAME is the name of the local host as reported by the 'hostname'
+#   utility), or just "Aeolus alert" if the 'hostname' utility is not found
+#
+###subject=
+
+#
+# path to the alert-timestamp file (used to track ifrunning)
+#
+# * _not_ ignored, even if ifrunning=0
+# * if blank or unset, defaults to "[lockfile].alert"; e.g., if lockfile is
+#   set to "/var/run/aeolus/lock", alertfile will default to
+#   "/var/run/aeolus/lock.alert"
+#
+###alertfile=
+
+#
+# path to the output log
+# (see usage note on output)
+#
+# this log gets a copy of the output of ssh, the DBMS commands, and rsync,
+# plus a few timestamps and diagnostics
+#
+# if outputlog_layout="date", the filename will have outputlog_sep and a
+# date string appended to it (see outputlog_sep and outputlog_date)
+#
+# output logs may be gzipped, bzipped, or lzipped in place without
+# disrupting the script
+#
+# * can be blank for no log
+# * if this is unset (as opposed to just blank), it defaults to
+#   "/var/log/aeolus-output.log"
+#
+###outputlog=
+
+#
+# the file layout to use for the output logs
+#
+# "append": append to a single file, with no rotation
+# "number": log to numbered files (lower number = more recent, most recent
+#           has no number)
+# "date": log to date-suffixed files (all suffixed, including the most
+#         recent; see outputlog_date)
+#
+# for example, if outputlog="aeolus.log", outputlog_layout="number", and
+#   outputlog_sep=".", the second-most-recent file will be named
+#   "aeolus.log.1"
+#
+# * ignored if outputlog is blank
+# * if blank or unset, defaults to "number"
+#
+###outputlog_layout=
+
+#
+# separator to use before number/date suffixes in output log names
+#
+# may not include '/' characters (directories in the path must be in the
+# outputlog setting)
+#
+# * ignored if outputlog is blank or outputlog_layout="append"
+# * can be more than one character, or blank
+# * if this is unset (as opposed to just blank), it defaults to "."
+#
+###outputlog_sep=
+
+#
+# format string for the 'date' utility, for output log names
+#
+# leaving this blank is not recommended because it introduces spaces and
+# other punctuation; better is something like "+%Y%m%d" (or "+%Y%m%d%H" if
+# backups are run more than once a day); your 'date' utility must support
+# whatever string you use
+#
+# dates refer to when the script starts; all files created during a given
+# run of the script will have the same date suffix (or as close as possible;
+# 'date' has to be run separately for, e.g., output logs and MySQL dumps)
+#
+# may not include '/' characters (directories in the path must be in the
+# outputlog setting)
+#
+# * ignored if outputlog is blank or outputlog_layout is not "date"
+# * can be blank
+# * if this is unset (as opposed to just blank), it defaults to "+%Y%m%d"
+#
+###outputlog_date=
+
+#
+# number of logs to keep, including the current one
+#
+# 0 means no number limit (but there may still be a date limit; see
+# dayslogs)
+#
+# note: currently applies only if outputlog_layout="number";
+# however, dayslogs applies to both
+#
+# * ignored if outputlog is blank or outputlog_layout is not "number"
+# * if blank or unset, defaults to "0"
+#
+###numlogs=
+
+#
+# days worth of logs to keep, including the current one
+#
+# 0 means no days limit (but there may still be a number limit; see numlogs)
+#
+# logs older than this many days are removed, first rounding _down_
+# to the nearest day
+#
+# note: _does_ apply to both outputlog_layout="number" and "date"
+#
+# * ignored if outputlog is blank or outputlog_layout="append"
+# * if blank or unset, defaults to "7"
+#
+###dayslogs=
+
+#
+# use syslog ("all", "yes" or "no")?
+# (see usage note on output)
+#
+# "all" includes the actual SSH/DBMS/rsync commands that are run
+#
+# * if blank or unset, defaults to "yes"
+#
+###usesyslog=
+
+#
+# syslog priority to use for status messages
+#
+# "daemon.info" is recommended
+#
+# * ignored if usesyslog="no"
+# * if blank or unset, the system default will be used
+#
+###syslogstat=
+
+#
+# syslog priority to use for alerts/errors
+#
+# "daemon.err" is recommended
+#
+# * ignored if usesyslog="no"
+# * if blank or unset, the system default will be used
+#
+###syslogerr=
+
+#
+# syslog tag to use for status and alert/error messages
+#
+# "aeolus" is recommended
+#
+# * ignored if usesyslog="no"
+# * if blank or unset, the system default will be used
+#
+###syslogtag=
+
+#
+# print to stdout/stderr ("yes" or "no")?
+# (see usage note on output)
+#
+# * if blank or unset, defaults to "no"
+#
+###quiet=
+
+#
+# path to the status log
+# (see usage note on output)
+#
+# this gets a copy of all intentional script output except what goes in
+# the output log
+#
+# * can be blank for no log
+# * if this is unset (as opposed to just blank), it defaults to
+#   "/var/log/aeolus.log"
+#
+###statuslog=
+
+
+################################
+# SSH settings for rsync tunnel
+# (ignored if do_rsync="no")
+################################
+
+#
+# username on the remote host
+#
+# * ignored if rsync_mode is not "tunnel"
+# * if blank or unset, the ssh utility's default will be used (generally
+#   the username the script is run by)
+#
+###rsync_sshuser=
+
+#
+# hostname of the remote host
+#
+# * ignored if rsync_mode is not "tunnel"
+#
+###rsync_sshhost=
+
+#
+# path to the SSH key file
+#
+# * ignored if rsync_mode is not "tunnel" or "nodaemon"
+# * if blank or unset, the ssh utility's default will be used
+#
+###rsync_sshkeyfile=
+
+#
+# SSH port on the remote host
+#
+# * ignored if rsync_mode is not "tunnel" or "nodaemon"
+# * if blank or unset, the ssh utility's default will be used (generally 22)
+#
+###rsync_sshport=
+
+#
+# port number on the local end of the tunnel
+#
+# can be any valid unused port
+#
+# * ignored if rsync_mode is not "tunnel"
+# * if blank or unset, defaults to 8873
+#
+###rsync_localport=
+
+#
+# port number on remote end of the tunnel
+#
+# generally 873
+#
+# * ignored if rsync_mode is not "tunnel"
+# * if blank or unset, defaults to 873
+#
+###rsync_remoteport=
+
+#
+# additional options to pass to the SSH client
+#
+# any options containing spaces must be in nested quotes (e.g.,
+# rsync_sshoptions='"space here" otheropt' or "\"space here\" otheropt")
+#
+# * ignored if rsync_mode is not "tunnel" or "nodaemon"
+# * can be blank or unset
+#
+###rsync_sshoptions=
+
+#
+# how long to wait for the SSH tunnel to be established, in seconds
+#
+# minimum setting allowed is 1 second
+#
+# * ignored if rsync_mode is not "tunnel"
+# * if blank or unset, defaults to 15 seconds
+#
+###rsync_sshtimeout=
+
+
+#################
+# rsync settings
+#################
+
+#
+# are we going to do an rsync backup ("yes" or "no")?
+#
+# if "no", the rest of the rsync settings and the rsync SSH tunnel settings
+# are ignored
+#
+# * if blank or unset, defaults to "no"
+#
+###do_rsync=
+
+#
+# mode of operation ("tunnel", "direct", "nodaemon", or "local")
+# (see usage note on rsync modes)
+#
+# * if blank or unset, defaults to "tunnel"
+#
+###rsync_mode=
+
+#
+# source files and/or directories, separated by spaces
+# (see usage note on rsync modes)
+#
+# any filenames containing spaces must be in nested quotes (e.g.,
+# rsync_source='"space here" otherfile' or "\"space here\" otherfile")
+#
+# note that directories ending with / will have their _contents_ transferred,
+# while directories not ending with / will be transferred themselves
+#
+###rsync_source=
+
+#
+# destination
+# (see usage note on rsync modes)
+#
+###rsync_dest=
+
+#
+# remote rsyncd port
+# (see usage note on rsync modes)
+#
+# * ignored if rsync_mode is not "direct"
+# * if blank or unset, the rsync utility's default will be used (generally
+#   873)
+#
+###rsync_port=
+
+#
+# path to the password file (for the remote rsync user)
+#
+# the file must contain only the password to use
+#
+# * ignored if rsync_mode is not "tunnel" or "direct"
+# * if blank, no password file will be used, and rsync will prompt for a
+#   password if the remote host requires one (which can be a problem if,
+#   e.g., the script is being run from cron)
+# * if this is unset (as opposed to just blank), it defaults to
+#   "/etc/aeolus/rsync.pw"
+#
+###rsync_pwfile=
+
+#
+# path to the filter-rules file
+#
+# suggested location: /etc/aeolus/rsync.filter
+#
+# one particularly important use: the lockfile should not be transferred
+# if it is in the source directories; specifically, it should be hidden
+# (meaning not copied, and deleted from the remote host if present)
+#
+# * can be blank or unset for no file; file can also be empty
+#
+###rsync_filterfile=
+
+#
+# additional options to rsync
+#
+# typically "-va --sparse --numeric-ids --delete"
+# (note that -H (to preserve hard links) takes a lot of memory)
+#
+# any options containing spaces must be in nested quotes (e.g.,
+# rsync_options='"space here" otheropt' or "\"space here\" otheropt")
+#
+# * can be blank or unset
+#
+###rsync_options=
+
+#
+# yet more options to rsync
+#
+# mostly useful to pass additional options from the command line without
+# having to repeat the ones in the config file
+#
+# any options containing spaces must be in nested quotes (e.g.,
+# rsync_add='"space here" otheropt' or "\"space here\" otheropt")
+#
+# * can be blank or unset
+#
+###rsync_add=
+
+
+############################################
+# MySQL dump settings, including SSH tunnel
+############################################
+
+#
+# are we going to do a MySQL dump ("yes" or "no")?
+#
+# if "no", the rest of the MySQL dump settings, including the MySQL SSH
+# tunnel settings, are ignored
+#
+# * if blank or unset, defaults to "no"
+#
+###mysql_dodump=
+
+#
+# MySQL SSH tunnel settings
+# (see rsync SSH tunnel settings for descriptions, but disregard references
+# to rsync_mode)
+#
+# usually the databases are dumped on the actual database server, but
+# sometimes they have to be dumped remotely; using an SSH tunnel will
+# slow the process down, but increase security
+#
+# MySQL does have SSL support, but it's not directly supported by this
+# script; see mysql_clientoptions and mysql_dumpoptions
+#
+# * if mysql_usetunnel="no", the rest of these are ignored
+#
+###mysql_usetunnel=  # "yes" or "no", * if blank or unset, defaults to "no"
+###mysql_sshuser=
+###mysql_sshhost=
+###mysql_sshkeyfile=
+###mysql_sshport=
+###mysql_localport=  # * if blank or unset, defaults to 4306
+###mysql_remoteport=  # * if blank or unset, defaults to 3306 (usual port)
+###mysql_sshoptions=
+###mysql_sshtimeout=
+
+#
+# MySQL username
+#
+# * if blank or unset, MySQL's default will be used (generally the system
+#   user the script is run by)
+#
+###mysql_user=
+
+#
+# path to the password file for connecting to the MySQL server
+#
+# the file must contain:
+#   [client]
+#   password="PASSWORD"
+# where PASSWORD is the password to use (everything else is literal)
+#
+# * if blank, MySQL's default will be used (generally no password)
+# * if this is unset (as opposed to just blank), it defaults to
+#   "/etc/aeolus/mysql.pw"
+#
+###mysql_pwfile=
+
+#
+# protocol for connecting to the MySQL server (e.g., "tcp", "socket",
+# "pipe")
+#
+# usually doesn't need to be specified; see the MySQL documentation for more
+# info, and mysql_socket, below
+#
+# specifying mysql_host, mysql_port, and/or mysql_socket may cause errors
+# depending on the value of this setting (e.g., "tcp" is incompatible with
+# mysql_socket)
+#
+# if mysql_usetunnel="yes", must be blank, unset, or "tcp"
+#
+# * can be blank or unset
+#
+###mysql_protocol=
+
+#
+# hostname of the MySQL server
+#
+# in case you need to remotely dump databases; also, localhost and 127.0.0.1
+# may give different results, e.g., connecting via socket or TCP
+#
+# * ignored if mysql_usetunnel="yes" (specify the host in mysql_sshhost
+#   instead in that case)
+# * if blank or unset, MySQL's default will be used (generally localhost)
+#
+###mysql_host=
+
+#
+# port for connecting to the MySQL server
+#
+# * ignored if mysql_usetunnel="yes" (specify the port in mysql_remoteport
+#   instead in that case)
+# * if blank or unset, MySQL's default will be used (generally 3306)
+#
+###mysql_port=
+
+#
+# socket path for connecting to the MySQL server
+#
+# typically /tmp/mysql.sock or /var/run/mysqld/mysqld.sock
+#
+# if mysql_protocol="pipe", this is the path to the pipe
+#
+# * ignored if mysql_usetunnel="yes", mysql_host is specified, or mysql_port
+#   is specified
+# * if blank or unset, MySQL's default will be used
+#
+###mysql_socket=
+
+#
+# which databases to dump
+#
+# "all" to dump everything
+# "include" to dump only those databases listed in mysql_dbs
+# "exclude" to dump everything _except_ those DBs listed in mysql_dbs
+# "includefile" and "excludefile" are like "include" and "exclude", but
+# mysql_dbs must be the path to a file containing the list
+#
+# the file options can be useful for scripting or permissions purposes, and
+# also allow you to get around command-length limits (should you have a
+# truly large number of DBs or a truly small length limit)
+#
+# if you get table-locking errors trying to dump the special
+# 'information_schema' database, see mysql_alts
+#
+# * if blank or unset, defaults to "all"
+#
+###mysql_dbmode=
+
+#
+# a list of databases, or the path to one
+# (see mysql_dbmode for usage)
+#
+# if this is the list itself, the DB names must be separated by tabs or
+# newlines, and the names themselves must have the following encoding
+# applied to them:
+#   tab -> \t
+#   newline -> \n
+#   \ -> \\
+#
+# if this is a file path (e.g., "/etc/aeolus/mysql.dbs"), the same rules
+# apply, but the names must be separated by newlines; tabs are not allowed
+#
+# * ignored if mysql_dbmode="all"
+# * can be blank or unset if mysql_dbmode="include" or "exclude", and the
+#   file can be empty if mysql_dbmode="includefile" or "excludefile"
+#
+###mysql_dbs=
+
+#
+# put each database in a separate file ("yes"), or put all of the dumped
+# databases in one file ("no")?
+#
+# if "no", dumpfile names will include the names of the databases; see the 
+# note on dumpfile names, below
+#
+# * if blank or unset, defaults to "no"
+#
+###mysql_splitdbs=
+
+#
+# options to pass to the MySQL client
+#
+# client will also be passed -BNe regardless of this setting
+#
+# if connecting with SSL, add your SSL options here
+#
+# any options containing spaces must be in nested quotes (e.g.,
+# mysql_clientoptions='"space here" otheropt' or "\"space here\" otheropt")
+#
+# * for MySQL, ignored unless either mysql_dbmode="all" and
+#   mysql_splitdbs="yes", or mysql_dbmode="exclude" (may be different for
+#   other DBMSes)
+# * can be blank or unset
+#
+###mysql_clientoptions=
+
+#
+# options to pass to the mysqldump utility
+#
+# utility will also be passed:
+#   "-A" if mysql_dbmode="all" and mysql_splitdbs="no", or
+#   "-B" if mysql_dbmode is not "all" and mysql_splitdbs="no"
+# regardless of this setting
+#
+# if connecting with SSL, add your SSL options here
+#
+# usually "--opt -Q", but other (potentially) useful options include:
+#   "-R": include stored procedures and functions
+#         NOTE: may not work with DBs with newlines in their names;
+#               this may be a bug in MySQL
+#   "-c": include column names in INSERTs
+#   "--master-data": include replication info
+#   "--skip-extended-insert": one INSERT per row, especially useful when
+#                             working with grant tables
+#
+# any options containing spaces must be in nested quotes (e.g.,
+# mysql_dumpoptions='"space here" otheropt' or "\"space here\" otheropt")
+#
+# * can be blank
+# * if this is unset (as opposed to just blank), it defaults to
+#   "--opt -Q -R -c"
+#
+###mysql_dumpoptions=
+
+#
+# alternative dump options for particular databases
+#
+# this feature allows you to selectively override mysql_dumpoptions, but
+# only if mysql_splitdbs="yes"
+#
+# mysql_altmode can be set to:
+#   "none" = just use mysql_dumpoptions
+#   "list" = mysql_alts is a list
+#   "file" = mysql_alts is the path to a file containing a list
+#            (e.g., "/etc/aeolus/mysql.alts"; see mysql_dbmode for comments)
+#
+# in the latter two cases, the list must be formatted as follows:
+#   -= each line contains a DB name and an option string
+#   -= lines are separated by newlines
+#   -= DB names and option strings are separated by a tab character
+#   -= both DB names and option strings are encoded (same as mysql_dbs):
+#        tab -> \t
+#        newline -> \n
+#        \ -> \\
+#   -= option strings do not need quotes around them, but any individual
+#      options containing spaces must be quoted
+#   -= option strings completely override mysql_dumpoptions; any options
+#      set there must be repeated for each DB in the list if they are to be
+#      used
+#
+# this is particularly useful for the special 'information_schema' DB -
+# use the same options as in mysql_dumpoptions, plus '--skip-lock-tables';
+# however, note the following, from the mysqldump man page:
+#     mysqldump does not dump the INFORMATION_SCHEMA database by default.
+#     As of MySQL 5.1.38, mysqldump dumps INFORMATION_SCHEMA if you name it
+#     explicitly on the command line, although you must also use the
+#     --skip-lock-tables option. Before 5.1.38, mysqldump silently ignores
+#     INFORMATION_SCHEMA even if you name it explicitly on the command
+#     line.
+#
+# it can also be useful for dumping the grants DB with
+# "--skip-extended-insert" while not wasting space in the other dumps
+#
+# * both settings are ignored if mysql_splitdbs="no"; mysql_alts is also
+#   ignored if mysql_altmode="none"
+# * if blank or unset, mysql_altmode defaults to "none"; mysql_alts can be
+#   blank or unset if mysql_altmode="list", and the file can be empty if
+#   mysql_altmode="file"
+#
+###mysql_altmode=
+###mysql_alts=
+
+#
+# path to a directory that will contain the dumps
+#
+# (this is NOT the subdirectory used if mysql_layout is a "dir" option;
+# it is the parent directory of that subdirectory)
+#
+# trailing '/' can be omitted
+#
+# * if blank or unset, defaults to "."
+#
+###mysql_dumpdir=
+
+#
+# the file layout to use for the dumps
+#
+# "single": store files in mysql_dumpdir, with no rotation
+# "number": store numbered files in mysql_dumpdir
+#           (lower number = more recent, most recent has no number)
+# "date": store date-suffixed files in mysql_dumpdir (all suffixed,
+#         including the most recent; see mysql_filedirdate)
+# "singledir": store files in an unrotated subdirectory of mysql_dumpdir
+# "numberdir": store files in numbered subdirectories of mysql_dumpdir
+#              (lower number = more recent, most recent has no number)
+# "datedir": store files in date-suffixed subdirectories of mysql_dumpdir
+#            (all suffixed, including the most recent; see
+#            mysql_filedirdate)
+#
+# in the case of the "numberdir" and "datedir" options, the subdirectory
+#   will be labeled with a number or date, but the files will not
+#
+# see notes, below, about subdirectory and dumpfile names
+#
+# * if blank or unset, defaults to "date"
+#
+###mysql_layout=
+
+#
+# subdirectory names, if mysql_layout is a "dir" option, are constructed
+#   as follows, within mysql_dumpdir:
+# -= if mysql_layout="singledir", the subdirectory will be named
+#      [subdirprefix]
+# -= if mysql_layout="numberdir", the current (most recent) subdirectory
+#      will be named [subdirprefix]
+# -= in all other cases, the subdirectories will be named
+#      [subdirprefix][filedirsep][number/date]
+#
+# dumpfile names are constructed as follows, within mysql_dumpdir or the
+#   the subdirectory described above (dbname will be omitted if
+#   mysql_splitdbs="no"):
+# -= if mysql_layout="single" or a "dir" option, the files will be named
+#      [fileprefix][dbname][filesuffix]
+# -= if mysql_layout="number", the current (most recent) file will be named
+#      [fileprefix][dbname][filesuffix]
+# -= in all other cases, the files will be named
+#      [fileprefix][dbname][filedirsep][number/date][filesuffix]
+#
+# e.g., if mysql_layout="number", mysql_fileprefix="mydbs-",
+# mysql_filedirsep=".", and mysql_suffix=".sql", you could have a file
+# named "mydbs-bigdb.3.sql", which would be the 4th oldest copy (including
+# the current one) of a database named 'bigdb'
+#
+
+#
+# prefix to prepend to the names of the database dumpfiles
+# (see notes, above)
+#
+# may not include '/' characters (directories in the path must be in the
+# mysql_dumpdir setting, except for "dir"-layout subdirectories)
+#
+# * can be blank if mysql_splitdbs="yes", or mysql_layout="date", or
+#   mysql_layout is not "date" and mysql_filesuffix is not blank
+# * if this is unset (as opposed to just blank), it defaults to "mysqldump"
+#
+###mysql_fileprefix=
+
+#
+# suffix to append to the names of the database dumpfiles
+# (see notes, above)
+#
+# usually ".sql" or ".txt"
+#
+# may not include '/' characters (directories in the path must be in the
+# mysql_dumpdir setting, except for "dir"-layout subdirectories)
+#
+# * can be blank if mysql_splitdbs="yes", or mysql_layout="date", or
+#   mysql_layout is not "date" and mysql_fileprefix is not blank
+# * if this is unset (as opposed to just blank), it defaults to ".sql"
+#
+###mysql_filesuffix=
+
+#
+# name of the subdirectories to use if mysql_layout is a "dir" option
+# (see notes, above)
+#
+# will have number or date suffixes added if mysql_layout is not "singledir"
+#
+# may not include '/' characters (directories in the path must be in the
+# mysql_dumpdir setting; "dir"-layout subdirectories must be only one layer
+# deep)
+#
+# * ignored if mysql_layout is not a "dir" option
+# * can be blank if mysql_layout="datedir"
+# * if this is unset (as opposed to just blank), it defaults to "mysqldump"
+#
+###mysql_subdirprefix=
+
+#
+# separator to use before number/date suffixes in dumpfile/subdirectory
+# names
+# (see notes, above)
+#
+# may not include '/' characters (directories in the path must be in the
+# mysql_dumpdir setting, except for "dir"-layout subdirectories)
+#
+# * ignored if any of these are true:
+#   -= mysql_layout="single" or "singledir"
+#   -= mysql_layout="number" or "date", mysql_splitdbs="no", and
+#      mysql_fileprefix is blank (see mysql_fileprefix for when that's
+#      allowed)
+#   -= mysql_layout="datedir" and mysql_subdirprefix is blank
+#   (the last two mean that no separator will be used if there's nothing
+#   in front of it)
+# * can be more than one character, or blank
+# * if this is unset (as opposed to just blank), it defaults to "-"
+#
+###mysql_filedirsep=
+
+#
+# format string for the 'date' utility, for dumpfile/subdirectory names
+# (see notes, above)
+#
+# leaving this blank is not recommended because it introduces spaces and
+# other punctuation; better is something like "+%Y%m%d" (or "+%Y%m%d%H" if
+# backups are run more than once a day); your 'date' utility must support
+# whatever string you use
+#
+# dates refer to when the script starts; all files created during a given
+# run of the script will have the same date suffix (or as close as possible;
+# 'date' has to be run separately for, e.g., output logs and MySQL dumps)
+#
+# may not include '/' characters (directories in the path must be in the
+# mysql_dumpdir setting, except for "dir"-layout subdirectories)
+#
+# * ignored if mysql_layout is not "date" or "datedir"
+# * can be blank
+# * if this is unset (as opposed to just blank), it defaults to "+%Y%m%d"
+#
+###mysql_filedirdate=
+
+#
+# number of dumps to keep, including the current one
+#
+# 0 means no number limit (but there may still be a date limit; see
+# mysql_daysfiles)
+#
+# note: currently applies only if mysql_layout="number" or "numberdir";
+# however, mysql_daysfiles applies to both
+#
+# * ignored if mysql_layout is not "number" or "numberdir"
+# * if blank or unset, defaults to "0"
+#
+###mysql_numfiles=
+
+#
+# days worth of dumps to keep, including the current one
+#
+# 0 means no days limit (but there may still be a number limit; see
+# mysql_numfiles)
+#
+# dumps older than this many days are removed, first rounding _down_
+# to the nearest day
+#
+# note: _does_ apply to both "number"/"numberdir" and "date"/"datedir"
+#
+# * ignored if mysql_layout is "single" or "singledir"
+# * if blank or unset, defaults to "7"
+#
+###mysql_daysfiles=
+
+#
+# what kind of compression to use: "none", "gzip", "pigz", "bzip2",
+# or "lzip"
+#
+# (lzip is particularly useful because it has features to aid in the
+# recovery of damaged files)
+#
+# if not set to "none", each file will be zipped in place
+#
+# * if blank or unset, defaults to "gzip"
+#
+###mysql_zipmode=
+
+#
+# additional options to pass to the zip utility
+#
+# for GNU gzip, "--rsyncable" is useful; other options include "-1" through
+# "-9" to tune the size of the file vs. the amount of CPU resources required
+# to zip it
+#
+# any options containing spaces must be in nested quotes (e.g.,
+# mysql_zipoptions='"space here" otheropt' or "\"space here\" otheropt")
+#
+# * ignored if mysql_zipmode="none"
+# * can be blank or unset
+#
+###mysql_zipoptions=
+
+#
+# when dumping, we can have one of two preservation priorities:
+# "data": preserve old data longer, especially in case an error prevents
+#         us from obtaining new data
+# "space": keep the total disk space usage during the backup process as low
+#          as possible
+#
+# -= in "single"/"singledir" modes, we can use temp files during the dump,
+#    then move them into place ("data"), or remove the old files (including
+#    zips) before starting it ("space")
+# -= the same choice applies if a dump file already exists when it
+#    shouldn't, but "warn" or "ignore" modes are set
+# -= we can prune old files only after we have finished the current dump
+#    ("data"), or remove them before we start it ("space")
+#
+# * if blank or unset, defaults to "data"
+#
+###mysql_preserve=
