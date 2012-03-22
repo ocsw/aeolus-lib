@@ -1,0 +1,3 @@
+backup started Mon Feb 27 07:52:09 EST 2012
+running mysql get-DB-list command: mysql "--defaults-extra-file=mysql.pw" -u "root" -BN -e "SHOW DATABASES;"
+backup finished Mon Feb 27 07:52:10 EST 2012
