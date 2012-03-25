@@ -1654,26 +1654,6 @@ do_dbdump () {
 }
 
 #
-# convert DB name escape sequences to the real characters
-#
-# $1 = DB name to un-escape
-#
-# sequences to un-escape:
-#   newline -> \n
-#   tab -> \t
-#   \ -> \\
-#
-# see also getdblist()
-#
-dbunescape () {
-  # note: \\ must be last; \t isn't portable in sed
-  printf "%s\n" "$1" | sed \
-      -e 's/^\\n/\n/' -e 's/\([^\]\)\\n/\1\n/g' \
-      -e "s/^\\\\t/$tab/" -e "s/\\([^\\]\)\\\\t/\\1$tab/g" \
-      -e 's/\\\\/\\/g'
-}
-
-#
 # wrapper around the different modes of DB dumps
 # (split/unsplit, all/include/exclude/etc.)
 #

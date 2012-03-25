@@ -1811,7 +1811,7 @@ opensshtunnel () {
 # local vars: sshpid_var, sshpid_l
 # global vars: (contents of $1, or sshpid), tun_prefix
 # library funcs: logstatus()
-# utilities: kill, [
+# utilities: printf, kill, [
 #
 closesshtunnel () {
   # apply default
@@ -1892,22 +1892,30 @@ dblistcmd () {
 
 #
 # convert DB name escape sequences to the real characters
+# used, e.g., on the output of dblistcmd()
 #
 # $1 = DB name to un-escape
 #
 # sequences to un-escape:
-#   newline -> \n
-#   tab -> \t
-#   \ -> \\
+#   MySQL:
+#     newline -> \n
+#     tab -> \t
+#     \ -> \\
 #
-# see also getdblist()
+# global vars: dbms_prefix, tab
+# utilities: printf, sed
 #
 dbunescape () {
-  # note: \\ must be last; \t isn't portable in sed
-  printf "%s\n" "$1" | sed \
-      -e 's/^\\n/\n/' -e 's/\([^\]\)\\n/\1\n/g' \
-      -e "s/^\\\\t/$tab/" -e "s/\\([^\\]\)\\\\t/\\1$tab/g" \
-      -e 's/\\\\/\\/g'
+  case "$dbms_prefix" in
+    mysql)
+      # note: \\ must be last; \t isn't portable in sed
+      printf "%s\n" "$1" | \
+        sed \
+          -e 's/^\\n/\n/' -e 's/\([^\]\)\\n/\1\n/g' \
+          -e "s/^\\\\t/$tab/" -e "s/\\([^\\]\)\\\\t/\\1$tab/g" \
+          -e 's/\\\\/\\/g'
+      ;;
+  esac
 }
 
 
