@@ -121,6 +121,24 @@ tab='	'
 
 
 
+############
+# debugging
+############
+
+#
+# clarify how arguments are being grouped
+#
+# prints number of arguments, and each argument in 's
+#
+# utilities: printf
+#
+clarifyargs () {
+  printf "%s:" "$#"
+  for arg in ${1+"$@"}; do
+    printf " '%s'" "$arg"
+  done
+  printf "\n"
+}
 
 
 ###########################
@@ -1389,14 +1407,6 @@ dblistcmd () {
 #                  rsync_dest
 # utilities: rsync, (ssh)
 #
-clarifyargs () {
-  printf "%s:" "$#"
-  for arg in ${1+"$@"}; do
-    printf " '%s'" "$arg"
-  done
-  printf "\n"
-}
-
 rsynccmd () {
   case "$rsync_mode" in
     tunnel)
