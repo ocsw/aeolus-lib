@@ -378,14 +378,6 @@ dbdump_exitval="8"
 dbzip_exitval="9"
 rsync_exitval="10"
 
-# a newline character
-# see section 8 of http://www.dwheeler.com/essays/filenames-in-shell.html
-newline=$(printf "\nX")
-newline="${newline%X}"
-
-# a tab character
-tab='	'
-
 
 #################################
 # helper functions: housekeeping
