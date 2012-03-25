@@ -364,6 +364,27 @@ logstatusquiet () {
 }
 
 #
+# log an alert/error message ($1) to syslog and/or the status log,
+# (depending on $usesyslog and $statuslog), but not to stdout, regardless of
+# the setting of $quiet
+#
+# used to avoid duplication when also logging to the output log
+#
+# if $2 is "all", only log to syslog if usesyslog="all" (but status logging
+# proceeds normally)
+#
+# "local" vars: savequiet
+# config settings: quiet
+# library functions: logstatus()
+#
+logalertquiet () {
+  savequiet="$quiet"
+  quiet="yes"
+  logalert "$1" "$2"
+  quiet="$savequiet"
+}
+
+#
 # send an alert email, and log to syslog/stdout/status log that an email
 # was sent
 #
