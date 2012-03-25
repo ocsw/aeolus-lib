@@ -1886,9 +1886,9 @@ removefilezip () {
 }
 
 
-##############################
-# core functions: SSH tunnels
-##############################
+################
+# SSH functions
+################
 
 #
 # open an SSH tunnel
@@ -1904,17 +1904,16 @@ removefilezip () {
 # FDs: 3
 #
 opensshtunnel () {
-  # set $cmd for ssh; see SECURITY NOTE, above, about this
-  setsshtuncmd
-
   # log the command; only log to syslog if usesyslog="all"
-  logstatusquiet "running ssh command for $tun_prefix: $cmd" all
-  printf "%s\n" "running ssh command for $tun_prefix: $cmd" >&3
+  logstatusquiet \
+    "running ssh command for $tun_prefix: $(sshtunnelcmd print)" all
+  printf "%s" \
+    "running ssh command for $tun_prefix: $(sshtunnelcmd print)" >&3
 
   # run the command
   #
   # note & _in the quotes_, so $! contains the correct pid
-  eval "$cmd >&3 2>&1 &"
+  sshtunnelcmd >&3 2>&1 &
   sshpid="$!"
 
   # make sure it's actually working;
