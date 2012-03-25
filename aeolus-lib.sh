@@ -924,8 +924,7 @@ throwusageerr () {
 #
 throwsettingerr () {
   vname="$1"
-#  eval "vval=\"$`printf '%s' $vname`\""
-  eval 'vval="$`printf '%s' $vname`"'
+  eval "vval=\"$`printf '%s' $vname`\""
 
   throwstartuperr "Error: invalid setting for $vname (\"$vval\"); exiting."
 }
