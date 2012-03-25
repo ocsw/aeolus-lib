@@ -50,12 +50,6 @@ fi
 # hardcoded variables
 ######################
 
-# for all invocations, regardless of config settings
-
-# name of the script, as reported by usage(), etc.
-# change this if you rename the script file
-scriptname="aeolus"
-
 # external commands used (potentially)
 #
 # some things can probably be omitted, like 'set' and 'command';
@@ -101,14 +95,6 @@ kill
 sleep
 "
 
-# default path to the config file, if one isn't specified
-# change usage notes if you change this
-defaultconfigfile="/etc/aeolus/aeolus.conf"
-
-# names of all config file settings
-configsettings="
-"
-
 # a newline character
 # see section 8 of http://www.dwheeler.com/essays/filenames-in-shell.html
 newline=$(printf "\nX")
@@ -120,6 +106,38 @@ tab='	'
 
 
 
+#!!! [config settings]
+# $ssh_port: SSH port (optional)
+# $ssh_keyfile: path to key file (optional)
+# $ssh_options: general options (optional)
+# $ssh_user: username (optional)
+# $ssh_host: hostname
+# $ssh_rcommand: remote command (optional, but usually supplied)
+# config settings: tun_sshlocalport, tun_sshremoteport, tun_sshport,
+#                  tun_sshkeyfile, tun_sshoptions, tun_sshuser, tun_sshhost
+#
+# $dbms_prefix: DBMS (currently only "mysql")
+# $*_user: username (optional*)
+# $*_pwfile: path to password file (optional*)
+# $*_protocol: protocol (optional*)
+# $*_host: hostname (optional*)
+# $*_port: port (optional*)
+# $*_socket: socket path (optional*)
+# $*_options: client options (optional*)
+# $*_dbname: database name (optional*)
+# $*_command: SQL command (or equivalent)
+#
+# * optional arguments may only be optional for some DBMSes; OTOH, not all
+#   arguments apply to all DBMSes
+
+# config settings: rsync_mode, rsync_pwfile, rsync_localport, rsync_port,
+#                  rsync_sshport, rsync_sshkeyfile, rsync_sshoptions,
+#                  rsync_filterfile, rsync_options, rsync_add, rsync_source,
+#                  rsync_dest
+
+
+
+############################################################################
 
 ############
 # debugging
