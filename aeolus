@@ -1209,76 +1209,6 @@ setrsynccmd () {
   cmd="$cmd \"$rsync_dest\""
 }
 
-#
-# print the actual commands that would be run (ssh, DBMS, rsync)
-#
-# must not be called until after needdblist() is defined
-#
-# "local" vars: do_something, dbms
-# global vars: cmd, dbmslist, dbms_prefix, dbms_dodump, dbms_usetunnel,
-#              dbms_dbmode, dbms_splitdbs, do_rsync, rsync_mode
-#
-printcmds () {
-  # are we supposed to actually do anything?
-  do_something="no"  # set this to yes later if we do something
-
-  # DBMSes
-  for dbms in $dbmslist; do
-    switchdbms "$dbms"
-
-    if [ "$dbms_dodump" = "yes" ]; then
-      do_something="yes"
-
-      # SSH tunnel
-      if [ "$dbms_usetunnel" = "yes" ]; then
-        switchtunnel "$dbms"
-        printf "%s" "$dbms_prefix ssh command: $(sshtunnelcmd print)"
-      fi
-
-      # DB list
-      if needdblist; then
-        printf "%s" "$dbms_prefix get-DB-list command: $(dblistcmd print)"
-      fi
-
-      # dump DBs
-      if [ "$dbms_splitdbs" = "no" ]; then
-        case "$dbms_dbmode" in
-          all)
-            setdbdumpallcmd
-            printf "%s\n" "$dbms_prefix dump-all-DBs command: $cmd"
-            ;;
-          include|exclude|includefile|excludefile)
-            setdbdumpmultcmd ""
-            printf "%s\n" "$dbms_prefix dump-multiple-DBs command: $cmd"
-            ;;
-        esac
-      else  # dbms_splitdbs="yes"
-        setdbdumponecmd ""
-        printf "%s\n" "$dbms_prefix dump-one-DB command: $cmd"
-      fi
-    fi  # if [ "$dbms_dodump" = "yes" ]
-  done  # for dbms in $dbmslist
-
-  # rsync
-  if [ "$do_rsync" = "yes" ]; then
-    do_something="yes"
-
-    # SSH tunnel
-    if [ "$rsync_mode" = "tunnel" ]; then
-      switchtunnel "rsync"
-      printf "%s" "rsync ssh command: $(sshtunnelcmd print)"
-    fi
-
-    # actual rsync
-    printf "%s" "rsync command: $(rsynccmd print)"
-  fi
-
-  # did we actually do anything?
-  if [ "$do_something" = "no" ]; then  # everything was turned off
-    echo "no commands would be run, because no actions are turned on"
-  fi
-}
-
 
 ###########################
 # core functions: DB dumps
@@ -1324,16 +1254,13 @@ getdblist () {
     return 0
   fi
 
-  # set $cmd to get DB list; see SECURITY NOTE, above, about this
-  setdblistcmd
-
-  # log the command; only log to syslog if usesyslog="all"
-  logstatusquiet "running $dbms_prefix get-DB-list command: $cmd" all
-  printf "%s\n" "running $dbms_prefix get-DB-list command: $cmd" >&3
+  # log that we're starting
+  logstatusquiet "running $dbms_prefix get-DB-list command"
+  printf "%s\n" "running $dbms_prefix get-DB-list command" >&3
 
   # run the command
   rm -f "$lockfile/$alldbs"  # to prevent noclobber-type issues
-  eval "$cmd" > "$lockfile/$alldbs" 2>&3
+  dblistcmd > "$lockfile/$alldbs" 2>&3
 
   # check status
   if [ "$?" != 0 ]; then
@@ -2068,11 +1995,6 @@ case "$mode" in
     echo
     do_exit "$no_error_exitval"
     ;;
-  cmds|commands)
-    # print the actual commands that would be run (ssh, DBMS, rsync)
-    printcmds
-    do_exit "$no_error_exitval"
-    ;;
   status|statusall)
     # print the current status
     echo
@@ -2453,18 +2375,15 @@ while true; do  # only here to allow us to easily skip to the next phase
       [ "$?" = "1" ] && skip_rsync && continue  # skip to the next phase
     fi
 
-    # set $cmd for rsync; see SECURITY NOTE, above, about this
-    setrsynccmd
-
-    # log the command; only log to syslog if usesyslog="all"
-    logstatusquiet "running rsync command: $cmd" all
-    printf "%s\n" "running rsync command: $cmd" >&3
+    # log that we're starting
+    logstatusquiet "running rsync command"
+    printf "%s\n" "running rsync command" >&3
 
     # starting timestamp
     printf "%s\n" "rsync started $(date)" >&3
 
     # run the command
-    eval "$cmd" >&3 2>&1
+    rsynccmd >&3 2>&1
 
     # check status
     if [ "$?" != 0 ]; then

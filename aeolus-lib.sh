@@ -1287,15 +1287,12 @@ validlist () {
 #
 # run a remote ssh command
 #
-# if $1 is non-null, print the command without running it
-#
 # config settings: ssh_port, ssh_keyfile, ssh_options, ssh_user, ssh_host,
 #                  ssh_rcmd
 # utilities: ssh
 #
 sshrcmdcmd () {
   # note no " on ssh_options
-  ${1:+printf "%s "} \
   ssh \
     ${ssh_port:+-p "$ssh_port"} \
     ${ssh_keyfile:+-i "$ssh_keyfile"} \
@@ -1303,14 +1300,10 @@ sshrcmdcmd () {
     ${ssh_user:+-l "$ssh_user"} \
     "$ssh_host" \
     ${ssh_rcommand:+ "$ssh_rcommand"}
-
-  [ "$1" != "" ] && printf "\n"
 }
 
 #
 # run an ssh tunnel command
-#
-# if $1 is non-null, print the command without running it
 #
 # config settings: tun_sshlocalport, tun_sshremoteport, tun_sshport,
 #                  tun_sshkeyfile, tun_sshoptions, tun_sshuser, tun_sshhost
@@ -1318,7 +1311,6 @@ sshrcmdcmd () {
 #
 sshtunnelcmd () {
   # note no " on tun_sshoptions
-  ${1:+printf "%s "} \
   ssh \
     -L "$ssh_localport:localhost:$ssh_remoteport" -N \
     ${tun_sshport:+-p "$tun_sshport"} \
@@ -1326,8 +1318,6 @@ sshtunnelcmd () {
     ${tun_sshoptions:+ $tun_sshoptions} \
     ${tun_sshuser:+-l "$tun_sshuser"} \
     "$tun_sshhost"
-
-  [ "$1" != "" ] && printf "\n"
 }
 
 #
@@ -1345,7 +1335,6 @@ dbcmd () {
     mysql)
       # --defaults-extra-file must be the first option if present
       # note no " on mysql_options
-      ${1:+printf "%s "} \
       mysql \
         ${mysql_pwfile:+"--defaults-extra-file=$mysql_pwfile"} \
         ${mysql_user:+-u "$mysql_user"} \
@@ -1356,8 +1345,6 @@ dbcmd () {
         ${mysql_options:+$mysql_options} \
         ${mysql_dbname:+"$mysql_dbname"} \
         ${mysql_command:+-e "$mysql_command"}
-
-      [ "$1" != "" ] && printf "\n"
       ;;
   esac
 }
@@ -1381,7 +1368,6 @@ dblistcmd () {
     mysql)
       # --defaults-extra-file must be the first option if present
       # note no " on mysql_options
-      ${1:+printf "%s "} \
       mysql \
         ${mysql_pwfile:+"--defaults-extra-file=$mysql_pwfile"} \
         ${mysql_user:+-u "$mysql_user"} \
@@ -1391,7 +1377,6 @@ dblistcmd () {
         ${mysql_socket:+-S "$mysql_socket"} \
         ${mysql_options:+$mysql_options} \
         -BN -e "SHOW DATABASES;"
-      [ "$1" != "" ] && printf "\n"
       ;;
   esac
 }
@@ -1411,106 +1396,51 @@ rsynccmd () {
   case "$rsync_mode" in
     tunnel)
       # note no " on rsync_options, rsync_add, rsync_source
-      if [ "$1" = "" ]; then  # run
-        rsync \
-          ${rsync_pwfile:+"--password-file=$rsync_pwfile"} \
-          "--port=$rsync_localport" \
-          ${rsync_filterfile:+-f "merge $rsync_filterfile"} \
-          ${rsync_options:+$rsync_options} \
-          ${rsync_add:+$rsync_add} \
-          $rsync_source \
-          "$rsync_dest"
-      else  # print, including quotes
-        printf "%s " rsync \
-          ${rsync_pwfile:+\"--password-file=$rsync_pwfile\"} \
-          \"--port=$rsync_localport\" \
-          ${rsync_filterfile:+-f \"merge $rsync_filterfile\"} \
-          ${rsync_options:+$rsync_options} \
-          ${rsync_add:+$rsync_add} \
-          $rsync_source \
-          \"$rsync_dest\"
-        printf "\n"
-      fi
+      rsync \
+        ${rsync_pwfile:+"--password-file=$rsync_pwfile"} \
+        "--port=$rsync_localport" \
+        ${rsync_filterfile:+-f "merge $rsync_filterfile"} \
+        ${rsync_options:+$rsync_options} \
+        ${rsync_add:+$rsync_add} \
+        $rsync_source \
+        "$rsync_dest"
       ;;
     direct)
       # note no " on rsync_options, rsync_add, rsync_source
-      if [ "$1" = "" ]; then  # run
-        rsync \
-          ${rsync_pwfile:+"--password-file=$rsync_pwfile"} \
-          ${rsync_port:+"--port=$rsync_port"} \
-          ${rsync_filterfile:+-f "merge $rsync_filterfile"} \
-          ${rsync_options:+$rsync_options} \
-          ${rsync_add:+$rsync_add} \
-          $rsync_source \
-          "$rsync_dest"
-      else  # print, including quotes
-        printf "%s " rsync \
-          ${rsync_pwfile:+\"--password-file=$rsync_pwfile\"} \
-          ${rsync_port:+\"--port=$rsync_port\"} \
-          ${rsync_filterfile:+-f \"merge $rsync_filterfile\"} \
-          ${rsync_options:+$rsync_options} \
-          ${rsync_add:+$rsync_add} \
-          $rsync_source \
-          \"$rsync_dest\"
-        printf "\n"
-      fi
+      rsync \
+        ${rsync_pwfile:+"--password-file=$rsync_pwfile"} \
+        ${rsync_port:+"--port=$rsync_port"} \
+        ${rsync_filterfile:+-f "merge $rsync_filterfile"} \
+        ${rsync_options:+$rsync_options} \
+        ${rsync_add:+$rsync_add} \
+        $rsync_source \
+        "$rsync_dest"
       ;;
     nodaemon)
       # note no " on rsync_sshoptions, rsync_options, rsync_add,
       # rsync_source
-      if [ "$1" = "" ]; then  # run
-        rsync \
-          -e "ssh
-              ${rsync_sshport:+-p "$rsync_sshport"} \
-              ${rsync_sshkeyfile:+-i "$rsync_sshkeyfile"} \
-              ${rsync_sshoptions:+$rsync_sshoptions}" \
-          ${rsync_filterfile:+-f "merge $rsync_filterfile"} \
-          ${rsync_options:+$rsync_options} \
-          ${rsync_add:+$rsync_add} \
-          $rsync_source \
-          "$rsync_dest"
-      else  # print, including quotes
-        printf "%s " rsync \
-          -e \"ssh
-              ${rsync_sshport:+-p \\\"$rsync_sshport\\\"} \
-              ${rsync_sshkeyfile:+-i \\\"$rsync_sshkeyfile\\\"} \
-              ${rsync_sshoptions:+$rsync_sshoptions}\" \
-          ${rsync_filterfile:+-f \"merge $rsync_filterfile\"} \
-          ${rsync_options:+$rsync_options} \
-          ${rsync_add:+$rsync_add} \
-          $rsync_source \
-          \"$rsync_dest\"
-        printf "\n"
-      fi
+      rsync \
+        -e "ssh
+            ${rsync_sshport:+-p "$rsync_sshport"} \
+            ${rsync_sshkeyfile:+-i "$rsync_sshkeyfile"} \
+            ${rsync_sshoptions:+$rsync_sshoptions}" \
+        ${rsync_filterfile:+-f "merge $rsync_filterfile"} \
+        ${rsync_options:+$rsync_options} \
+        ${rsync_add:+$rsync_add} \
+        $rsync_source \
+        "$rsync_dest"
       ;;
     local)
       # note no " on rsync_options, rsync_add, rsync_source
-      if [ "$1" = "" ]; then  # run
-        rsync \
-          ${rsync_filterfile:+-f "merge $rsync_filterfile"} \
-          ${rsync_options:+$rsync_options} \
-          ${rsync_add:+$rsync_add} \
-          $rsync_source \
-          "$rsync_dest"
-      else  # print, including quotes
-        printf "%s " rsync \
-          ${rsync_filterfile:+-f \"merge $rsync_filterfile\"} \
-          ${rsync_options:+$rsync_options} \
-          ${rsync_add:+$rsync_add} \
-          $rsync_source \
-          \"$rsync_dest\"
-        printf "\n"
-      fi
+      rsync \
+        ${rsync_filterfile:+-f "merge $rsync_filterfile"} \
+        ${rsync_options:+$rsync_options} \
+        ${rsync_add:+$rsync_add} \
+        $rsync_source \
       ;;
   esac
 }
-. ./aeolus.conf
-#rsync_mode=nodaemon
-rsync_filterfile="srdgsth\"sgh"
-rsync_options="f \"g\" h"
-rsynccmd print
-rsynccmd
-exit
+
 
 ######################################
 # file rotation, pruning, and zipping
@@ -1910,15 +1840,13 @@ removefilezip () {
 #
 # "local" vars: waited, sshexit
 # global vars: cmd, sshpid, tun_prefix, tun_localport, tun_sshtimeout,
-#              vars for setsshtuncmd()
+# library funcs: sshtunnelcmd()
 # FDs: 3
 #
 opensshtunnel () {
-  # log the command; only log to syslog if usesyslog="all"
-  logstatusquiet \
-    "running ssh command for $tun_prefix: $(sshtunnelcmd print)" all
-  printf "%s" \
-    "running ssh command for $tun_prefix: $(sshtunnelcmd print)" >&3
+  # log that we're starting
+  logstatusquiet "running SSH tunnel command for $tun_prefix"
+  printf "%s\n" "running SSH tunnel command for $tun_prefix" >&3
 
   # run the command
   #
