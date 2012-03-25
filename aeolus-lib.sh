@@ -50,6 +50,12 @@ fi
 # hardcoded variables
 ######################
 
+# for all invocations, regardless of config settings
+
+# name of the script, as reported by usage(), etc.
+# change this if you rename the script file
+scriptname="aeolus"
+
 # external commands used (potentially)
 #
 # some things can probably be omitted, like 'set' and 'command';
@@ -95,6 +101,14 @@ kill
 sleep
 "
 
+# default path to the config file, if one isn't specified
+# change usage notes if you change this
+defaultconfigfile="/etc/aeolus/aeolus.conf"
+
+# names of all config file settings
+configsettings="
+"
+
 # a newline character
 # see section 8 of http://www.dwheeler.com/essays/filenames-in-shell.html
 newline=$(printf "\nX")
@@ -106,38 +120,6 @@ tab='	'
 
 
 
-#!!! [config settings]
-# $ssh_port: SSH port (optional)
-# $ssh_keyfile: path to key file (optional)
-# $ssh_options: general options (optional)
-# $ssh_user: username (optional)
-# $ssh_host: hostname
-# $ssh_rcommand: remote command (optional, but usually supplied)
-# config settings: tun_sshlocalport, tun_sshremoteport, tun_sshport,
-#                  tun_sshkeyfile, tun_sshoptions, tun_sshuser, tun_sshhost
-#
-# $dbms_prefix: DBMS (currently only "mysql")
-# $*_user: username (optional*)
-# $*_pwfile: path to password file (optional*)
-# $*_protocol: protocol (optional*)
-# $*_host: hostname (optional*)
-# $*_port: port (optional*)
-# $*_socket: socket path (optional*)
-# $*_options: client options (optional*)
-# $*_dbname: database name (optional*)
-# $*_command: SQL command (or equivalent)
-#
-# * optional arguments may only be optional for some DBMSes; OTOH, not all
-#   arguments apply to all DBMSes
-
-# config settings: rsync_mode, rsync_pwfile, rsync_localport, rsync_port,
-#                  rsync_sshport, rsync_sshkeyfile, rsync_sshoptions,
-#                  rsync_filterfile, rsync_options, rsync_add, rsync_source,
-#                  rsync_dest
-
-
-
-############################################################################
 
 ############
 # debugging
@@ -360,27 +342,6 @@ logstatusquiet () {
   savequiet="$quiet"
   quiet="yes"
   logstatus "$1" "$2"
-  quiet="$savequiet"
-}
-
-#
-# log an alert/error message ($1) to syslog and/or the status log,
-# (depending on $usesyslog and $statuslog), but not to stdout, regardless of
-# the setting of $quiet
-#
-# used to avoid duplication when also logging to the output log
-#
-# if $2 is "all", only log to syslog if usesyslog="all" (but status logging
-# proceeds normally)
-#
-# "local" vars: savequiet
-# config settings: quiet
-# library functions: logstatus()
-#
-logalertquiet () {
-  savequiet="$quiet"
-  quiet="yes"
-  logalert "$1" "$2"
   quiet="$savequiet"
 }
 
@@ -1293,6 +1254,194 @@ validlist () {
 }
 
 
+####################
+# assemble commands
+####################
+
+#!!! [config settings]
+# $ssh_port: SSH port (optional)
+# $ssh_keyfile: path to key file (optional)
+# $ssh_options: general options (optional)
+# $ssh_user: username (optional)
+# $ssh_host: hostname
+# $ssh_rcommand: remote command (optional, but usually supplied)
+# config settings: tun_sshlocalport, tun_sshremoteport, tun_sshport,
+#                  tun_sshkeyfile, tun_sshoptions, tun_sshuser, tun_sshhost
+#
+# $dbms_prefix: DBMS (currently only "mysql")
+# $*_user: username (optional*)
+# $*_pwfile: path to password file (optional*)
+# $*_protocol: protocol (optional*)
+# $*_host: hostname (optional*)
+# $*_port: port (optional*)
+# $*_socket: socket path (optional*)
+# $*_options: client options (optional*)
+# $*_dbname: database name (optional*)
+# $*_command: SQL command (or equivalent)
+#
+# * optional arguments may only be optional for some DBMSes; OTOH, not all
+#   arguments apply to all DBMSes
+
+
+
+#
+# run a remote ssh command
+#
+# config settings: ssh_port, ssh_keyfile, ssh_options, ssh_user, ssh_host,
+#                  ssh_rcmd
+# utilities: ssh
+#
+sshrcmdcmd () {
+  # note no " on ssh_options
+  ssh \
+    ${ssh_port:+-p "$ssh_port"} \
+    ${ssh_keyfile:+-i "$ssh_keyfile"} \
+    ${ssh_options:+ $ssh_options} \
+    ${ssh_user:+-l "$ssh_user"} \
+    "$ssh_host" \
+    ${ssh_rcommand:+ "$ssh_rcommand"}
+}
+
+#
+# run an ssh tunnel command
+#
+# config settings: tun_sshlocalport, tun_sshremoteport, tun_sshport,
+#                  tun_sshkeyfile, tun_sshoptions, tun_sshuser, tun_sshhost
+# utilities: ssh
+#
+sshtunnelcmd () {
+  # note no " on tun_sshoptions
+  ssh \
+    -L "$ssh_localport:localhost:$ssh_remoteport" -N \
+    ${tun_sshport:+-p "$tun_sshport"} \
+    ${tun_sshkeyfile:+-i "$tun_sshkeyfile"} \
+    ${tun_sshoptions:+ $tun_sshoptions} \
+    ${tun_sshuser:+-l "$tun_sshuser"} \
+    "$tun_sshhost"
+}
+
+#
+# run a database command
+#
+# if $1 is non-null, print the command without running it
+#
+# global vars: dbms_prefix
+# config settings: *_user, *_pwfile, *_protocol, *_host, *_port, *_socket,
+#                  *_options, *_dbname, *_command
+# utilities: mysql
+#
+dbcmd () {
+  case "$dbms_prefix" in
+    mysql)
+      # --defaults-extra-file must be the first option if present
+      # note no " on mysql_options
+      mysql \
+        ${mysql_pwfile:+"--defaults-extra-file=$mysql_pwfile"} \
+        ${mysql_user:+-u "$mysql_user"} \
+        ${mysql_protocol:+"--protocol=$mysql_protocol"} \
+        ${mysql_host:+-h "$mysql_host"} \
+        ${mysql_port:+-P "$mysql_port"} \
+        ${mysql_socket:+-S "$mysql_socket"} \
+        ${mysql_options:+$mysql_options} \
+        ${mysql_dbname:+"$mysql_dbname"} \
+        ${mysql_command:+-e "$mysql_command"}
+      ;;
+  esac
+}
+
+#
+# run a get-database-list command
+#
+# (may not be possible/straightforward for all DBMSes)
+#
+# if $1 is non-null, print the command without running it
+#
+# for MySQL, '-BN' is already included in the options
+#
+# global vars: dbms_prefix
+# config settings: *_user, *_pwfile, *_protocol, *_host, *_port, *_socket,
+#                  *_options
+# utilities: mysql
+#
+dblistcmd () {
+  case "$dbms_prefix" in
+    mysql)
+      # --defaults-extra-file must be the first option if present
+      # note no " on mysql_options
+      mysql \
+        ${mysql_pwfile:+"--defaults-extra-file=$mysql_pwfile"} \
+        ${mysql_user:+-u "$mysql_user"} \
+        ${mysql_protocol:+"--protocol=$mysql_protocol"} \
+        ${mysql_host:+-h "$mysql_host"} \
+        ${mysql_port:+-P "$mysql_port"} \
+        ${mysql_socket:+-S "$mysql_socket"} \
+        ${mysql_options:+$mysql_options} \
+        -BN -e "SHOW DATABASES;"
+      ;;
+  esac
+}
+
+#
+# run an rsync command
+#
+# if $1 is non-null, print the command without running it
+#
+# config settings: rsync_mode, rsync_pwfile, rsync_localport, rsync_port,
+#                  rsync_sshport, rsync_sshkeyfile, rsync_sshoptions,
+#                  rsync_filterfile, rsync_options, rsync_add, rsync_source,
+#                  rsync_dest
+# utilities: rsync, (ssh)
+#
+rsynccmd () {
+  case "$rsync_mode" in
+    tunnel)
+      # note no " on rsync_options, rsync_add, rsync_source
+      rsync \
+        ${rsync_pwfile:+"--password-file=$rsync_pwfile"} \
+        "--port=$rsync_localport" \
+        ${rsync_filterfile:+-f "merge $rsync_filterfile"} \
+        ${rsync_options:+$rsync_options} \
+        ${rsync_add:+$rsync_add} \
+        $rsync_source \
+        "$rsync_dest"
+      ;;
+    direct)
+      # note no " on rsync_options, rsync_add, rsync_source
+      rsync \
+        ${rsync_pwfile:+"--password-file=$rsync_pwfile"} \
+        ${rsync_port:+"--port=$rsync_port"} \
+        ${rsync_filterfile:+-f "merge $rsync_filterfile"} \
+        ${rsync_options:+$rsync_options} \
+        ${rsync_add:+$rsync_add} \
+        $rsync_source \
+        "$rsync_dest"
+      ;;
+    nodaemon)
+      # note no " on rsync_sshoptions, rsync_options, rsync_add,
+      # rsync_source
+      rsync \
+        -e "ssh
+            ${rsync_sshport:+-p "$rsync_sshport"} \
+            ${rsync_sshkeyfile:+-i "$rsync_sshkeyfile"} \
+            ${rsync_sshoptions:+$rsync_sshoptions}" \
+        ${rsync_filterfile:+-f "merge $rsync_filterfile"} \
+        ${rsync_options:+$rsync_options} \
+        ${rsync_add:+$rsync_add} \
+        $rsync_source \
+        "$rsync_dest"
+      ;;
+    local)
+      # note no " on rsync_options, rsync_add, rsync_source
+      rsync \
+        ${rsync_filterfile:+-f "merge $rsync_filterfile"} \
+        ${rsync_options:+$rsync_options} \
+        ${rsync_add:+$rsync_add} \
+        $rsync_source \
+      ;;
+  esac
+}
+
+
 ######################################
 # file rotation, pruning, and zipping
 ######################################
@@ -1682,100 +1831,44 @@ removefilezip () {
 ################
 
 #
-# run a remote ssh command
-#
-# config settings: ssh_port, ssh_keyfile, ssh_options, ssh_user, ssh_host,
-#                  ssh_rcommand
-# utilities: ssh
-#
-sshrcmdcmd () {
-  # note no " on ssh_options
-  ssh \
-    ${ssh_port:+-p "$ssh_port"} \
-    ${ssh_keyfile:+-i "$ssh_keyfile"} \
-    ${ssh_options:+ $ssh_options} \
-    ${ssh_user:+-l "$ssh_user"} \
-    "$ssh_host" \
-    ${ssh_rcommand:+ "$ssh_rcommand"}
-}
-
-#
-# run an ssh tunnel command
-#
-# config settings: tun_sshlocalport, tun_sshremoteport, tun_sshport,
-#                  tun_sshkeyfile, tun_sshoptions, tun_sshuser, tun_sshhost
-# utilities: ssh
-#
-sshtunnelcmd () {
-  # note no " on tun_sshoptions
-  ssh \
-    -L "$ssh_localport:localhost:$ssh_remoteport" -N \
-    ${tun_sshport:+-p "$tun_sshport"} \
-    ${tun_sshkeyfile:+-i "$tun_sshkeyfile"} \
-    ${tun_sshoptions:+ $tun_sshoptions} \
-    ${tun_sshuser:+-l "$tun_sshuser"} \
-    "$tun_sshhost"
-}
-
-#
 # open an SSH tunnel
 #
-# $1 is the name of a variable to store the ssh PID in, to differentiate
-# between multiple tunnels; if unset or null, it defaults to "sshpid"
+# one tunnel at a time; closesshtunnel() must be run before opening
+# another tunnel
 #
-# returns 0 on success
-# on error, calls sendalert(), then acts according to the value of
-# $on_ssherr:
-#   "exit": exits with exitval $sshtunnel_exitval (*)
-#   "phase": returns 1 ("skip to the next phase of the script")
-#   unset or null: defaults to "exit"
-# *if $sshtunnel_exitval is unset or null, "1" is used as the default
+# returns 1 to mean "skip to the next phase of the backup", else 0
 #
-# FD 3 gets a start message and the actual output (stdout and stderr) of
-# ssh
-#
-# "local" vars: waited, sshexit, sshpid_var, sshpid_l, on_err_l, exitval_l
-# global vars: (contents of $1, or sshpid), tun_prefix
-# config settings: tun_localport, tun_sshtimeout, on_ssherr (optional),
-#                  sshtunnel_exitval (optional)
-# library funcs: sshtunnelcmd(), logstatus(), logstatusquiet(), sendalert(),
-#                do_exit()
-# utilities: nc, printf, kill, expr, [
+# "local" vars: waited, sshexit
+# global vars: cmd, sshpid, tun_prefix, tun_localport, tun_sshtimeout,
+# library funcs: sshtunnelcmd()
 # FDs: 3
 #
 opensshtunnel () {
-  # apply some defaults
-  sshpid_var="sshpid"
-  [ "$1" != "" ] && sshpid_var="$1"
-  on_err_l="exit"
-  [ "$on_ssherr" != "" ] && on_err_l="$on_ssherr"
-  exitval_l=1
-  [ "$sshtunnel_exitval" != "" ] && exitval_l="$sshtunnel_exitval"
-
   # log that we're starting
   logstatusquiet "running SSH tunnel command for $tun_prefix"
   printf "%s\n" "running SSH tunnel command for $tun_prefix" >&3
 
   # run the command
+  #
+  # note & _in the quotes_, so $! contains the correct pid
   sshtunnelcmd >&3 2>&1 &
-  sshpid_l="$!"
-  eval "$(printf "%s" "$sshpid_var")=\"$sshpid_l\""  # set the global
+  sshpid="$!"
 
   # make sure it's actually working;
   # see http://mywiki.wooledge.org/ProcessManagement#Starting_a_.22daemon.22_and_checking_whether_it_started_successfully
   waited="0"
   while sleep 1; do
     nc -z localhost "$tun_localport" && break
-    if kill -0 "$sshpid_l"; then
+    if kill -0 "$sshpid"; then
       # expr is more portable than $(())
       waited=$(expr "$waited" + 1)
       if [ "$waited" -ge "$tun_sshtimeout" ]; then
         sendalert "could not establish SSH tunnel for $tun_prefix (timed out); exiting" log
-        kill "$sshpid_l"
-        wait "$sshpid_l"
-        case "$on_err_l" in
+        kill "$sshpid"
+        wait "$sshpid"
+        case "$on_ssherr" in
           exit)
-            do_exit "$exitval_l"
+            do_exit "$sshtunnel_exitval"
             ;;
           phase)
             return 1  # skip to the next phase
@@ -1783,12 +1876,12 @@ opensshtunnel () {
         esac
       fi
     else
-      wait "$sshpid_l"
+      wait "$sshpid"
       sshexit="$?"
       sendalert "could not establish SSH tunnel for $tun_prefix (error code $sshexit); exiting" log
-      case "$on_err_l" in
+      case "$on_ssherr" in
         exit)
-          do_exit "$exitval_l"
+          do_exit "$sshtunnel_exitval"
           ;;
         phase)
           return 1  # skip to the next phase
@@ -1805,26 +1898,12 @@ opensshtunnel () {
 #
 # close an SSH tunnel
 #
-# $1 is the name of a variable that contains the ssh PID, to differentiate
-# between multiple tunnels; if unset or null, it defaults to "sshpid"
-#
-# local vars: sshpid_var, sshpid_l
-# global vars: (contents of $1, or sshpid), tun_prefix
-# library funcs: logstatus()
-# utilities: kill, [
+# global vars: sshpid, tun_prefix
 #
 closesshtunnel () {
-  # apply default
-  sshpid_var="sshpid"
-  [ "$1" != "" ] && sshpid_var="$1"
-
-  eval "sshpid_l=\"\$$(printf "%s" "$sshpid_var")\""
-
-  kill "$sshpid_l"
-  wait "$sshpid_l"
-
-  eval "$(printf "%s" "$sshpid_var")=\"\""  # so we know it's been closed
-
+  kill "$sshpid"
+  wait "$sshpid"
+  sshpid=""  # so we know if a tunnel is open
   logstatus "SSH tunnel for $tun_prefix closed"
 }
 
@@ -1832,63 +1911,6 @@ closesshtunnel () {
 #####################
 # database functions
 #####################
-
-#
-# run a database command
-#
-# global vars: dbms_prefix
-# config settings: *_user, *_pwfile, *_protocol, *_host, *_port, *_socket,
-#                  *_options, *_dbname, *_command
-# utilities: mysql
-#
-dbcmd () {
-  case "$dbms_prefix" in
-    mysql)
-      # --defaults-extra-file must be the first option if present
-      # note no " on mysql_options
-      mysql \
-        ${mysql_pwfile:+"--defaults-extra-file=$mysql_pwfile"} \
-        ${mysql_user:+-u "$mysql_user"} \
-        ${mysql_protocol:+"--protocol=$mysql_protocol"} \
-        ${mysql_host:+-h "$mysql_host"} \
-        ${mysql_port:+-P "$mysql_port"} \
-        ${mysql_socket:+-S "$mysql_socket"} \
-        ${mysql_options:+$mysql_options} \
-        ${mysql_dbname:+"$mysql_dbname"} \
-        ${mysql_command:+-e "$mysql_command"}
-      ;;
-  esac
-}
-
-#
-# run a get-database-list command
-#
-# (may not be possible/straightforward for all DBMSes)
-#
-# for MySQL, '-BN' is already included in the options
-#
-# global vars: dbms_prefix
-# config settings: *_user, *_pwfile, *_protocol, *_host, *_port, *_socket,
-#                  *_options
-# utilities: mysql
-#
-dblistcmd () {
-  case "$dbms_prefix" in
-    mysql)
-      # --defaults-extra-file must be the first option if present
-      # note no " on mysql_options
-      mysql \
-        ${mysql_pwfile:+"--defaults-extra-file=$mysql_pwfile"} \
-        ${mysql_user:+-u "$mysql_user"} \
-        ${mysql_protocol:+"--protocol=$mysql_protocol"} \
-        ${mysql_host:+-h "$mysql_host"} \
-        ${mysql_port:+-P "$mysql_port"} \
-        ${mysql_socket:+-S "$mysql_socket"} \
-        ${mysql_options:+$mysql_options} \
-        -BN -e "SHOW DATABASES;"
-      ;;
-  esac
-}
 
 #
 # convert DB name escape sequences to the real characters
@@ -1909,70 +1931,6 @@ dbunescape () {
       -e "s/^\\\\t/$tab/" -e "s/\\([^\\]\)\\\\t/\\1$tab/g" \
       -e 's/\\\\/\\/g'
 }
-
-
-##################
-# rsync functions
-##################
-
-#
-# run an rsync command
-#
-# config settings: rsync_mode, rsync_pwfile, rsync_localport, rsync_port,
-#                  rsync_sshport, rsync_sshkeyfile, rsync_sshoptions,
-#                  rsync_filterfile, rsync_options, rsync_add, rsync_source,
-#                  rsync_dest
-# utilities: rsync, (ssh)
-#
-rsynccmd () {
-  case "$rsync_mode" in
-    tunnel)
-      # note no " on rsync_options, rsync_add, rsync_source
-      rsync \
-        ${rsync_pwfile:+"--password-file=$rsync_pwfile"} \
-        "--port=$rsync_localport" \
-        ${rsync_filterfile:+-f "merge $rsync_filterfile"} \
-        ${rsync_options:+$rsync_options} \
-        ${rsync_add:+$rsync_add} \
-        $rsync_source \
-        "$rsync_dest"
-      ;;
-    direct)
-      # note no " on rsync_options, rsync_add, rsync_source
-      rsync \
-        ${rsync_pwfile:+"--password-file=$rsync_pwfile"} \
-        ${rsync_port:+"--port=$rsync_port"} \
-        ${rsync_filterfile:+-f "merge $rsync_filterfile"} \
-        ${rsync_options:+$rsync_options} \
-        ${rsync_add:+$rsync_add} \
-        $rsync_source \
-        "$rsync_dest"
-      ;;
-    nodaemon)
-      # note no " on rsync_sshoptions, rsync_options, rsync_add,
-      # rsync_source
-      rsync \
-        -e "ssh
-            ${rsync_sshport:+-p "$rsync_sshport"} \
-            ${rsync_sshkeyfile:+-i "$rsync_sshkeyfile"} \
-            ${rsync_sshoptions:+$rsync_sshoptions}" \
-        ${rsync_filterfile:+-f "merge $rsync_filterfile"} \
-        ${rsync_options:+$rsync_options} \
-        ${rsync_add:+$rsync_add} \
-        $rsync_source \
-        "$rsync_dest"
-      ;;
-    local)
-      # note no " on rsync_options, rsync_add, rsync_source
-      rsync \
-        ${rsync_filterfile:+-f "merge $rsync_filterfile"} \
-        ${rsync_options:+$rsync_options} \
-        ${rsync_add:+$rsync_add} \
-        $rsync_source \
-      ;;
-  esac
-}
-
 
 
 
