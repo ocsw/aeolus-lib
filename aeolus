@@ -945,12 +945,6 @@ validconf () {
 ####################################
 
 #
-# these are factored out here so the "cmds" argument to the script
-# doesn't make things complicated and unreadable;
-# when running for real, they are used to set $cmd, which is then eval'ed
-#
-
-#
 # SECURITY NOTE: this is the only portable way I've found to be able to
 # pass optional arguments that can contain spaces, and get everything
 # to work as expected; I've done some tests, and I'm pretty sure using
@@ -962,69 +956,6 @@ validconf () {
 # also, this approach doesn't handle some combinations of, e.g., embedded
 # quotes well, but it's probably good enough for this script, anyway
 #
-
-# see also do_syslog(), above
-
-#
-# set $cmd to the command to run to get a list of databases
-#
-#
-# set $cmd to the ssh command to run for a tunnel
-#
-# global vars: cmd, tun_localport, tun_remoteport, tun_sshport, tun_sshkeyfile,
-#              tun_sshoptions, tun_sshuser, tun_sshhost
-#
-setsshtuncmd () {
-  cmd="ssh -L \"${tun_localport}:localhost:${tun_remoteport}\" -N"
-  [ "$tun_sshport" != "" ] && cmd="$cmd -p \"$tun_sshport\""
-  [ "$tun_sshkeyfile" != "" ] && cmd="$cmd -i \"$tun_sshkeyfile\""
-  # no \" so we can specify multiple options
-  [ "$tun_sshoptions" != "" ] && cmd="$cmd $tun_sshoptions"
-  [ "$tun_sshuser" != "" ] && cmd="$cmd -l \"$tun_sshuser\""
-  cmd="$cmd \"$tun_sshhost\""
-}
-
-#
-# add database connection options to $cmd
-#
-# global vars: cmd, dbms_prefix, *_user, *_pwfile, *_usetunnel, *_localport,
-#              *_protocol, *_host, *_port, *_socket
-#
-adddbconncmd () {
-  case "$dbms_prefix" in
-    mysql)
-      # --defaults-extra-file must be the first option
-      [ "$mysql_pwfile" != "" ] && \
-          cmd="$cmd \"--defaults-extra-file=$mysql_pwfile\""
-      [ "$mysql_user" != "" ] && cmd="$cmd -u \"$mysql_user\""
-      if [ "$mysql_usetunnel" = "yes" ]; then
-        cmd="$cmd -h localhost"
-        cmd="$cmd -P \"$mysql_localport\""
-      else
-        [ "$mysql_protocol" != "" ] && cmd="$cmd \"--protocol=$mysql_protocol\""
-        [ "$mysql_host" != "" ] && cmd="$cmd -h \"$mysql_host\""
-        [ "$mysql_port" != "" ] && cmd="$cmd -P \"$mysql_port\""
-        [ "$mysql_socket" != "" ] && cmd="$cmd -S \"$mysql_socket\""
-      fi
-      ;;
-  esac
-}
-
-# global vars: cmd, dbms_prefix, *_clientoptions, vars for adddbconncmd()
-# global vars: cmd, dbms_prefix, *_user, *_pwfile, *_usetunnel, *_localport,
-#              *_protocol, *_host, *_port, *_socket
-#
-setdblistcmd () {
-  case "$dbms_prefix" in
-    mysql)
-      cmd="mysql"
-      adddbconncmd
-      # no \" so we can specify multiple options
-      [ "$mysql_clientoptions" != "" ] && cmd="$cmd $mysql_clientoptions"
-      cmd="$cmd -BN -e \"SHOW DATABASES;\""
-      ;;
-  esac
-}
 
 #
 # check if setdbdumponecmd() should be using alternate options
@@ -1173,40 +1104,6 @@ setdbdumpallcmd () {
       cmd="$cmd -A"
       ;;
   esac
-}
-
-#
-# set $cmd to the rsync command to run for the backup
-#
-# global vars: cmd, rsync_mode, rsync_pwfile, rsync_localport, rsync_port,
-#              rsync_sshport, rsync_sshkeyfile, rsync_sshoptions,
-#              rsync_filterfile, rsync_options, rsync_add, rsync_source,
-#              rsync_dest
-#
-setrsynccmd () {
-  cmd="rsync"
-  { [ "$rsync_mode" = "tunnel" ] || [ "$rsync_mode" = "direct" ]; } && \
-      [ "$rsync_pwfile" != "" ] && \
-      cmd="$cmd \"--password-file=$rsync_pwfile\""
-  [ "$rsync_mode" = "tunnel" ] && \
-      cmd="$cmd \"--port=$rsync_localport\""
-  [ "$rsync_mode" = "direct" ] && \
-      [ "$rsync_port" != "" ] && cmd="$cmd \"--port=$rsync_port\""
-  if [ "$rsync_mode" = "nodaemon" ]; then
-    cmd="$cmd -e \"ssh"
-    [ "$rsync_sshport" != "" ] && cmd="$cmd -p \\\"$rsync_sshport\\\""
-    [ "$rsync_sshkeyfile" != "" ] && cmd="$cmd -i \\\"$rsync_sshkeyfile\\\""
-    # no \" so we can specify multiple options
-    [ "$rsync_sshoptions" != "" ] && cmd="$cmd $rsync_sshoptions"
-    cmd="$cmd\""
-  fi
-  [ "$rsync_filterfile" != "" ] && cmd="$cmd -f \"merge $rsync_filterfile\""
-  # no \" so we can specify multiple options
-  [ "$rsync_options" != "" ] && cmd="$cmd $rsync_options"
-  # no \" so we can specify multiple options
-  [ "$rsync_add" != "" ] && cmd="$cmd $rsync_add"
-  cmd="$cmd $rsync_source"  # no \" so we can specify multiple paths
-  cmd="$cmd \"$rsync_dest\""
 }
 
 
