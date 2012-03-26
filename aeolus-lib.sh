@@ -768,7 +768,7 @@ getseddelim () {
 #
 # "local" vars: seddelim, lhs_esc, rhs_esc
 # library functions: getseddelim(), escregex(), escsedrepl()
-# utilities: printf, [
+# utilities: echo, printf, [
 #
 escsedsubst () {
   seddelim=$(getseddelim "$1$2")
