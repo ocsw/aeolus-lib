@@ -569,9 +569,6 @@ Modes:
 
   "config" or "settings": the current config settings are printed
 
-  "cmds" or "commands": the ssh, DBMS, and rsync commands that would be run
-  are printed, but nothing else is done
-
   "status": the current status, including timestamps, is printed
   "statusall": temp files mainly relevant for debugging are also included
 
@@ -1767,9 +1764,8 @@ while [ "$#" -gt 0 ]; do
 done
 
 validlist "mode" "" "help" "usage" "license" "config" "settings" \
-          "cmds" "commands" "status" "statusall" "silence" \
-          "unsilence" "stop" "disable" "start" "enable" "clearlock" \
-          "unlock" "create" "systemtest"
+          "status" "statusall" "silence" "unsilence" "stop" "disable" \
+          "start" "enable" "clearlock" "unlock" "create" "systemtest"
 
 # first deal with the modes that don't require sourcing the config file
 # or dealing with settings

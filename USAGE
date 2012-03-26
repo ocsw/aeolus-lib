@@ -190,8 +190,7 @@ CONTENTS
       known hosts file on the local host.  This can be done in several ways:
         * editing the file directly (i.e., pasting in the public key)
         * running ssh with the same options as in the config file and
-          answering "yes" (use the 'cmds' mode of the script to get the
-          exact command)
+          answering "yes"
         * running the script manually (see (d)) and answering "yes",
           assuming that terminal I/O works properly when ssh is run in the
           background
