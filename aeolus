@@ -948,33 +948,20 @@ validconf () {
 }
 
 
-####################################
-# core functions: assemble commands
-####################################
+###########################
+# core functions: DB dumps
+###########################
 
 #
-# SECURITY NOTE: this is the only portable way I've found to be able to
-# pass optional arguments that can contain spaces, and get everything
-# to work as expected; I've done some tests, and I'm pretty sure using
-# eval like this, with early evaluation and as much quoting as possible,
-# is at worst no more dangerous than passing user-supplied filenames
-# and arguments is in the first place, but if anyone reading this has
-# a better idea, I'm listening
-#
-# also, this approach doesn't handle some combinations of, e.g., embedded
-# quotes well, but it's probably good enough for this script, anyway
-#
-
-#
-# check if setdbdumponecmd() should be using alternate options
+# check if dbdumponecmd() should be using alternate options
 #
 # $1 is the name of the database to dump
 #
-# don't actually apply the options here in case there are DBMS-specific
-# things that need to be done
-#
 # "local" vars: OLDIFS, dbname, altline_esc, altdb_esc, altopts_esc, altdb
-# global vars: IFS, newline, tab, dbms_altmode, dbms_alts, altopts
+# global vars: IFS, dbms_altmode, dbms_alts, altopts
+# library vars: newline, tab
+# library funcs: dbunescape()
+# utilities: printf, sed, [
 #
 checkusealtopts () {
   OLDIFS="$IFS"
@@ -1022,102 +1009,104 @@ checkusealtopts () {
 }
 
 #
-# set $cmd to the command to run to dump a single database
+# run a command to dump a single database to stdout
 #
-# (may not be possible with all DBMSes; see also setdbdumpmultcmd(),
-# setdbdumpallcmd())
+# (may not be possible with all DBMSes; see also dbdumpmultcmd(),
+# dbdumpallcmd())
 #
-# $1 is the name of the database to dump; if blank, it will be replaced
-#    with "DBNAME" (useful for, e.g., running the script in cmds mode)
+# $1 is the name of the database to dump
 #
-# "local" vars: dbname
-# global vars: cmd, dbms_prefix, altopts, *_dumponeoptions (or, e.g.,
-#              *_dumpoptions for DBMSes that only need one set of options),
-#              vars for adddbconncmd()
+# "local" vars: opts_l
+# global vars: dbms_prefix, altopts
+# config settings: *_user, *_pwfile, *_protocol, *_host, *_port, *_socket,
+#                  *_dumpoptions/*_dumponeoptions/etc. (depending on DBMS)
+# utilities: mysqldump, [
 #
-setdbdumponecmd () {
-  if [ "$1" = "" ]; then
-    dbname="DBNAME"
-  else
-    dbname="$1"
-  fi
-
+dbdumponecmd () {
   case "$dbms_prefix" in
     mysql)
-      cmd="mysqldump"
-      adddbconncmd
       if checkusealtopts "$1"; then
-        # no \" so we can specify multiple options
-        [ "$altopts" != "" ] && cmd="$cmd $altopts"
+        opts_l="$altopts"
       else
-        # no \" so we can specify multiple options
-        [ "$dbms_dumpoptions" != "" ] && cmd="$cmd $dbms_dumpoptions"
+        opts_l="$mysql_dumpoptions"
       fi
-      cmd="$cmd \"$dbname\""
+
+      # --defaults-extra-file must be the first option if present
+      # note no " on opts_l
+      mysqldump \
+        ${mysql_pwfile:+"--defaults-extra-file=$mysql_pwfile"} \
+        ${mysql_user:+-u "$mysql_user"} \
+        ${mysql_protocol:+"--protocol=$mysql_protocol"} \
+        ${mysql_host:+-h "$mysql_host"} \
+        ${mysql_port:+-P "$mysql_port"} \
+        ${mysql_socket:+-S "$mysql_socket"} \
+        ${opts_l:+$opts_l} \
+        "$1"
       ;;
   esac
 }
 
 #
-# set $cmd to the command to run to dump multiple databases to one file
+# run a command to dump multiple databases to stdout
 #
-# (may not be possible with all DBMSes; see also setdbdumponecmd(),
-# setdbdumpallcmd())
+# (may not be possible with all DBMSes; see also dbdumponecmd(),
+# dbdumpallcmd())
 #
 # $1 is a string containing the names of the databases to dump (names
 #    containing spaces must be sub-quoted (e.g., '... "foo bar" ...' or
-#    "... \"foo bar\" ...")); if blank, it will be replaced with
-#    "DBNAMES" (useful for, e.g., running the script in cmds mode)
+#    "... \"foo bar\" ..."))
 #
-# "local" vars: dbnames
-# global vars: cmd, dbms_prefix, *_dumpmultoptions (or, e.g., *_dumpoptions
-#              for DBMSes that only need one set of options), vars for
-#              adddbconncmd()
+# global vars: dbms_prefix
+# config settings: *_user, *_pwfile, *_protocol, *_host, *_port, *_socket,
+#                  *_dumpoptions/*_dumpmultoptions/etc. (depending on DBMS)
+# utilities: mysqldump
 #
-setdbdumpmultcmd () {
-  if [ "$1" = "" ]; then
-    dbnames="DBNAMES"
-  else
-    dbnames="$1"
-  fi
-
+dbdumpmultcmd () {
   case "$dbms_prefix" in
     mysql)
-      cmd="mysqldump"
-      adddbconncmd
-      # no \" so we can specify multiple options
-      [ "$mysql_dumpoptions" != "" ] && cmd="$cmd $mysql_dumpoptions"
-      cmd="$cmd -B $dbnames"
+      # --defaults-extra-file must be the first option if present
+      # note no " on mysql_dumpoptions, $1
+      mysqldump \
+        ${mysql_pwfile:+"--defaults-extra-file=$mysql_pwfile"} \
+        ${mysql_user:+-u "$mysql_user"} \
+        ${mysql_protocol:+"--protocol=$mysql_protocol"} \
+        ${mysql_host:+-h "$mysql_host"} \
+        ${mysql_port:+-P "$mysql_port"} \
+        ${mysql_socket:+-S "$mysql_socket"} \
+        ${mysql_dumpoptions:+$mysql_dumpoptions} \
+        -B $1
       ;;
   esac
 }
 
 #
-# set $cmd to the command to run to dump all databases to one file
+# run a command to dump all databases to stdout
 #
-# (may not be possible with all DBMSes; see also setdbdumponecmd(),
-# setdbdumpmultcmd())
+# (may not be possible with all DBMSes; see also dbdumponecmd(),
+# dbdumpmultcmd())
 #
-# global vars: cmd, dbms_prefix, *_dumpalloptions (or, e.g., *_dumpoptions
-#              for DBMSes that only need one set of options), vars for
-#              adddbconncmd()
+# global vars: dbms_prefix
+# config settings: *_user, *_pwfile, *_protocol, *_host, *_port, *_socket,
+#                  *_dumpoptions/*_dumpalloptions/etc. (depending on DBMS)
+# utilities: mysqldump
 #
-setdbdumpallcmd () {
+dbdumpallcmd () {
   case "$dbms_prefix" in
     mysql)
-      cmd="mysqldump"
-      adddbconncmd
-      # no \" so we can specify multiple options
-      [ "$mysql_dumpoptions" != "" ] && cmd="$cmd $mysql_dumpoptions"
-      cmd="$cmd -A"
+      # --defaults-extra-file must be the first option if present
+      # note no " on mysql_dumpoptions
+      mysqldump \
+        ${mysql_pwfile:+"--defaults-extra-file=$mysql_pwfile"} \
+        ${mysql_user:+-u "$mysql_user"} \
+        ${mysql_protocol:+"--protocol=$mysql_protocol"} \
+        ${mysql_host:+-h "$mysql_host"} \
+        ${mysql_port:+-P "$mysql_port"} \
+        ${mysql_socket:+-S "$mysql_socket"} \
+        ${mysql_dumpoptions:+$mysql_dumpoptions} \
+        -A
       ;;
   esac
 }
-
-
-###########################
-# core functions: DB dumps
-###########################
 
 #
 #
