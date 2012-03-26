@@ -452,14 +452,14 @@ sendalert_body () {
 #
 switchtunnel () {
   tun_prefix="$1"
-  eval "tun_sshuser=\"$`printf '%s' $1`_sshuser\""
-  eval "tun_sshhost=\"$`printf '%s' $1`_sshhost\""
-  eval "tun_sshkeyfile=\"$`printf '%s' $1`_sshkeyfile\""
-  eval "tun_sshport=\"$`printf '%s' $1`_sshport\""
-  eval "tun_localport=\"$`printf '%s' $1`_localport\""
-  eval "tun_remoteport=\"$`printf '%s' $1`_remoteport\""
-  eval "tun_sshoptions=\"$`printf '%s' $1`_sshoptions\""
-  eval "tun_sshtimeout=\"$`printf '%s' $1`_sshtimeout\""
+  eval "tun_sshuser=\"\$$(printf "%s" "$1")_sshuser\""
+  eval "tun_sshhost=\"\$$(printf "%s" "$1")_sshhost\""
+  eval "tun_sshkeyfile=\"\$$(printf "%s" "$1")_sshkeyfile\""
+  eval "tun_sshport=\"\$$(printf "%s" "$1")_sshport\""
+  eval "tun_localport=\"\$$(printf "%s" "$1")_localport\""
+  eval "tun_remoteport=\"\$$(printf "%s" "$1")_remoteport\""
+  eval "tun_sshoptions=\"\$$(printf "%s" "$1")_sshoptions\""
+  eval "tun_sshtimeout=\"\$$(printf "%s" "$1")_sshtimeout\""
 }
 
 #
@@ -489,38 +489,38 @@ switchtunnel () {
 #
 switchdbms () {
   dbms_prefix="$1"
-  eval "dbms_dodump=\"$`printf '%s' $1`_dodump\""
-  eval "dbms_usetunnel=\"$`printf '%s' $1`_usetunnel\""
-  eval "dbms_user=\"$`printf '%s' $1`_user\""
-  eval "dbms_pwfile=\"$`printf '%s' $1`_pwfile\""
-  eval "dbms_protocol=\"$`printf '%s' $1`_protocol\""
-  eval "dbms_host=\"$`printf '%s' $1`_host\""
-  eval "dbms_port=\"$`printf '%s' $1`_port\""
-  eval "dbms_socket=\"$`printf '%s' $1`_socket\""
-  eval "dbms_dbmode=\"$`printf '%s' $1`_dbmode\""
-  eval "dbms_dbs=\"$`printf '%s' $1`_dbs\""
-  eval "dbms_splitdbs=\"$`printf '%s' $1`_splitdbs\""
-  eval "dbms_clientoptions=\"$`printf '%s' $1`_clientoptions\""
-  eval "dbms_dumpoptions=\"$`printf '%s' $1`_dumpoptions\""
-  eval "dbms_dumponeoptions=\"$`printf '%s' $1`_dumponeoptions\""
-  eval "dbms_dumpmultoptions=\"$`printf '%s' $1`_dumpmultoptions\""
-  eval "dbms_dumpalloptions=\"$`printf '%s' $1`_dumpalloptions\""
-  eval "dbms_altmode=\"$`printf '%s' $1`_altmode\""
-  eval "dbms_alts=\"$`printf '%s' $1`_alts\""
-  eval "dbms_dumpdir=\"$`printf '%s' $1`_dumpdir\""
-  eval "dbms_layout=\"$`printf '%s' $1`_layout\""
-  eval "dbms_fileprefix=\"$`printf '%s' $1`_fileprefix\""
-  eval "dbms_filesuffix=\"$`printf '%s' $1`_filesuffix\""
-  eval "dbms_subdirprefix=\"$`printf '%s' $1`_subdirprefix\""
-  eval "dbms_filedirsep=\"$`printf '%s' $1`_filedirsep\""
-  eval "dbms_filedirdate=\"$`printf '%s' $1`_filedirdate\""
-  eval "dbms_numfiles=\"$`printf '%s' $1`_numfiles\""
-  eval "dbms_daysfiles=\"$`printf '%s' $1`_daysfiles\""
-  eval "dbms_zipmode=\"$`printf '%s' $1`_zipmode\""
-  eval "dbms_zipoptions=\"$`printf '%s' $1`_zipoptions\""
-  eval "dbms_preserve=\"$`printf '%s' $1`_preserve\""
+  eval "dbms_dodump=\"\$$(printf "%s" "$1")_dodump\""
+  eval "dbms_usetunnel=\"\$$(printf "%s" "$1")_usetunnel\""
+  eval "dbms_user=\"\$$(printf "%s" "$1")_user\""
+  eval "dbms_pwfile=\"\$$(printf "%s" "$1")_pwfile\""
+  eval "dbms_protocol=\"\$$(printf "%s" "$1")_protocol\""
+  eval "dbms_host=\"\$$(printf "%s" "$1")_host\""
+  eval "dbms_port=\"\$$(printf "%s" "$1")_port\""
+  eval "dbms_socket=\"\$$(printf "%s" "$1")_socket\""
+  eval "dbms_dbmode=\"\$$(printf "%s" "$1")_dbmode\""
+  eval "dbms_dbs=\"\$$(printf "%s" "$1")_dbs\""
+  eval "dbms_splitdbs=\"\$$(printf "%s" "$1")_splitdbs\""
+  eval "dbms_clientoptions=\"\$$(printf "%s" "$1")_clientoptions\""
+  eval "dbms_dumpoptions=\"\$$(printf "%s" "$1")_dumpoptions\""
+  eval "dbms_dumponeoptions=\"\$$(printf "%s" "$1")_dumponeoptions\""
+  eval "dbms_dumpmultoptions=\"\$$(printf "%s" "$1")_dumpmultoptions\""
+  eval "dbms_dumpalloptions=\"\$$(printf "%s" "$1")_dumpalloptions\""
+  eval "dbms_altmode=\"\$$(printf "%s" "$1")_altmode\""
+  eval "dbms_alts=\"\$$(printf "%s" "$1")_alts\""
+  eval "dbms_dumpdir=\"\$$(printf "%s" "$1")_dumpdir\""
+  eval "dbms_layout=\"\$$(printf "%s" "$1")_layout\""
+  eval "dbms_fileprefix=\"\$$(printf "%s" "$1")_fileprefix\""
+  eval "dbms_filesuffix=\"\$$(printf "%s" "$1")_filesuffix\""
+  eval "dbms_subdirprefix=\"\$$(printf "%s" "$1")_subdirprefix\""
+  eval "dbms_filedirsep=\"\$$(printf "%s" "$1")_filedirsep\""
+  eval "dbms_filedirdate=\"\$$(printf "%s" "$1")_filedirdate\""
+  eval "dbms_numfiles=\"\$$(printf "%s" "$1")_numfiles\""
+  eval "dbms_daysfiles=\"\$$(printf "%s" "$1")_daysfiles\""
+  eval "dbms_zipmode=\"\$$(printf "%s" "$1")_zipmode\""
+  eval "dbms_zipoptions=\"\$$(printf "%s" "$1")_zipoptions\""
+  eval "dbms_preserve=\"\$$(printf "%s" "$1")_preserve\""
   # internal, not from config
-  eval "dbms_datestring=\"$`printf '%s' $1`_datestring\""
+  eval "dbms_datestring=\"\$$(printf "%s" "$1")_datestring\""
 }
 
 
@@ -881,9 +881,9 @@ validconf () {
         validnum "${dbms}_remoteport" 1 65535
         validnum "${dbms}_sshtimeout" 1
         # ignore these
-        eval "`printf '%s' $dbms`_host=\"localhost\""
-        eval "`printf '%s' $dbms`_port=\"${dbms}_localport\""
-        eval "`printf '%s' $dbms`_socket=\"\""
+        eval "$(printf "%s" "$dbms")_host=\"localhost\""
+        eval "$(printf "%s" "$dbms")_port=\"${dbms}_localport\""
+        eval "$(printf "%s" "$dbms")_socket=\"\""
         # also change the dbms_* variables, for completeness
         dbms_host="localhost"
         dbms_port="${dbms}_localport"
@@ -891,13 +891,13 @@ validconf () {
       else
         if [ "$dbms_host" != "" ]; then  # nothing to validate, but...
           # ignore socket
-          eval "`printf '%s' $dbms`_socket=\"\""
+          eval "$(printf "%s" "$dbms")_socket=\"\""
           dbms_socket=""  # for later tests
         fi
         if [ "$dbms_port" != "" ]; then
           validnum "${dbms}_port" 1 65535
           # ignore socket
-          eval "`printf '%s' $dbms`_socket=\"\""
+          eval "$(printf "%s" "$dbms")_socket=\"\""
           dbms_socket=""  # for later tests
         fi
         [ "$dbms_socket" != "" ] && validrwfile "${dbms}_socket"
@@ -1794,8 +1794,8 @@ case "$mode" in
     echo
     echo "# see CONFIG for details"
     echo
-    for i in $configsettings; do
-      eval 'printf "%s\n" "#$setting=\"\""'
+    for setting in $configsettings; do
+      printf "%s\n" "#$setting=\"\""
     done
     if [ "$noconfigfile" = "no" ] && [ "$configfile" != "" ]; then
       exec 1>&3  # put stdout back
@@ -1973,7 +1973,7 @@ case "$mode" in
     echo "and the settings used; on the other hand, commands may be present"
     echo "but not support required options)"
     echo
-    for i in $externalcmds; do
+    for cmd in $externalcmds; do
       if command -v "$cmd" > /dev/null 2>&1; then
         printf "%-10s\n" "$cmd was found"
       else
@@ -2110,7 +2110,7 @@ for dbms in $dbmslist; do
     else
       dbms_datestring=$(date)
     fi
-    eval "`printf '%s\n' $dbms`_datestring=\"$dbms_datestring\""
+    eval "$(printf "%s" "$dbms")_datestring=\"$dbms_datestring\""
   fi
 done
 

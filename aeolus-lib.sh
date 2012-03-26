@@ -773,7 +773,7 @@ getseddelim () {
 escsedsubst () {
   seddelim=$(getseddelim "$1$2")
   if [ "$seddelim" = "" ]; then
-    printf ""
+    echo
   else
     lhs_esc=$(escregex "$1")
     rhs_esc=$(escsedrepl "$2")
@@ -900,14 +900,16 @@ logclconfig () {
 # will print settings with '""' and "\"\"" sub-quoting correctly,
 # but not "''" (prints as '''')
 #
-# "local" vars: setting
+# "local" vars: setting, sval
 # global vars: configsettings
 # config settings: (all)
 # utilities: printf
 #
 printsettings () {
   for setting in $configsettings; do
-    eval "printf \"%s\n\" \"$setting=\\\"$`printf '%s' $setting`\\\"\""
+    # split into two lines for readability
+    eval "sval=\"\$$(printf "%s" "$setting")\""
+    printf "%s\n" "$setting=\"$sval\""
   done
 }
 
@@ -981,7 +983,7 @@ throwusageerr () {
 #
 throwsettingerr () {
   vname="$1"
-  eval "vval=\"$`printf '%s' $vname`\""
+  eval "vval=\"\$$(printf "%s" "$vname")\""
 
   throwstartuperr "Error: invalid setting for $vname (\"$vval\"); exiting."
 }
@@ -998,7 +1000,7 @@ throwsettingerr () {
 #
 validnoblank () {
   vname="$1"
-  eval "vval=\"$`printf '%s' $vname`\""
+  eval "vval=\"\$$(printf "%s" "$vname")\""
 
   if [ "$vval" = "" ]; then
     throwstartuperr "Error: $vname is unset or blank; exiting."
@@ -1018,9 +1020,9 @@ validnoblank () {
 #
 validnotbothblank () {
   vname1="$1"
-  eval "vval1=\"$`printf '%s' $vname1`\""
+  eval "vval1=\"\$$(printf "%s" "$vname1")\""
   vname2="$2"
-  eval "vval2=\"$`printf '%s' $vname2`\""
+  eval "vval2=\"\$$(printf "%s" "$vname2")\""
 
   if [ "$vval1" = "" ] && [ "$vval2" = "" ]; then
     throwstartuperr "Error: $vname1 and $vname2 cannot both be blank; exiting."
@@ -1041,7 +1043,7 @@ validnotbothblank () {
 #
 validnum () {
   vname="$1"
-  eval "vval=\"$`printf '%s' $vname`\""
+  eval "vval=\"\$$(printf "%s" "$vname")\""
 
   # use extra [0-9] to avoid having to use egrep
   if printf "%s\n" "$vval" | grep '^[0-9][0-9]*$' > /dev/null 2>&1; then
@@ -1069,7 +1071,7 @@ validnum () {
 #
 validnochar () {
   vname="$1"
-  eval "vval=\"$`printf '%s' $vname`\""
+  eval "vval=\"\$$(printf "%s" "$vname")\""
   char="$2"
 
   # use tr so we don't have to worry about metacharacters
@@ -1095,7 +1097,7 @@ validnochar () {
 #
 validrwxdir () {
   vname="$1"
-  eval "vval=\"$`printf '%s' $vname`\""
+  eval "vval=\"\$$(printf "%s" "$vname")\""
 
   validnoblank "$vname"
 
@@ -1142,7 +1144,7 @@ validrwxdir () {
 #
 validcreate () {
   vname="$1"
-  eval "vval=\"$`printf '%s' $vname`\""
+  eval "vval=\"\$$(printf "%s" "$vname")\""
 
   # condition 1
   validnoblank "$vname"
@@ -1213,7 +1215,7 @@ validcreate () {
 #
 validreadfile () {
   vname="$1"
-  eval "vval=\"$`printf '%s' $vname`\""
+  eval "vval=\"\$$(printf "%s" "$vname")\""
 
   # blank?
   validnoblank "$vname"
@@ -1251,7 +1253,7 @@ validreadfile () {
 #
 validrwfile () {
   vname="$1"
-  eval "vval=\"$`printf '%s' $vname`\""
+  eval "vval=\"\$$(printf "%s" "$vname")\""
 
   validreadfile "$vname"
 
@@ -1275,7 +1277,7 @@ validrwfile () {
 #
 validlist () {
   vname="$1"
-  eval "vval=\"$`printf '%s' $vname`\""
+  eval "vval=\"\$$(printf "%s" "$vname")\""
   shift
 
   # implied $@ isn't supported by ksh
@@ -2004,7 +2006,7 @@ foo () {
     echo "# see CONFIG for details"
     echo
     for setting in $configsettings; do
-      eval 'printf "%s\n" "#$setting=\"\""'
+      printf "%s\n" "#$setting=\"\""
     done
     if [ "$noconfigfile" = "no" ] && [ "$configfile" != "" ]; then
       exec 1>&3  # put stdout back
@@ -2281,7 +2283,7 @@ for dbms in $dbmslist; do
     else
       dbms_datestring=$(date)
     fi
-    eval "`printf '%s\n' $dbms`_datestring=\"$dbms_datestring\""
+    eval "$(printf "%s" "$dbms")_datestring=\"$dbms_datestring\""
   fi
 done
 
