@@ -838,7 +838,7 @@ saveclset () {
   # so we know if anything was saved, when we want to use logclconfig
   clsetsaved="no"
 
-  for settings in $configsettings; do
+  for setting in $configsettings; do
     cmdtemp="[ \"\${$setting+X}\" = \"X\" ] &&"
     cmdtemp="$cmdtemp cl_$setting=\"\$$setting\" && clsetsaved=\"yes\""
     eval "$cmdtemp"  # doesn't work if combined into one line
@@ -1988,7 +1988,7 @@ rsynccmd () {
 
 foo () {
 
-  create)
+#  create)
     # output a "blank" config file
     #
     # do this _before_ applying default config file
@@ -2010,7 +2010,7 @@ foo () {
       exec 1>&3  # put stdout back
     fi
     do_exit "$no_error_exitval"
-    ;;
+#    ;;
 
 
 # save variables set on the command line
