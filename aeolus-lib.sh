@@ -1754,11 +1754,11 @@ opensshtunnel () {
   exitval_l=1
   [ "$sshtunnel_exitval" != "" ] && exitval_l="$sshtunnel_exitval"
 
-  # log that we're starting
+  # log that we're running the command
   logstatusquiet "running SSH tunnel command for $tun_prefix"
   printf "%s\n" "running SSH tunnel command for $tun_prefix" >&3
 
-  # run the command
+  # run the command and get the PID
   sshtunnelcmd >&3 2>&1 &
   sshpid_l="$!"
   eval "$(printf "%s" "$sshpid_var")=\"$sshpid_l\""  # set the global

@@ -1136,12 +1136,14 @@ getdblist () {
       ;;
   esac
 
-  # log that we're starting
+  # remove any existing file, to prevent noclobber-type issues
+  rm -f "$lockfile/$alldbs"
+
+  # log that we're running the command
   logstatusquiet "running $dbms_prefix get-DB-list command"
   printf "%s\n" "running $dbms_prefix get-DB-list command" >&3
 
   # run the command
-  rm -f "$lockfile/$alldbs"  # to prevent noclobber-type issues
   dblistcmd > "$lockfile/$alldbs" 2>&3
 
   # check status
@@ -1396,18 +1398,6 @@ do_dbdump () {
     esac
   fi
 
-  # if we're dumping a single database, log the name
-  if [ "$dbname" != "" ]; then
-    logstatus "dumping $dbms_prefix database \"$dbname\""
-  fi
-
-  #
-  logstatusquiet "running $dbms_prefix dump command"
-  printf "%s\n" "running $dbms_prefix dump command" >&3
-
-  # starting timestamp
-  printf "%s\n" "$dbms_prefix dump started $(date)" >&3
-
   # clean up ("space" preservation mode; see below)
   if [ "$dbms_preserve" = "space" ]; then
     # prune old dumpfiles
@@ -1426,6 +1416,23 @@ do_dbdump () {
     # or from, e.g., rerunning the backup)
     removefilezip "$dumpprefix$dbname$dumpsuffix"
   fi
+
+  # if we're dumping a single database, log the name
+  if [ "$dbname" != "" ]; then
+    logstatus "dumping $dbms_prefix database \"$dbname\""
+  fi
+
+  # log that we're running the command
+  if [ "$dbname" != "" ]; then
+    logstatusquiet "running $dbms_prefix dump command for database \"$dbname\""
+    printf "%s\n" "running $dbms_prefix dump command for database \"$dbname\"" >&3
+  else
+    logstatusquiet "running $dbms_prefix dump command"
+    printf "%s\n" "running $dbms_prefix dump command" >&3
+  fi
+
+  # starting timestamp
+  printf "%s\n" "$dbms_prefix dump started $(date)" >&3
 
   # run the command
   case "$dbms_preserve" in
@@ -2275,7 +2282,7 @@ while true; do  # only here to allow us to easily skip to the next phase
       [ "$?" = "1" ] && skip_rsync && continue  # skip to the next phase
     fi
 
-    # log that we're starting
+    # log that we're running the command
     logstatusquiet "running rsync command"
     printf "%s\n" "running rsync command" >&3
 
