@@ -1998,6 +1998,7 @@ foo () {
       if [ -f "$configfile" ]; then
         throwusageerr "Error: specified config file already exists; exiting."
       else
+        # use a separate FD to make the code cleaner
         exec 3>&1  # save for later
         exec 1>"$configfile"
       fi
