@@ -39,7 +39,8 @@
 # $configsettings, the default settings section, some of switch*()
 # [possibly], applydefaults() [probably], and validconf()
 #
-# all commands used should be listed in $externalcmds and the usage notes
+# all external commands used should be listed in $externalcmds and the usage
+# notes (including those used in library functions)
 #
 # adding a DBMS:
 #   add vars to the sample config file, modeling after MySQL (but split up
