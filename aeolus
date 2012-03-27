@@ -1583,6 +1583,7 @@ do_dbdump () {
 # global vars: IFS, dbms_dbmode, dbms_dbs, dbms_splitdbs, lockfile, alldbs
 # library vars: newline, tab
 # library funcs: dbunescape()
+# utilities: [
 # files: alldbs
 #
 do_dbdumploop () {
