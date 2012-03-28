@@ -1296,6 +1296,118 @@ validlist () {
 }
 
 
+##################################
+# status checks and modifications
+##################################
+
+#
+# check if we should actually start running
+#
+# * has $runevery passed?
+# * does the $lockfile already exist?
+# * send alerts about it if necessary
+# * has the script been disabled?
+#
+# $1 is a description of the script's purpose, such as "backup"; this is
+# used in messages like "backup interval has not expired"
+# $2 is the plural of $1, used in messages like "backups have been manually
+# disabled"
+#
+# global vars: no_error_exitval, lockfile_exitval, cleanup_on_exit,
+#              disable, silencealerts
+# config settings: runevery, startedfile, ifrunning, lockfile, alertfile
+# library funcs: newerthan(), logstatus(), logalert(), sendalert(),
+#                do_exit()
+# utilities: mkdir, rm, touch, [
+# files: lockfile, disable, startedfile, alertfile, silencealerts
+#
+checkstatus () {
+  if [ "$runevery" != "0" ]; then
+    # has it been long enough since the script was last started
+    # (sucessfully)?
+    #
+    # if $startedfile exists and is newer than $runevery, exit
+    # (-f instead of -e because it's more portable)
+    if [ -f "$startedfile" ] && newerthan "$startedfile" "$runevery"; then
+      logstatus "$1 interval has not expired; exiting"
+      do_exit "$no_error_exitval"
+    else
+      logstatus "$1 interval has expired; continuing"
+    fi
+  else
+    logstatus "interval checking has been disabled; continuing"
+  fi
+
+  # did the previous run finish?
+  #
+  # use an atomic command to check and create the lock
+  # (could also be ln -s, but we might not be able to set the metadata, and
+  # it could cause issues with commands that don't manipulate symlinks
+  # directly; plus, now we have a tempdir)
+  if mkdir "$lockfile" > /dev/null 2>&1; then
+    # got the lock, clear lock-alert status
+    if [ -f "$alertfile" ]; then  # -f is more portable than -e
+      rm "$alertfile"
+      sendalert "lockfile created; cancelling previous alert status" log
+    fi
+    # set flag to remove the lockfile (etc.) on exit
+    cleanup_on_exit="yes"
+  else
+    # assume mkdir failed because it already existed;
+    # but that could be because we manually disabled the script
+    if [ -f "$lockfile/$disable" ]; then
+      logalert "$2 have been manually disabled; exiting"
+    else
+      logalert "could not create lockfile (previous $1 still running or failed?); exiting"
+    fi
+    # don't actually exit yet
+
+    # send the initial alert email (no "log", we already logged it)
+    #
+    # (-f instead of -e because it's more portable)
+    if [ ! -f "$alertfile" ]; then
+      touch "$alertfile"
+      if [ -f "$lockfile/$disable" ]; then
+        sendalert "$2 have been manually disabled; exiting"
+      else
+        sendalert "could not create lockfile (previous $1 still running or failed?); exiting"
+      fi
+      do_exit "$lockfile_exitval"
+    fi
+
+    # but what about subsequent emails?
+
+    # if ifrunning=0, log it but don't send email
+    if [ "$ifrunning" = "0" ]; then
+      logalert "ifrunning=0; no email sent"
+      do_exit "$lockfile_exitval"
+    fi
+
+    # if alerts have been silenced, log it but don't send email
+    # (and don't bother checking $ifrunning)
+    if [ -f "$lockfile/$silencealerts" ]; then
+      logalert "alerts have been silenced; no email sent"
+      do_exit "$lockfile_exitval"
+    fi
+
+    # if $alertfile is newer than $ifrunning, log it but don't send email
+    if newerthan "$alertfile" "$ifrunning"; then
+      logalert "alert interval has not expired; no email sent"
+      do_exit "$lockfile_exitval"
+    fi
+
+    # send an alert email (no "log", we already logged it)
+    touch "$alertfile"
+    if [ -f "$lockfile/$disable" ]; then
+      sendalert "$2 have been manually disabled; exiting"
+    else
+      sendalert "could not create lockfile (previous $1 still running or failed?); exiting"
+    fi
+    do_exit "$lockfile_exitval"
+  fi  # if mkdir "$lockfile"
+}
+
+
 ######################################
 # file rotation, pruning, and zipping
 ######################################
@@ -2171,93 +2283,6 @@ esac
 # on the command line
 logclconfig
 
-
-################
-# status checks
-################
-
-if [ "$runevery" != "0" ]; then
-  # has it been long enough since the last backup started?
-  #
-  # if $startedfile exists and is newer than $runevery, exit
-  # (-f instead of -e because it's more portable)
-  if [ -f "$startedfile" ] && newerthan "$startedfile" "$runevery"; then
-    logstatus "backup interval has not expired; exiting"
-    do_exit "$no_error_exitval"
-  else
-    logstatus "backup interval has expired; continuing"
-  fi
-else
-  logstatus "interval checking has been disabled; continuing"
-fi
-
-# did the previous backup finish?
-#
-# use an atomic command to check and create the lock
-# (could also be ln -s, but we might not be able to set the metadata, and
-#  it could cause issues with commands that don't manipulate links directly;
-#  plus, now we have a tempdir)
-if mkdir "$lockfile" > /dev/null 2>&1; then
-  # got the lock, clear lock-alert status
-  if [ -f "$alertfile" ]; then  # -f is more portable than -e
-    rm "$alertfile"
-    sendalert "lockfile created; cancelling previous alert status" log
-  fi
-  # set flag to remove the lockfile (etc.) on exit
-  cleanup_on_exit="yes"
-else
-  # assume mkdir failed because it already existed;
-  # but that could be because we manually disabled backups
-  if [ -f "$lockfile/$disable" ]; then
-    logalert "backups have been manually disabled; exiting"
-  else
-    logalert "could not create lockfile (previous backup still running or failed?); exiting"
-  fi
-  # don't actually exit yet
-
-  # send the initial alert email (no "log", we already logged it)
-  #
-  # (-f instead of -e because it's more portable)
-  if [ ! -f "$alertfile" ]; then
-    touch "$alertfile"
-    if [ -f "$lockfile/$disable" ]; then
-      sendalert "backups have been manually disabled; exiting"
-    else
-      sendalert "could not create lockfile (previous backup still running or failed?); exiting"
-    fi
-    do_exit "$lockfile_exitval"
-  fi
-
-  # but what about subsequent emails?
-
-  # if ifrunning=0, log it but don't send email
-  if [ "$ifrunning" = "0" ]; then
-    logalert "ifrunning=0; no email sent"
-    do_exit "$lockfile_exitval"
-  fi
-
-  # if alerts have been silenced, log it but don't send email
-  # (and don't bother checking $ifrunning)
-  if [ -f "$lockfile/$silencealerts" ]; then
-    logalert "alerts have been silenced; no email sent"
-    do_exit "$lockfile_exitval"
-  fi
-
-  # if $alertfile is newer than $ifrunning, log it but don't send email
-  if newerthan "$alertfile" "$ifrunning"; then
-    logalert "alert interval has not expired; no email sent"
-    do_exit "$lockfile_exitval"
-  fi
-
-  # send an alert email (no "log", we already logged it)
-  touch "$alertfile"
-  if [ -f "$lockfile/$disable" ]; then
-    sendalert "backups have been manually disabled; exiting"
-  else
-    sendalert "could not create lockfile (previous backup still running or failed?); exiting"
-  fi
-  do_exit "$lockfile_exitval"
-fi  # if mkdir "$lockfile"
 
 
 ###################
