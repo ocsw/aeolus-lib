@@ -1337,7 +1337,7 @@ do_dbdump () {
   dbname=""
   if [ "$dumptype" = "one" ]; then
     dbname="$dbstring"
-  }
+  fi
 
   # rotate if we need to, to make way for the new dump
   case "$dbms_layout" in
