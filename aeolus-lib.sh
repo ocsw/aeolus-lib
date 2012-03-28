@@ -957,7 +957,7 @@ restoreclset () {
 # log config file, current working directory, and setting variables supplied
 # on the command line
 #
-# must be run after saveclset()
+# saveclset() must be called before function, to set up $cl_*
 #
 # "local" vars: setting, cmdtemp
 # global vars: configsettings, noconfigfile, configfile, clsetsaved
