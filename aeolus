@@ -1852,35 +1852,8 @@ case "$mode" in
     ;;
 esac
 
-# save variables set on the command line
-saveclset
-
-# check and source config file
-if [ "$noconfigfile" = "no" ]; then
-  # apply default config file if applicable
-  if [ "$configfile" = "" ]; then
-    configfile="$defaultconfigfile"
-  fi
-
-  validreadfile "configfile"
-
-  # . won't work with no directory (unless ./ is in the PATH);
-  # the cwd has to be specified explicitly
-  if printf "%s\n" "$configfile" | grep -v '/' > /dev/null 2>&1; then
-    . "./$configfile"
-  else
-    . "$configfile"
-  fi
-fi
-
-# restore variables set on the command line, overriding the config file
-restoreclset
-
-# apply default settings where applicable
-applydefaults
-
-# validate the config settings
-validconf
+# process command-line settings and the config file
+do_config
 
 # debug mode?
 # (in case it was turned on in the config file, but not on the command line;
@@ -2013,41 +1986,7 @@ done
 # start output log
 ###################
 
-# set up a fifo for logging; this has two benefits:
-# 1) we can handle multiple output options in one place
-# 2) we can run commands without needing pipelines, so we can get the
-#    return values
-mkfifo "$lockfile/$logfifo"
-
-# rotate and prune output logs
-# (also tests in case there is no output log, and prints status accordingly)
-rotatepruneoutputlogs
-
-if [ "$outputlog" != "" ]; then
-  # append to the output log and possibly stdout
-  # appending is always safe / the right thing to do, because either the
-  # file won't exist, or it will have been moved out of the way by the
-  # rotation - except in one case:
-  # if we're using a date layout, and the script has been run more recently
-  # than the datestring allows for, we should append so as not to lose
-  # information
-  if [ "$quiet" = "no" ]; then  # default to yes
-    tee -a "$outputlog_filename" < "$lockfile/$logfifo" &
-  else
-    cat >> "$outputlog_filename" < "$lockfile/$logfifo" &
-  fi
-else  # no output log
-  if [ "$quiet" = "no" ]; then
-    cat < "$lockfile/$logfifo" &
-  else
-    cat > /dev/null < "$lockfile/$logfifo" &
-  fi
-fi
-
-# create an fd to write to instead of the fifo,
-# so it won't be closed after every line;
-# see http://mywiki.wooledge.org/BashFAQ/085
-exec 3> "$lockfile/$logfifo"
+startoutputlog
 
 
 ################
@@ -2189,12 +2128,7 @@ printf "%s\n" "backup finished $(date)" >&3
 # stop output log
 ##################
 
-# remove the fifo and kill the reader process;
-# note that we don't have to worry about doing this if we exit abnormally,
-# because exiting will close the fd, and the fifo is in the lockfile dir
-
-exec 3>&-  # close the fd, this should kill the reader
-rm -f "$lockfile/$logfifo"
+stopoutputlog
 
 
 ###########
