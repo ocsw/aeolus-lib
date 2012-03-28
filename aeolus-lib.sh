@@ -1316,8 +1316,8 @@ validlist () {
 # global vars: no_error_exitval, lockfile_exitval, cleanup_on_exit,
 #              disable, silencealerts
 # config settings: runevery, startedfile, ifrunning, lockfile, alertfile
-# library funcs: newerthan(), logstatus(), logalert(), sendalert(),
-#                do_exit()
+# library functions: newerthan(), logstatus(), logalert(), sendalert(),
+#                    do_exit()
 # utilities: mkdir, rm, touch, [
 # files: lockfile, disable, startedfile, alertfile, silencealerts
 #
@@ -1420,7 +1420,7 @@ checkstatus () {
 #
 # global vars: no_error_exitval, startup_exitval, silencealerts
 # config settings: lockfile, quiet (value not actually used)
-# library funcs: logclconfig, logstatus(), do_exit()
+# library functions: logclconfig, logstatus(), do_exit()
 # utilities: touch, echo, [
 # files: lockfile, silencealerts
 #
@@ -1448,7 +1448,7 @@ silencelfalerts () {
 #
 # global vars: no_error_exitval, startup_exitval, silencealerts
 # config settings: lockfile, quiet (value not actually used)
-# library funcs: logclconfig, logstatus(), do_exit()
+# library functions: logclconfig, logstatus(), do_exit()
 # utilities: rm, echo, [
 # files: silencealerts
 #
@@ -1476,7 +1476,7 @@ unsilencelfalerts () {
 #
 # global vars: no_error_exitval, startup_exitval, disable
 # config settings: lockfile, quiet (value not actually used)
-# library funcs: logclconfig, logstatus(), do_exit()
+# library functions: logclconfig, logstatus(), do_exit()
 # utilities: mkdir, touch, echo, [
 # files: lockfile, disable
 #
@@ -1510,7 +1510,7 @@ disablescript () {
 #
 # global vars: no_error_exitval, startup_exitval, disable
 # config settings: lockfile, quiet (value not actually used)
-# library funcs: logclconfig, logstatus(), do_exit()
+# library functions: logclconfig, logstatus(), do_exit()
 # utilities: rm, echo, [
 # files: disable
 #
@@ -1540,7 +1540,7 @@ enablescript () {
 # "local" vars: type_y
 # global vars: no_error_exitval, startup_exitval
 # config settings: lockfile, quiet (value not actually used)
-# library funcs: logclconfig, logstatus(), do_exit()
+# library functions: logclconfig, logstatus(), do_exit()
 # utilities: rm, echo, [
 # files: lockfile
 #
@@ -1902,7 +1902,7 @@ prunefiles () {
 #                  dayslogs
 # library functions: logstatus(), rotatenumfiles(), prunefiles()
 # utilities: [
-# files: outputlog, (old outputlogs)
+# files: outputlog, (previous outputlogs)
 #
 rotatepruneoutputlogs () {
   if [ "$outputlog" = "" ]; then
@@ -2018,8 +2018,8 @@ sshtunnelcmd () {
 # global vars: (contents of $1, or sshpid), tun_prefix
 # config settings: tun_localport, tun_sshtimeout, on_ssherr (optional),
 #                  sshtunnel_exitval (optional)
-# library funcs: sshtunnelcmd(), logstatus(), logstatusquiet(), sendalert(),
-#                do_exit()
+# library functions: sshtunnelcmd(), logstatus(), logstatusquiet(),
+#                    sendalert(), do_exit()
 # utilities: nc, printf, kill, expr, [
 # FDs: 3
 #
@@ -2090,7 +2090,7 @@ opensshtunnel () {
 #
 # local vars: sshpid_var, sshpid_l
 # global vars: (contents of $1, or sshpid), tun_prefix
-# library funcs: logstatus()
+# library functions: logstatus()
 # utilities: printf, kill, [
 #
 closesshtunnel () {

@@ -397,7 +397,7 @@ rsync_exitval="10"
 #
 # global vars: sshpid, disable
 # config settings: lockfile
-# library funcs: closesshtunnel()
+# library functions: closesshtunnel()
 # utilities: rm, [
 # files: lockfile, disable
 #
@@ -424,7 +424,7 @@ do_exit_cleanup () {
 #
 # must not be called until after printstatus() is defined
 #
-# library funcs: printconfig()
+# library functions: printconfig()
 # utilities: cat
 #
 sendalert_body () {
@@ -644,7 +644,7 @@ EOF
 #
 # global vars: silencealerts, disable, timetemp, logfifo, alldbs, alldbstmp
 # config settings: startedfile, alertfile, lockfile
-# library funcs: getfilemetadata()
+# library functions: getfilemetadata()
 # utilities: cat, echo, [
 # files: startedfile, alertfile, lockfile, silencealerts, disable, timetemp,
 #        logfifo, alldbs, alldbstmp
@@ -804,9 +804,9 @@ applydefaults () {
 #              [DBMS]: *_user, *_protocol, *_clientoptions, *_dumpoptions,
 #              *_dumponeoptions, *_dumpmultoptions, *_dumpalloptions,
 #              *_filedirsep, *_filedirdate, *_zipoptions)
-# library funcs: validnoblank(), validnotbothblank(), validnum(),
-#                validnochar(), validrwxdir(), validcreate(),
-#                validreadfile(), validrwfile(), validlist()
+# library functions: validnoblank(), validnotbothblank(), validnum(),
+#                    validnochar(), validrwxdir(), validcreate(),
+#                    validreadfile(), validrwfile(), validlist()
 # utilities: [
 # files: startedfile, lockfile, alertfile, outputlog, statuslog,
 #        rsync_sshkeyfile, rsync_pwfile, rsync_filterfile,
@@ -963,7 +963,7 @@ validconf () {
 # "local" vars: OLDIFS, dbname, altline_esc, altdb_esc, altopts_esc, altdb
 # global vars: IFS, dbms_altmode, dbms_alts, altopts
 # library vars: newline, tab
-# library funcs: dbunescape()
+# library functions: dbunescape()
 # utilities: printf, sed, [
 #
 checkusealtopts () {
@@ -1124,8 +1124,8 @@ dbdumpallcmd () {
 #              getdblist_exitval, dblistchar_exitval
 # config settings: lockfile, on_dblisterr, on_dbcharerr
 # library vars: newline, tab
-# library funcs: dblistcmd(), filecomp(), logstatusquiet(), logstatus(),
-#                sendalert(), do_exit()
+# library functions: dblistcmd(), filecomp(), logstatusquiet(), logstatus(),
+#                    sendalert(), do_exit()
 # utilities: rm, tr, printf, [
 # files: alldbs, alldbstmp
 # FDs: 3
@@ -1323,9 +1323,9 @@ getdumppaths () {
 #              dbzip_exitval
 # config settings: on_duplerr, on_dumperr, on_ziperr
 # library vars: newline
-# library funcs: rotatenumfiles(), prunefiles(), removefilezip(),
-#                dbdumponecmd(), dbdumpmultcmd(), dbdumpallcmd(),
-#                sendalert(), logstatus(), logstatusquiet(), do_exit()
+# library functions: rotatenumfiles(), prunefiles(), removefilezip(),
+#                    dbdumponecmd(), dbdumpmultcmd(), dbdumpallcmd(),
+#                    sendalert(), logstatus(), logstatusquiet(), do_exit()
 # utilities: (allowed values of $dbms_zipmode), rm, mv, date, printf, [
 # FDs: 3
 #
@@ -1599,7 +1599,7 @@ do_dbdump () {
 # global vars: IFS, dbms_dbmode, dbms_dbs, dbms_splitdbs, alldbs
 # config settings: lockfile
 # library vars: newline, tab
-# library funcs: dbunescape()
+# library functions: dbunescape()
 # utilities: [
 # files: alldbs
 #
