@@ -1033,6 +1033,50 @@ printconfig () {
 }
 
 #
+# output a "blank" config file
+#
+# $1 is a string to use as the header of the config file, e.g.:
+# "# see CONFIG for details"
+#
+# returns 1 if the config file already exists, else 0
+#
+# note: this function is mostly meant to be run from a manual command line
+# mode, but for flexibility, it does not call do_exit() itself
+#
+# "local" vars: setting
+# global vars: configfile, noconfigfile, configsettings
+# utilities: printf, [
+# FDs: 3
+#
+createblankconfig () {
+  if [ "$noconfigfile" = "no" ] && [ "$configfile" != "" ]; then
+    if [ -f "$configfile" ]; then
+      return 1
+    else
+      # use a separate FD to make the code cleaner
+      exec 3>&1  # save for later
+      exec 1>"$configfile"
+    fi
+  fi
+
+  # header
+  printf "\n"
+  printf "%s\n" "$1"
+  printf "\n"
+
+  # config settings
+  for setting in $configsettings; do
+    printf "%s\n" "#$setting=\"\""
+  done
+
+  if [ "$noconfigfile" = "no" ] && [ "$configfile" != "" ]; then
+    exec 1>&3  # put stdout back
+  fi
+
+  return 0
+}
+
+#
 # print a startup error to stderr and exit
 #
 # $1 = message
@@ -1538,7 +1582,8 @@ checkstatus () {
 
 #
 # note: below functions are meant to be run from manual command line modes,
-# not autonomous operation; they only log actual status changes
+# not autonomous operation; they only log actual status changes, and they
+# exit when finished
 #
 
 #
@@ -2398,33 +2443,6 @@ rsynccmd () {
 
 return
 ##############################################################################
-
-  create)
-    # output a "blank" config file
-    #
-    # do this _before_ applying default config file
-    if [ "$noconfigfile" = "no" ] && [ "$configfile" != "" ]; then
-      if [ -f "$configfile" ]; then
-        throwusageerr "Error: specified config file already exists; exiting."
-      else
-        # use a separate FD to make the code cleaner
-        exec 3>&1  # save for later
-        exec 1>"$configfile"
-      fi
-    fi
-    echo
-    echo "# see CONFIG for details"
-    echo
-    for setting in $configsettings; do
-      printf "%s\n" "#$setting=\"\""
-    done
-    if [ "$noconfigfile" = "no" ] && [ "$configfile" != "" ]; then
-      exec 1>&3  # put stdout back
-    fi
-    do_exit "$no_error_exitval"
-    ;;
-
-
 
 
   systemtest)

@@ -1827,28 +1827,12 @@ case "$mode" in
     do_exit "$no_error_exitval"
     ;;
   create)
-    # output a "blank" config file
-    #
-    # do this _before_ applying default config file
-    if [ "$noconfigfile" = "no" ] && [ "$configfile" != "" ]; then
-      if [ -f "$configfile" ]; then
-        throwusageerr "Error: specified config file already exists; exiting."
-      else
-        # use a separate FD to make the code cleaner
-        exec 3>&1  # save for later
-        exec 1>"$configfile"
-      fi
+    createblankconfig "# see CONFIG for details"
+    if [ "$!" = "1" ]; then
+      throwusageerr "Error: specified config file already exists; exiting."
+    else
+      do_exit "$no_error_exitval"
     fi
-    echo
-    echo "# see CONFIG for details"
-    echo
-    for setting in $configsettings; do
-      printf "%s\n" "#$setting=\"\""
-    done
-    if [ "$noconfigfile" = "no" ] && [ "$configfile" != "" ]; then
-      exec 1>&3  # put stdout back
-    fi
-    do_exit "$no_error_exitval"
     ;;
 esac
 
