@@ -450,8 +450,8 @@ sendalert_body () {
 # $dbmslist)
 #
 # global vars: tun_prefix, tun_sshuser, tun_sshhost, tun_sshkeyfile,
-#              tun_sshport, tun_localport, tun_remoteport, tun_sshoptions,
-#              tun_sshtimeout
+#              tun_sshport, tun_sshlocalport, tun_sshremoteport,
+#              tun_sshoptions, tun_sshtimeout
 # config settings: *_sshuser, *_sshhost, *_sshkeyfile, *_sshport,
 #                  *_localport, *_remoteport, *_sshoptions, *_sshtimeout
 #
@@ -461,8 +461,8 @@ switchtunnel () {
   eval "tun_sshhost=\"\$$(printf "%s" "$1")_sshhost\""
   eval "tun_sshkeyfile=\"\$$(printf "%s" "$1")_sshkeyfile\""
   eval "tun_sshport=\"\$$(printf "%s" "$1")_sshport\""
-  eval "tun_localport=\"\$$(printf "%s" "$1")_localport\""
-  eval "tun_remoteport=\"\$$(printf "%s" "$1")_remoteport\""
+  eval "tun_sshlocalport=\"\$$(printf "%s" "$1")_sshlocalport\""
+  eval "tun_sshremoteport=\"\$$(printf "%s" "$1")_sshremoteport\""
   eval "tun_sshoptions=\"\$$(printf "%s" "$1")_sshoptions\""
   eval "tun_sshtimeout=\"\$$(printf "%s" "$1")_sshtimeout\""
 }

@@ -1202,7 +1202,7 @@ validnum () {
 # "local" vars: vname, vval, char
 # config settings: (contents of $1)
 # library functions: throwstartuperr()
-# utilities: printf, td, [
+# utilities: printf, tr, [
 #
 validnochar () {
   vname="$1"
@@ -2224,9 +2224,9 @@ sshtunnelcmd () {
 # ssh
 #
 # "local" vars: waited, sshexit, sshpid_var, sshpid_l, on_err_l, exitval_l
-# global vars: (contents of $1, or sshpid), tun_prefix
-# config settings: tun_localport, tun_sshtimeout, on_ssherr (optional),
-#                  sshtunnel_exitval (optional)
+# global vars: (contents of $1, or sshpid), tun_prefix,
+#              sshtunnel_exitval (optional)
+# config settings: tun_sshlocalport, tun_sshtimeout, on_ssherr (optional)
 # library functions: sshtunnelcmd(), logstatus(), logstatusquiet(),
 #                    sendalert(), do_exit()
 # utilities: nc, printf, kill, expr, [
@@ -2254,7 +2254,7 @@ opensshtunnel () {
   # see http://mywiki.wooledge.org/ProcessManagement#Starting_a_.22daemon.22_and_checking_whether_it_started_successfully
   waited="0"
   while sleep 1; do
-    nc -z localhost "$tun_localport" && break
+    nc -z localhost "$tun_sshlocalport" && break
     if kill -0 "$sshpid_l"; then
       # expr is more portable than $(())
       waited=$(expr "$waited" + 1)
@@ -2325,9 +2325,11 @@ closesshtunnel () {
 #
 # run a database command
 #
+# (in the notes below, [dbms] = the value of $dbms_prefix)
 # global vars: dbms_prefix
-# config settings: *_user, *_pwfile, *_protocol, *_host, *_port, *_socket,
-#                  *_options, *_dbname, *_command
+# config settings: [dbms]_user, [dbms]_pwfile, [dbms]_protocol, [dbms]_host,
+#                  [dbms]_port, [dbms]_socket, [dbms]_options,
+#                  [dbms]_dbname, [dbms]_command
 # utilities: mysql
 # files: [dbms]_pwfile, [dbms]_socket
 #
@@ -2357,9 +2359,10 @@ dbcmd () {
 #
 # for MySQL, '-BN' is already included in the options
 #
+# (in the notes below, [dbms] = the value of $dbms_prefix)
 # global vars: dbms_prefix
-# config settings: *_user, *_pwfile, *_protocol, *_host, *_port, *_socket,
-#                  *_options
+# config settings: [dbms]_user, [dbms]_pwfile, [dbms]_protocol, [dbms]_host,
+#                  [dbms]_port, [dbms]_socket, [dbms]_options
 # utilities: mysql
 # files: [dbms]_pwfile, [dbms]_socket
 #
