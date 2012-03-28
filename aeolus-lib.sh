@@ -922,7 +922,7 @@ EOF
 #
 clsetsaved="no"
 saveclset () {
-  # so we know if anything was saved, when we want to use logclconfig
+  # so we know if anything was saved, when we want to use logclconfig()
   clsetsaved="no"
 
   for setting in $configsettings; do
@@ -1549,7 +1549,7 @@ checkstatus () {
 #
 # global vars: no_error_exitval, startup_exitval, silencealerts
 # config settings: lockfile, quiet (value not actually used)
-# library functions: logclconfig, logstatus(), do_exit()
+# library functions: logclconfig(), logstatus(), do_exit()
 # utilities: touch, echo, [
 # files: lockfile, silencealerts
 #
@@ -1577,7 +1577,7 @@ silencelfalerts () {
 #
 # global vars: no_error_exitval, startup_exitval, silencealerts
 # config settings: lockfile, quiet (value not actually used)
-# library functions: logclconfig, logstatus(), do_exit()
+# library functions: logclconfig(), logstatus(), do_exit()
 # utilities: rm, echo, [
 # files: silencealerts
 #
@@ -1605,7 +1605,7 @@ unsilencelfalerts () {
 #
 # global vars: no_error_exitval, startup_exitval, disable
 # config settings: lockfile, quiet (value not actually used)
-# library functions: logclconfig, logstatus(), do_exit()
+# library functions: logclconfig(), logstatus(), do_exit()
 # utilities: mkdir, touch, echo, [
 # files: lockfile, disable
 #
@@ -1639,7 +1639,7 @@ disablescript () {
 #
 # global vars: no_error_exitval, startup_exitval, disable
 # config settings: lockfile, quiet (value not actually used)
-# library functions: logclconfig, logstatus(), do_exit()
+# library functions: logclconfig(), logstatus(), do_exit()
 # utilities: rm, echo, [
 # files: disable
 #
@@ -1669,7 +1669,7 @@ enablescript () {
 # "local" vars: type_y
 # global vars: no_error_exitval, startup_exitval
 # config settings: lockfile, quiet (value not actually used)
-# library functions: logclconfig, logstatus(), do_exit()
+# library functions: logclconfig(), logstatus(), do_exit()
 # utilities: rm, echo, [
 # files: lockfile
 #
@@ -2449,15 +2449,6 @@ esac
 # log config file, current working directory, and setting variables supplied
 # on the command line
 logclconfig
-
-
-
-###################
-# get date strings
-###################
-
-# get them all now, so they're as close together as possible
-
 
 
 ################
