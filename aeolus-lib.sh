@@ -426,17 +426,32 @@ sendalert () {
 # 2) we can run commands without needing pipelines, so we can get the
 #    return values
 #
+# NOTE: this function also gets the datestring for the output log name, so
+# if you need to get other datestrings close to that one, get them right
+# *before* calling this function
+#
+# "local" vars: outputlog_filename, outputlog_datestring
 # global vars: logfifo
-# config settings: lockfile, outputlog, quiet
+# config settings: lockfile, outputlog, outputlog_layout, outputlog_sep,
+#                  outputlog_date, quiet
 # library functions: rotatepruneoutputlogs()
-# utilities: mkfifo, tee, cat, [
+# utilities: date, touch, mkfifo, tee, cat, [
 # files: logfifo, outputlog, (previous outputlogs)
 # FDs: 3
 #
-
-#!!!olfn
-
 startoutputlog () {
+  # get the full filename, including datestring if applicable
+  outputlog_filename="$outputlog"
+  if [ "$outputlog" != "" ] && [ "$outputlog_layout" = "date" ]; then
+    if [ "$outputlog_date" != "" ]; then
+      outputlog_datestring=$(date "$outputlog_date")
+    else
+      outputlog_datestring=$(date)
+    fi
+    outputlog_filename="$outputlog_filename$outputlog_sep$outputlog_datestring"
+    touch "$outputlog_filename"  # needed for prunedayslogs()
+  fi
+
   mkfifo "$lockfile/$logfifo"
 
   # rotate and prune output logs
@@ -2443,17 +2458,6 @@ logclconfig
 
 # get them all now, so they're as close together as possible
 
-# for the current output log; set the filename while we're at it
-outputlog_filename="$outputlog"
-if [ "$outputlog" != "" ] && [ "$outputlog_layout" = "date" ]; then
-  if [ "$outputlog_date" != "" ]; then
-    outputlog_datestring=$(date "$outputlog_date")
-  else
-    outputlog_datestring=$(date)
-  fi
-  outputlog_filename="$outputlog_filename$outputlog_sep$outputlog_datestring"
-  touch "$outputlog_filename"  # needed for prunedayslogs()
-fi
 
 
 ################

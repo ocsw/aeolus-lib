@@ -1953,18 +1953,6 @@ checkstatus "backup" "backups"
 
 # get them all now, so they're as close together as possible
 
-# for the current output log; set the filename while we're at it
-outputlog_filename="$outputlog"
-if [ "$outputlog" != "" ] && [ "$outputlog_layout" = "date" ]; then
-  if [ "$outputlog_date" != "" ]; then
-    outputlog_datestring=$(date "$outputlog_date")
-  else
-    outputlog_datestring=$(date)
-  fi
-  outputlog_filename="$outputlog_filename$outputlog_sep$outputlog_datestring"
-  touch "$outputlog_filename"  # needed for prunedayslogs()
-fi
-
 # for the current DB dump filenames
 for dbms in $dbmslist; do
   switchdbms "$dbms"
@@ -1981,12 +1969,14 @@ for dbms in $dbmslist; do
   fi
 done
 
+# output log datestring is included in startoutputlog(), called below
+
 
 ###################
 # start output log
 ###################
 
-startoutputlog
+startoutputlog  # includes getting output log datestring
 
 
 ################
