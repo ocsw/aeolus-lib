@@ -504,6 +504,10 @@ stopoutputlog () {
   rm -f "$lockfile/$logfifo"
 }
 
+#
+# see also rotatepruneoutputlogs()
+#
+
 
 ####################################
 # file tests and path manipulations
