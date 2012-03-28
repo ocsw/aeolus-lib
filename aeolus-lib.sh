@@ -1993,11 +1993,10 @@ rsynccmd () {
 
 
 
+return
 ##############################################################################
 
-foo () {
-
-#  create)
+  create)
     # output a "blank" config file
     #
     # do this _before_ applying default config file
@@ -2020,7 +2019,7 @@ foo () {
       exec 1>&3  # put stdout back
     fi
     do_exit "$no_error_exitval"
-#    ;;
+    ;;
 
 
 # save variables set on the command line
@@ -2350,6 +2349,3 @@ printf "%s\n" "backup finished $(date)" >&3
 
 exec 3>&-  # close the fd, this should kill the reader
 rm -f "$lockfile/$logfifo"
-
-
-}
