@@ -1,4 +1,4 @@
-####################################################
+\####################################################
 # configuration file for Aeolus, by Daniel Malament
 # run 'aeolus license' for license info
 ####################################################
@@ -309,10 +309,8 @@
 ###dayslogs=
 
 #
-# use syslog ("all", "yes" or "no")?
+# use syslog ("yes" or "no")?
 # (see usage note on output)
-#
-# "all" includes the actual SSH/DBMS/rsync commands that are run
 #
 # * if blank or unset, defaults to "yes"
 #

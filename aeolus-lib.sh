@@ -2272,22 +2272,6 @@ if [ "$outputlog" != "" ] && [ "$outputlog_layout" = "date" ]; then
   touch "$outputlog_filename"  # needed for prunedayslogs()
 fi
 
-# for the current DB dump filenames
-for dbms in $dbmslist; do
-  switchdbms "$dbms"
-
-  if [ "$dbms_dodump" = "yes" ] \
-     && \
-     { [ "$dbms_layout" = "date" ] || [ "$dbms_layout" = "datedir" ]; }; then
-    if [ "$dbms_filedirdate" != "" ]; then
-      dbms_datestring=$(date "$dbms_filedirdate")
-    else
-      dbms_datestring=$(date)
-    fi
-    eval "$(printf "%s" "$dbms")_datestring=\"$dbms_datestring\""
-  fi
-done
-
 
 ###################
 # start output log
@@ -2339,26 +2323,10 @@ logstatus "starting backup"
 touch "$startedfile"
 printf "%s\n" "backup started $(date)" >&3
 
-# are we supposed to actually do anything?
-do_something="no"  # set this to yes later if we do something
-
-
-###########
-# DB dumps
-###########
-
-########
-# rsync
-########
 
 ###############
 # done working
 ###############
-
-# did we actually do anything?
-if [ "$do_something" = "no" ]; then  # everything was turned off
-  logstatus "nothing to do, because no actions are turned on"
-fi
 
 # finishing notifications
 logstatus "backup finished"
@@ -2376,11 +2344,5 @@ printf "%s\n" "backup finished $(date)" >&3
 exec 3>&-  # close the fd, this should kill the reader
 rm -f "$lockfile/$logfifo"
 
-
-###########
-# clean up
-###########
-
-do_exit "$no_error_exitval"
 
 }

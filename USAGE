@@ -273,14 +273,11 @@ CONTENTS
       can be configured to send logs to a remote system for centralization.
 
       However, it can also be a security weakness, since logs are often
-      world-readable, remotely copied without encryption, etc.  Therefore,
-      the actual commands that are run are only logged if usesyslog="all"
-      (because these probably include things like paths to password/key
-      files).
-
-      Note that settings supplied on the command line will be logged
-      even if usesyslog="yes" (not "all"); put them in a config file
-      instead if they contain sensitive information.
+      world-readable, remotely copied without encryption, etc.  Note that
+      settings may include things like paths to password/key files, and
+      any settings supplied on the command line will be logged.  Therefore,
+      you should consider putting settings containing sensitive information
+      in a config file.
 
       If usesyslog="no", it is a good idea to preserve the script's output
       in another way, e.g.:

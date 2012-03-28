@@ -844,7 +844,7 @@ validconf () {
       validnum "dayslogs"
     fi
   fi
-  validlist "usesyslog" "all" "yes" "no"
+  validlist "usesyslog" "yes" "no"
   validlist "quiet" "yes" "no"
   [ "$statuslog" != "" ] && validcreate "statuslog" "file"
 
