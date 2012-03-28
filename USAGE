@@ -443,10 +443,10 @@ CONTENTS
    b) The script uses these utilities:
         awk, bzip2, cat, cmp, date, diff, expr, find, gawk, grep, gzip,
         hostname, logger, ls, lzip, mailx, mkdir, mkfifo, mv, mysql,
-        mysqldump, nc, pigz, rm, rsync, sed, ssh, tee, touch, tr
+        mysqldump, nc, pigz, rm, rsync, sed, sleep, ssh, tee, touch, tr
 
       and these, which are usually built into the shell:
-        echo, kill, printf, pwd, sleep, [
+        echo, kill, printf, pwd, [
 
    c) Some of the above are optional, depending on the settings used.  In
       the list below, [dbms] means any DBMS, but the same one throughout any

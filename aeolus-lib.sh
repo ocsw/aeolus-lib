@@ -2229,7 +2229,7 @@ sshtunnelcmd () {
 # config settings: tun_sshlocalport, tun_sshtimeout, on_ssherr (optional)
 # library functions: sshtunnelcmd(), logstatus(), logstatusquiet(),
 #                    sendalert(), do_exit()
-# utilities: nc, printf, kill, expr, [
+# utilities: nc, printf, sleep, kill, expr, [
 # FDs: 3
 #
 opensshtunnel () {
