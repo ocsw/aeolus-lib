@@ -1606,22 +1606,22 @@ unsilencelfalerts () {
 # global vars: no_error_exitval, startup_exitval, disable
 # config settings: lockfile, quiet (value not actually used)
 # library functions: logclconfig(), logstatus(), do_exit()
-# utilities: mkdir, touch, echo, [
+# utilities: mkdir, touch, printf, [
 # files: lockfile, disable
 #
 disablescript () {
   if [ -f "$lockfile/$disable" ]; then  # -e isn't portable
-    echo "$3 were already disabled"
+    printf "%s\n" "$3 were already disabled"
     do_exit "$startup_exitval"
   fi
   if [ -d "$lockfile" ]; then  # -e isn't portable
-    echo "lockfile directory exists; $1 $2 is probably running"
-    echo "disable command will take effect after the current $2 finishes"
-    echo
+    printf "%s\n" "lockfile directory exists; $1 $2 is probably running"
+    printf "%s\n" "disable command will take effect after the current $2 finishes"
+    printf "\n"
   fi
   mkdir "$lockfile" > /dev/null 2>&1  # ignore already-exists errors
   touch "$lockfile/$disable"
-  echo "$3 have been disabled; remember to re-enable them later!"
+  printf "%s\n" "$3 have been disabled; remember to re-enable them later!"
   quiet="yes"  # don't print to the terminal again
   logclconfig  # so we know what the status message means
   logstatus "$3 have been disabled, lockfile=\"$lockfile\""
@@ -1640,18 +1640,18 @@ disablescript () {
 # global vars: no_error_exitval, startup_exitval, disable
 # config settings: lockfile, quiet (value not actually used)
 # library functions: logclconfig(), logstatus(), do_exit()
-# utilities: rm, echo, [
+# utilities: rm, printf, [
 # files: disable
 #
 enablescript () {
   if [ ! -f "$lockfile/$disable" ]; then  # -e isn't portable
-    echo "$3 were already enabled"
+    printf "%s\n" "$3 were already enabled"
     do_exit "$startup_exitval"
   fi
   rm -f "$lockfile/$disable"
-  echo "$3 have been re-enabled"
-  echo "if $1 $2 is not currently running, you should now remove the lockfile"
-  echo "with the unlock command"
+  printf "%s\n" "$3 have been re-enabled"
+  printf "%s\n" "if $1 $2 is not currently running, you should now remove the lockfile"
+  printf "%s\n" "with the unlock command"
   quiet="yes"  # don't print to the terminal again
   logclconfig  # so we know what the status message means
   logstatus "$3 have been re-enabled, lockfile=\"$lockfile\""
@@ -1670,7 +1670,7 @@ enablescript () {
 # global vars: no_error_exitval, startup_exitval
 # config settings: lockfile, quiet (value not actually used)
 # library functions: logclconfig(), logstatus(), do_exit()
-# utilities: rm, echo, [
+# utilities: rm, echo, printf, [
 # files: lockfile
 #
 clearlock () {
@@ -1678,10 +1678,10 @@ clearlock () {
     echo "lockfile has already been removed"
     do_exit "$startup_exitval"
   fi
-  echo
-  echo "WARNING: the lockfile should only be removed if you're sure $1 $2 is not"
-  echo "currently running."
-  echo "Type 'y' (without the quotes) to continue."
+  printf "\n"
+  printf "%s\n" "WARNING: the lockfile should only be removed if you're sure $1 $2 is not"
+  printf "%s\n" "currently running."
+  printf "%s\n" "Type 'y' (without the quotes) to continue."
   # it would be nice to have this on the same line as the prompt,
   # but the portability issues aren't worth it for this
   read type_y
