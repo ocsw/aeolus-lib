@@ -1581,6 +1581,37 @@ checkstatus () {
 }
 
 #
+# begin working
+#
+# log starting messages and timestamp, and touch $startedfile
+#
+# config settings: startedfile
+# library functions: logstatus()
+# utilities: touch, printf, date
+# files: startedfile
+# FDs: 3
+#
+do_start () {
+  logstatus "starting backup"
+  touch "$startedfile"
+  printf "%s\n" "backup started $(date)" >&3
+}
+
+#
+# done working
+#
+# log finished messages and timestamp
+#
+# library functions: logstatus()
+# utilities: printf, date
+# FDs: 3
+#
+do_finish () {
+  logstatus "backup finished"
+  printf "%s\n" "backup finished $(date)" >&3
+}
+
+#
 # note: below functions are meant to be run from manual command line modes,
 # not autonomous operation; they only log actual status changes, and they
 # exit when finished
@@ -2463,26 +2494,3 @@ return
     do_exit "$no_error_exitval"
     ;;
 esac
-
-# log config file, current working directory, and setting variables supplied
-# on the command line
-logclconfig
-
-
-################
-# begin working
-################
-
-# starting notifications/timestamps
-logstatus "starting backup"
-touch "$startedfile"
-printf "%s\n" "backup started $(date)" >&3
-
-
-###############
-# done working
-###############
-
-# finishing notifications
-logstatus "backup finished"
-printf "%s\n" "backup finished $(date)" >&3

@@ -1967,10 +1967,8 @@ startoutputlog  # includes getting output log datestring
 # begin working
 ################
 
-# starting notifications/timestamps
-logstatus "starting backup"
-touch "$startedfile"
-printf "%s\n" "backup started $(date)" >&3
+# log starting messages and timestamp, and touch $startedfile
+do_start
 
 # are we supposed to actually do anything?
 do_something="no"  # set this to yes later if we do something
@@ -2093,9 +2091,8 @@ if [ "$do_something" = "no" ]; then  # everything was turned off
   logstatus "nothing to do, because no actions are turned on"
 fi
 
-# finishing notifications
-logstatus "backup finished"
-printf "%s\n" "backup finished $(date)" >&3
+# log finished messages and timestamp
+do_finish
 
 
 ##################
