@@ -1925,94 +1925,23 @@ case "$mode" in
     ;;
   silence)
     # silence lockfile-exists alerts
-    if [ ! -d "$lockfile" ]; then  # -e isn't portable
-      echo "lockfile directory doesn't exist; nothing to silence"
-      do_exit "$startup_exitval"
-    fi
-    if [ -f "$lockfile/$silencealerts" ]; then  # -e isn't portable
-      echo "lockfile alerts were already silenced"
-      do_exit "$startup_exitval"
-    fi
-    # using a file in the lockfile dir means that we automatically
-    # get the silencing cleared when the lockfile is removed
-    touch "$lockfile/$silencealerts"
-    echo "lockfile alerts have been silenced"
-    quiet="yes"  # don't print to the terminal again
-    logclconfig  # so we know what the status message means
-    logstatus "lockfile alerts have been silenced, lockfile=\"$lockfile\""
-    do_exit "$no_error_exitval"
+    silencelfalerts
     ;;
   unsilence)
     # unsilence lockfile-exists alerts
-    if [ ! -f "$lockfile/$silencealerts" ]; then  # -e isn't portable
-      echo "lockfile alerts were already unsilenced"
-      do_exit "$startup_exitval"
-    fi
-    rm -f "$lockfile/$silencealerts"
-    echo "lockfile alerts have been unsilenced"
-    quiet="yes"  # don't print to the terminal again
-    logclconfig  # so we know what the status message means
-    logstatus "lockfile alerts have been unsilenced, lockfile=\"$lockfile\""
-    do_exit "$no_error_exitval"
+    unsilencelfalerts
     ;;
   stop|disable)
     # disable backups
-    if [ -f "$lockfile/$disable" ]; then  # -e isn't portable
-      echo "backups were already disabled"
-      do_exit "$startup_exitval"
-    fi
-    if [ -d "$lockfile" ]; then  # -e isn't portable
-      echo "lockfile directory exists; a backup is probably running"
-      echo "disable command will take effect after the current backup finishes"
-      echo
-    fi
-    mkdir "$lockfile" > /dev/null 2>&1  # ignore already-exists errors
-    touch "$lockfile/$disable"
-    echo "backups have been disabled; remember to re-enable them later!"
-    quiet="yes"  # don't print to the terminal again
-    logclconfig  # so we know what the status message means
-    logstatus "backups have been disabled, lockfile=\"$lockfile\""
-    do_exit "$no_error_exitval"
+    disablescript "a" "backup" "backups"
     ;;
   start|enable)
     # re-enable backups
-    if [ ! -f "$lockfile/$disable" ]; then  # -e isn't portable
-      echo "backups were already enabled"
-      do_exit "$startup_exitval"
-    fi
-    rm -f "$lockfile/$disable"
-    echo "backups have been re-enabled"
-    echo "if a backup is not currently running, you should now remove the lockfile"
-    echo "with the unlock command"
-    quiet="yes"  # don't print to the terminal again
-    logclconfig  # so we know what the status message means
-    logstatus "backups have been re-enabled, lockfile=\"$lockfile\""
-    do_exit "$no_error_exitval"
+    enablescript "a" "backup" "backups"
     ;;
   clearlock|unlock)
     # remove lockfile dir
-    if [ ! -d "$lockfile" ]; then  # -e isn't portable
-      echo "lockfile has already been removed"
-      do_exit "$startup_exitval"
-    fi
-    echo
-    echo "WARNING: the lockfile should only be removed if you're sure a backup is not"
-    echo "currently running."
-    echo "Type 'y' (without the quotes) to continue."
-    # it would be nice to have this on the same line as the prompt,
-    # but the portability issues aren't worth it for this
-    read type_y
-    if [ "$type_y" != "y" ]; then
-      echo "Exiting."
-      do_exit "$no_error_exitval"
-    fi
-    echo
-    rm -rf "$lockfile"
-    echo "lockfile has been removed"
-    quiet="yes"  # don't print to the terminal again
-    logclconfig  # so we know what the status message means
-    logstatus "lockfile \"$lockfile\" has been manually removed"
-    do_exit "$no_error_exitval"
+    clearlock "a" "backup"
     ;;
   systemtest)
     echo

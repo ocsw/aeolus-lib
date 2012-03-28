@@ -1407,6 +1407,168 @@ checkstatus () {
   fi  # if mkdir "$lockfile"
 }
 
+#
+# note: below functions are meant to be run from manual command line modes,
+# not autonomous operation; they only log actual status changes
+#
+
+#
+# silence lockfile-exists alerts
+#
+# note: not named silencealerts() partly because some shells have issues
+# with functions having the same names as variables
+#
+# global vars: no_error_exitval, startup_exitval, silencealerts
+# config settings: lockfile, quiet (value not actually used)
+# library funcs: logclconfig, logstatus(), do_exit()
+# utilities: touch, echo, [
+# files: lockfile, silencealerts
+#
+silencelfalerts () {
+  if [ ! -d "$lockfile" ]; then  # -e isn't portable
+    echo "lockfile directory doesn't exist; nothing to silence"
+    do_exit "$startup_exitval"
+  fi
+  if [ -f "$lockfile/$silencealerts" ]; then  # -e isn't portable
+    echo "lockfile alerts were already silenced"
+    do_exit "$startup_exitval"
+  fi
+  # using a file in the lockfile dir means that we automatically
+  # get the silencing cleared when the lockfile is removed
+  touch "$lockfile/$silencealerts"
+  echo "lockfile alerts have been silenced"
+  quiet="yes"  # don't print to the terminal again
+  logclconfig  # so we know what the status message means
+  logstatus "lockfile alerts have been silenced, lockfile=\"$lockfile\""
+  do_exit "$no_error_exitval"
+}
+
+#
+# unsilence lockfile-exists alerts
+#
+# global vars: no_error_exitval, startup_exitval, silencealerts
+# config settings: lockfile, quiet (value not actually used)
+# library funcs: logclconfig, logstatus(), do_exit()
+# utilities: rm, echo, [
+# files: silencealerts
+#
+unsilencelfalerts () {
+  if [ ! -f "$lockfile/$silencealerts" ]; then  # -e isn't portable
+    echo "lockfile alerts were already unsilenced"
+    do_exit "$startup_exitval"
+  fi
+  rm -f "$lockfile/$silencealerts"
+  echo "lockfile alerts have been unsilenced"
+  quiet="yes"  # don't print to the terminal again
+  logclconfig  # so we know what the status message means
+  logstatus "lockfile alerts have been unsilenced, lockfile=\"$lockfile\""
+  do_exit "$no_error_exitval"
+}
+
+#
+# disable the script
+#
+# $1 is the article to use with $2, such as "a" or "an"; this is used in
+# messages like "a backup is probably running"
+# $2 is a description of the script's purpose, such as "backup"; this is
+# used in messages like "after the current backup finishes"
+# $3 is the plural of $2, used in messages like "backups have been disabled"
+#
+# global vars: no_error_exitval, startup_exitval, disable
+# config settings: lockfile, quiet (value not actually used)
+# library funcs: logclconfig, logstatus(), do_exit()
+# utilities: mkdir, touch, echo, [
+# files: lockfile, disable
+#
+disablescript () {
+  if [ -f "$lockfile/$disable" ]; then  # -e isn't portable
+    echo "$3 were already disabled"
+    do_exit "$startup_exitval"
+  fi
+  if [ -d "$lockfile" ]; then  # -e isn't portable
+    echo "lockfile directory exists; $1 $2 is probably running"
+    echo "disable command will take effect after the current $2 finishes"
+    echo
+  fi
+  mkdir "$lockfile" > /dev/null 2>&1  # ignore already-exists errors
+  touch "$lockfile/$disable"
+  echo "$3 have been disabled; remember to re-enable them later!"
+  quiet="yes"  # don't print to the terminal again
+  logclconfig  # so we know what the status message means
+  logstatus "$3 have been disabled, lockfile=\"$lockfile\""
+  do_exit "$no_error_exitval"
+}
+
+#
+# (re-)enable the script
+#
+# $1 is the article to use with $2, such as "a" or "an"; this is used in
+# messages like "a backup is probably running"
+# $2 is a description of the script's purpose, such as "backup"; this is
+# used in messages like "after the current backup finishes"
+# $3 is the plural of $2, used in messages like "backups have been disabled"
+#
+# global vars: no_error_exitval, startup_exitval, disable
+# config settings: lockfile, quiet (value not actually used)
+# library funcs: logclconfig, logstatus(), do_exit()
+# utilities: rm, echo, [
+# files: disable
+#
+enablescript () {
+  if [ ! -f "$lockfile/$disable" ]; then  # -e isn't portable
+    echo "$3 were already enabled"
+    do_exit "$startup_exitval"
+  fi
+  rm -f "$lockfile/$disable"
+  echo "$3 have been re-enabled"
+  echo "if $1 $2 is not currently running, you should now remove the lockfile"
+  echo "with the unlock command"
+  quiet="yes"  # don't print to the terminal again
+  logclconfig  # so we know what the status message means
+  logstatus "$3 have been re-enabled, lockfile=\"$lockfile\""
+  do_exit "$no_error_exitval"
+}
+
+#
+# forcibly remove the lockfile directory
+#
+# $1 is the article to use with $2, such as "a" or "an"; this is used in
+# messages like "a backup is probably running"
+# $2 is a description of the script's purpose, such as "backup"; this is
+# used in messages like "after the current backup finishes"
+#
+# "local" vars: type_y
+# global vars: no_error_exitval, startup_exitval
+# config settings: lockfile, quiet (value not actually used)
+# library funcs: logclconfig, logstatus(), do_exit()
+# utilities: rm, echo, [
+# files: lockfile
+#
+clearlock () {
+  if [ ! -d "$lockfile" ]; then  # -e isn't portable
+    echo "lockfile has already been removed"
+    do_exit "$startup_exitval"
+  fi
+  echo
+  echo "WARNING: the lockfile should only be removed if you're sure $1 $2 is not"
+  echo "currently running."
+  echo "Type 'y' (without the quotes) to continue."
+  # it would be nice to have this on the same line as the prompt,
+  # but the portability issues aren't worth it for this
+  read type_y
+  if [ "$type_y" != "y" ]; then
+    echo "Exiting."
+    do_exit "$no_error_exitval"
+  fi
+  echo
+  rm -rf "$lockfile"
+  echo "lockfile has been removed"
+  quiet="yes"  # don't print to the terminal again
+  logclconfig  # so we know what the status message means
+  logstatus "lockfile \"$lockfile\" has been manually removed"
+  do_exit "$no_error_exitval"
+}
+
 
 ######################################
 # file rotation, pruning, and zipping
@@ -2165,101 +2327,6 @@ applydefaults
 validconf
 
 
-# handle remaining command-line mode options
-# these are meant to be run manually from the command line, so only
-# log actual status changes
-case "$mode" in
-  silence)
-    # silence lockfile-exists alerts
-    if [ ! -d "$lockfile" ]; then  # -e isn't portable
-      echo "lockfile directory doesn't exist; nothing to silence"
-      do_exit "$startup_exitval"
-    fi
-    if [ -f "$lockfile/$silencealerts" ]; then  # -e isn't portable
-      echo "lockfile alerts were already silenced"
-      do_exit "$startup_exitval"
-    fi
-    # using a file in the lockfile dir means that we automatically
-    # get the silencing cleared when the lockfile is removed
-    touch "$lockfile/$silencealerts"
-    echo "lockfile alerts have been silenced"
-    quiet="yes"  # don't print to the terminal again
-    logclconfig  # so we know what the status message means
-    logstatus "lockfile alerts have been silenced, lockfile=\"$lockfile\""
-    do_exit "$no_error_exitval"
-    ;;
-  unsilence)
-    # unsilence lockfile-exists alerts
-    if [ ! -f "$lockfile/$silencealerts" ]; then  # -e isn't portable
-      echo "lockfile alerts were already unsilenced"
-      do_exit "$startup_exitval"
-    fi
-    rm -f "$lockfile/$silencealerts"
-    echo "lockfile alerts have been unsilenced"
-    quiet="yes"  # don't print to the terminal again
-    logclconfig  # so we know what the status message means
-    logstatus "lockfile alerts have been unsilenced, lockfile=\"$lockfile\""
-    do_exit "$no_error_exitval"
-    ;;
-  stop|disable)
-    # disable backups
-    if [ -f "$lockfile/$disable" ]; then  # -e isn't portable
-      echo "backups were already disabled"
-      do_exit "$startup_exitval"
-    fi
-    if [ -d "$lockfile" ]; then  # -e isn't portable
-      echo "lockfile directory exists; a backup is probably running"
-      echo "disable command will take effect after the current backup finishes"
-      echo
-    fi
-    mkdir "$lockfile" > /dev/null 2>&1  # ignore already-exists errors
-    touch "$lockfile/$disable"
-    echo "backups have been disabled; remember to re-enable them later!"
-    quiet="yes"  # don't print to the terminal again
-    logclconfig  # so we know what the status message means
-    logstatus "backups have been disabled, lockfile=\"$lockfile\""
-    do_exit "$no_error_exitval"
-    ;;
-  start|enable)
-    # re-enable backups
-    if [ ! -f "$lockfile/$disable" ]; then  # -e isn't portable
-      echo "backups were already enabled"
-      do_exit "$startup_exitval"
-    fi
-    rm -f "$lockfile/$disable"
-    echo "backups have been re-enabled"
-    echo "if a backup is not currently running, you should now remove the lockfile"
-    echo "with the unlock command"
-    quiet="yes"  # don't print to the terminal again
-    logclconfig  # so we know what the status message means
-    logstatus "backups have been re-enabled, lockfile=\"$lockfile\""
-    do_exit "$no_error_exitval"
-    ;;
-  clearlock|unlock)
-    # remove lockfile dir
-    if [ ! -d "$lockfile" ]; then  # -e isn't portable
-      echo "lockfile has already been removed"
-      do_exit "$startup_exitval"
-    fi
-    echo
-    echo "WARNING: the lockfile should only be removed if you're sure a backup is not"
-    echo "currently running."
-    echo "Type 'y' (without the quotes) to continue."
-    # it would be nice to have this on the same line as the prompt,
-    # but the portability issues aren't worth it for this
-    read type_y
-    if [ "$type_y" != "y" ]; then
-      echo "Exiting."
-      do_exit "$no_error_exitval"
-    fi
-    echo
-    rm -rf "$lockfile"
-    echo "lockfile has been removed"
-    quiet="yes"  # don't print to the terminal again
-    logclconfig  # so we know what the status message means
-    logstatus "lockfile \"$lockfile\" has been manually removed"
-    do_exit "$no_error_exitval"
-    ;;
   systemtest)
     echo
     echo "checking for commands in the PATH..."
