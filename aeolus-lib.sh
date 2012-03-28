@@ -234,6 +234,7 @@ throwerr () {
 #
 # config settings: statuslog
 # utilities: printf, date, [
+# files: statuslog
 #
 logstatlog () {
   if [ "$statuslog" != "" ]; then
@@ -1627,6 +1628,7 @@ prunefiles () {
 #                  dayslogs
 # library functions: logstatus(), rotatenumfiles(), prunefiles()
 # utilities: [
+# files: outputlog, (old outputlogs)
 #
 rotatepruneoutputlogs () {
   if [ "$outputlog" = "" ]; then
@@ -1689,6 +1691,7 @@ removefilezip () {
 # config settings: ssh_port, ssh_keyfile, ssh_options, ssh_user, ssh_host,
 #                  ssh_rcommand
 # utilities: ssh
+# files: ssh_keyfile
 #
 sshrcmdcmd () {
   # note no " on ssh_options
@@ -1707,6 +1710,7 @@ sshrcmdcmd () {
 # config settings: tun_sshlocalport, tun_sshremoteport, tun_sshport,
 #                  tun_sshkeyfile, tun_sshoptions, tun_sshuser, tun_sshhost
 # utilities: ssh
+# files: ssh_keyfile
 #
 sshtunnelcmd () {
   # note no " on tun_sshoptions
@@ -1842,6 +1846,7 @@ closesshtunnel () {
 # config settings: *_user, *_pwfile, *_protocol, *_host, *_port, *_socket,
 #                  *_options, *_dbname, *_command
 # utilities: mysql
+# files: [dbms]_pwfile, [dbms]_socket
 #
 dbcmd () {
   case "$dbms_prefix" in
@@ -1873,6 +1878,7 @@ dbcmd () {
 # config settings: *_user, *_pwfile, *_protocol, *_host, *_port, *_socket,
 #                  *_options
 # utilities: mysql
+# files: [dbms]_pwfile, [dbms]_socket
 #
 dblistcmd () {
   case "$dbms_prefix" in
@@ -1933,6 +1939,7 @@ dbunescape () {
 #                  rsync_filterfile, rsync_options, rsync_add, rsync_source,
 #                  rsync_dest
 # utilities: rsync, (ssh)
+# files: rsync_sshkeyfile, rsync_pwfile, rsync_filterfile
 #
 rsynccmd () {
   case "$rsync_mode" in

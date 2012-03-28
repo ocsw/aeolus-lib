@@ -395,7 +395,8 @@ rsync_exitval="10"
 # serves as notice that something went wrong previously;
 # this is also the reason for not using -f
 #
-# global vars: sshpid, lockfile, disable
+# global vars: sshpid, disable
+# config settings: lockfile
 # library funcs: closesshtunnel()
 # utilities: rm, [
 # files: lockfile, disable
@@ -807,6 +808,10 @@ applydefaults () {
 #                validnochar(), validrwxdir(), validcreate(),
 #                validreadfile(), validrwfile(), validlist()
 # utilities: [
+# files: startedfile, lockfile, alertfile, outputlog, statuslog,
+#        rsync_sshkeyfile, rsync_pwfile, rsync_filterfile,
+#        [dbms]_sshkeyfile, [dbms]_socket, [dbms]_pwfile, [dbms]_alts,
+#        [dbms]_dumpdir
 #
 validconf () {
   # housekeeping
@@ -1019,6 +1024,7 @@ checkusealtopts () {
 # config settings: *_user, *_pwfile, *_protocol, *_host, *_port, *_socket,
 #                  *_dumpoptions/*_dumponeoptions/etc. (depending on DBMS)
 # utilities: mysqldump, [
+# files: [dbms]_pwfile, [dbms]_socket
 #
 dbdumponecmd () {
   case "$dbms_prefix" in
@@ -1058,6 +1064,7 @@ dbdumponecmd () {
 # config settings: *_user, *_pwfile, *_protocol, *_host, *_port, *_socket,
 #                  *_dumpoptions/*_dumpmultoptions/etc. (depending on DBMS)
 # utilities: mysqldump
+# files: [dbms]_pwfile, [dbms]_socket
 #
 dbdumpmultcmd () {
   case "$dbms_prefix" in
@@ -1087,6 +1094,7 @@ dbdumpmultcmd () {
 # config settings: *_user, *_pwfile, *_protocol, *_host, *_port, *_socket,
 #                  *_dumpoptions/*_dumpalloptions/etc. (depending on DBMS)
 # utilities: mysqldump
+# files: [dbms]_pwfile, [dbms]_socket
 #
 dbdumpallcmd () {
   case "$dbms_prefix" in
@@ -1112,9 +1120,9 @@ dbdumpallcmd () {
 #
 # returns 1 to mean "skip to the next phase of the backup", else 0
 #
-# global vars: dbms_prefix, dbms_dbmode, dbms_splitdbs, lockfile, alldbs,
-#              alldbstmp, getdblist_exitval, dblistchar_exitval
-# config settings: on_dblisterr, on_dbcharerr
+# global vars: dbms_prefix, dbms_dbmode, dbms_splitdbs, alldbs, alldbstmp,
+#              getdblist_exitval, dblistchar_exitval
+# config settings: lockfile, on_dblisterr, on_dbcharerr
 # library vars: newline, tab
 # library funcs: dblistcmd(), filecomp(), logstatusquiet(), logstatus(),
 #                sendalert(), do_exit()
@@ -1588,7 +1596,8 @@ do_dbdump () {
 # returns 1 to mean "skip to the next phase of the backup", else 0
 #
 # "local" vars: OLDIFS, dbnames, dbname_esc, dbname, exclude_esc, exclude
-# global vars: IFS, dbms_dbmode, dbms_dbs, dbms_splitdbs, lockfile, alldbs
+# global vars: IFS, dbms_dbmode, dbms_dbs, dbms_splitdbs, alldbs
+# config settings: lockfile
 # library vars: newline, tab
 # library funcs: dbunescape()
 # utilities: [
