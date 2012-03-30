@@ -126,9 +126,9 @@ scriptname="aeolus"
 
 # external commands used (potentially)
 #
-# some things can probably be omitted, like 'set' and 'command';
-# they should always be builtins, and anyway, by the time we try to
-# test them...
+# commands that are always builtins, such as 'set' and 'wait', can be
+# omitted (and in some cases, we would have used them already by the time
+# we try to test for them)
 #
 externalcmds="
   rsync
