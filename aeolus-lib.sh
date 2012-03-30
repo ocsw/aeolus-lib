@@ -72,19 +72,11 @@ tab='	'
 #####################
 
 #
-# centralized so it's clear what sourcing the library will always
-# create/change, as opposed to what's only required if you use particular
-# functions
+# centralized so it's clear what sourcing the library will always set, as
+# opposed to what's only set/required if you use particular functions
 #
 
-# see setexitval()
-exitval="-1"
-
-# see do_exit()
-cleanup_on_exit="no"
-
-# see saveclset()
-clsetsaved="no"
+# (nothing here yet)
 
 
 ############################################################################
@@ -152,15 +144,17 @@ checkextcmds () {
 #
 # update an exit value for the script
 #
+# $1 = exit value
+#
 # if the value has already been set, don't change it,
 # so that we can return the value corresponding to
 # the first error encountered
 #
-# global vars: exitval (initialized to "-1", above)
+# global vars: exitval
 # utilities: [
 #
 setexitval () {
-  if [ "$exitval" = "-1" ]; then
+  if [ "${exitval:+X}" = "" ]; then
     exitval="$1"
   fi
 }
@@ -170,16 +164,18 @@ setexitval () {
 #
 # $1 = exit value (required)
 #
-# if cleanup_on_exit="yes", calls do_exit_cleanup(), which must be defined
-# by the calling script
+# if cleanup_on_exit is non-null, calls do_exit_cleanup(), which must be
+# defined by the calling script
 #
-# global vars: cleanup_on_exit (initialized to "no", above), exitval
+# for clarity, a value of "yes" is recommended when setting cleanup_on_exit
+#
+# global vars: cleanup_on_exit, exitval
 # user-defined functions: do_exit_cleanup()
 # library functions: setexitval()
 # utilities: [
 #
 do_exit () {
-  if [ "$cleanup_on_exit" = "yes" ]; then
+  if [ "$cleanup_on_exit" != "" ]; then
     do_exit_cleanup
   fi
 
@@ -904,7 +900,7 @@ EOF
 # to null)
 #
 # "local" vars: setting, cmdtemp
-# global vars: configsettings, clsetsaved (initialized to "no", above)
+# global vars: configsettings, clsetsaved
 # config settings: (*, cl_*)
 # utilities: [
 #
