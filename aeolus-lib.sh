@@ -50,10 +50,8 @@
 
 
 ############################################################################
-
-############
-# VARIABLES
-############
+#                                VARIABLES
+############################################################################
 
 
 ###################
@@ -74,8 +72,9 @@ tab='	'
 #####################
 
 #
-# centralized so it's clear what sourcing the library will create/change,
-# as opposed to what's only required if you use particular functions
+# centralized so it's clear what sourcing the library will always
+# create/change, as opposed to what's only required if you use particular
+# functions
 #
 
 # see setexitval()
@@ -88,11 +87,9 @@ cleanup_on_exit="no"
 clsetsaved="no"
 
 
-
-############
-# FUNCTIONS
-############
-
+############################################################################
+#                                FUNCTIONS
+############################################################################
 
 ############
 # debugging
