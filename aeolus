@@ -429,7 +429,7 @@ sendalert_body () {
 # $dbmslist)
 #
 # global vars: tun_prefix, tun_sshuser, tun_sshhost, tun_sshkeyfile,
-#              tun_sshport, tun_sshlocalport, tun_sshremoteport,
+#              tun_sshport, tun_localport, tun_remoteport,
 #              tun_sshoptions, tun_sshtimeout
 # config settings: *_sshuser, *_sshhost, *_sshkeyfile, *_sshport,
 #                  *_localport, *_remoteport, *_sshoptions, *_sshtimeout
@@ -440,8 +440,8 @@ switchtunnel () {
   eval "tun_sshhost=\"\$$(printf "%s" "$1")_sshhost\""
   eval "tun_sshkeyfile=\"\$$(printf "%s" "$1")_sshkeyfile\""
   eval "tun_sshport=\"\$$(printf "%s" "$1")_sshport\""
-  eval "tun_sshlocalport=\"\$$(printf "%s" "$1")_sshlocalport\""
-  eval "tun_sshremoteport=\"\$$(printf "%s" "$1")_sshremoteport\""
+  eval "tun_localport=\"\$$(printf "%s" "$1")_localport\""
+  eval "tun_remoteport=\"\$$(printf "%s" "$1")_remoteport\""
   eval "tun_sshoptions=\"\$$(printf "%s" "$1")_sshoptions\""
   eval "tun_sshtimeout=\"\$$(printf "%s" "$1")_sshtimeout\""
 }
@@ -451,10 +451,13 @@ switchtunnel () {
 #
 # $1 is the prefix for the settings to use (which must be in $dbmslist)
 #
+# note that the global for *_clientoptions is dbms_options, NOT
+# clientoptions
+#
 # global vars: *_datestring, dbms_prefix,
 #              dbms_dodump, dbms_usetunnel, dbms_user, dbms_pwfile,
 #              dbms_protocol, dbms_host, dbms_port, dbms_socketfile,
-#              dbms_dbmode, dbms_dbs, dbms_splitdbs, dbms_clientoptions,
+#              dbms_dbmode, dbms_dbs, dbms_splitdbs, dbms_options,
 #              dbms_dumpoptions, dbms_dumponeoptions, dbms_dumpmultoptions,
 #              dbms_dumpalloptions, dbms_altmode, dbms_alts, dbms_dumpdir,
 #              dbms_layout, dbms_fileprefix, dbms_filesuffix,
@@ -482,7 +485,7 @@ switchdbms () {
   eval "dbms_dbmode=\"\$$(printf "%s" "$1")_dbmode\""
   eval "dbms_dbs=\"\$$(printf "%s" "$1")_dbs\""
   eval "dbms_splitdbs=\"\$$(printf "%s" "$1")_splitdbs\""
-  eval "dbms_clientoptions=\"\$$(printf "%s" "$1")_clientoptions\""
+  eval "dbms_options=\"\$$(printf "%s" "$1")_clientoptions\""
   eval "dbms_dumpoptions=\"\$$(printf "%s" "$1")_dumpoptions\""
   eval "dbms_dumponeoptions=\"\$$(printf "%s" "$1")_dumponeoptions\""
   eval "dbms_dumpmultoptions=\"\$$(printf "%s" "$1")_dumpmultoptions\""

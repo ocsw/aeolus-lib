@@ -278,7 +278,7 @@ logstatus () {
 # if $2 is "all", only log to syslog if usesyslog="all" (but printing
 # and status logging proceed normally)
 #
-# config settings: usesyslog, syslogstat, syslogtag
+# config settings: usesyslog, syslogerr, syslogtag
 # library functions: do_syslog(), logprint()
 # utilities: [
 #
@@ -2141,7 +2141,7 @@ sshrcmdcmd () {
 #
 # run an ssh tunnel command
 #
-# config settings: tun_sshlocalport, tun_sshremoteport, tun_sshport,
+# config settings: tun_localport, tun_remoteport, tun_sshport,
 #                  tun_sshkeyfile, tun_sshoptions, tun_sshuser, tun_sshhost
 # utilities: ssh
 # files: $ssh_keyfile
@@ -2177,7 +2177,7 @@ sshtunnelcmd () {
 # "local" vars: waited, sshexit, sshpid_var, sshpid_l, on_err_l, exitval_l
 # global vars: (contents of $1, or sshpid), tun_prefix,
 #              sshtunnel_exitval (optional)
-# config settings: tun_sshlocalport, tun_sshtimeout, on_ssherr (optional)
+# config settings: tun_localport, tun_sshtimeout, on_ssherr (optional)
 # library functions: sshtunnelcmd(), logstatus(), logstatusquiet(),
 #                    sendalert(), do_exit()
 # utilities: nc, printf, sleep, kill, expr, [
@@ -2205,7 +2205,7 @@ opensshtunnel () {
   # see http://mywiki.wooledge.org/ProcessManagement#Starting_a_.22daemon.22_and_checking_whether_it_started_successfully
   waited="0"
   while sleep 1; do
-    nc -z localhost "$tun_sshlocalport" && break
+    nc -z localhost "$tun_localport" && break
     if kill -0 "$sshpid_l"; then
       # expr is more portable than $(())
       waited=$(expr "$waited" + 1)
