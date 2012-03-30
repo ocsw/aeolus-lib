@@ -185,12 +185,12 @@ configsettings="
   on_ziperr
   runevery
   startedfile
-  ifrunning
   lockfile
+  ifrunning
+  alertfile
   suppressemail
   mailto
   subject
-  alertfile
   outputlog
   outputlog_layout
   outputlog_sep
@@ -277,8 +277,9 @@ on_ziperr_default="db"
 # default settings: checks and logging
 runevery_default="0"
 startedfile_default="/var/run/aeolus/started"
-ifrunning_default="120"  # 2 hours
 lockfile_default="/var/run/aeolus/lock"
+ifrunning_default="120"  # 2 hours
+#alertfile_default="$lockfile.alert"  # set it later, after lockfile
 suppressemail_default="no"
 if command -v hostname > /dev/null 2>&1; then
   mailto_default="root@$(hostname)"
@@ -287,7 +288,6 @@ else
   mailto_default="root@localhost"
   subject_default="Aeolus alert"
 fi
-#alertfile_default="$lockfile.alert"  # set it later, after lockfile
 outputlog_default="/var/log/aeolus-output.log"  # only if unset
 outputlog_layout_default="number"
 outputlog_sep_default="."  # only if unset
@@ -636,7 +636,7 @@ EOF
 # doesn't print surrounding blank lines; add them if necessary in context
 #
 # global vars: silencealerts, disable, timetemp, logfifo, alldbs, alldbstmp
-# config settings: startedfile, alertfile, lockfile
+# config settings: startedfile, lockfile, alertfile
 # library functions: getfilemetadata()
 # utilities: cat, echo, [
 # files: startedfile, alertfile, lockfile, silencealerts, disable, timetemp,
@@ -733,12 +733,12 @@ applydefaults () {
   # checks and logging
   [ "$runevery" = "" ] && runevery="$runevery_default"
   [ "$startedfile" = "" ] && startedfile="$startedfile_default"
-  [ "$ifrunning" = "" ] && ifrunning="$ifrunning_default"
   [ "$lockfile" = "" ] && lockfile="$lockfile_default"
+  [ "$ifrunning" = "" ] && ifrunning="$ifrunning_default"
+  [ "$alertfile" = "" ] && alertfile="$lockfile.alert"  # late-binding default
   [ "$suppressemail" = "" ] && suppressemail="$suppressemail_default"
   [ "$mailto" = "" ] && mailto="$mailto_default"
   [ "$subject" = "" ] && subject="$subject_default"
-  [ "$alertfile" = "" ] && alertfile="$lockfile.alert"  # late-binding default
   [ "${outputlog+X}" = "" ] && outputlog="$outputlog_default"
   [ "$outputlog_layout" = "" ] && outputlog_layout="$outputlog_layout_default"
   [ "${outputlog_sep+X}" = "" ] && outputlog_sep="$outputlog_sep_default"
@@ -824,14 +824,14 @@ validconf () {
   # checks and logging
   validnum "runevery"
   validcreate "startedfile" "file"
-  validnum "ifrunning"
   validcreate "lockfile" "dir"
+  validnum "ifrunning"
+  validcreate "alertfile" "file"
   validlist "suppressemail" "yes" "no"
   if [ "$suppressemail" = "no" ]; then
     validnoblank "mailto"
     validnoblank "subject"
   fi
-  validcreate "alertfile" "file"
   if [ "$outputlog" != "" ]; then
     validcreate "outputlog" "file" "rotate"
     validlist "outputlog_layout" "append" "number" "date"

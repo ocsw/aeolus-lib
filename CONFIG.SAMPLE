@@ -144,6 +144,16 @@
 ###startedfile=
 
 #
+# path to the lockfile
+#
+# (actually a directory for technical reasons, and since we have it, we can
+# put temp files in it)
+#
+# * if blank or unset, defaults to "/var/run/aeolus/lock"
+#
+###lockfile=
+
+#
 # if the script has passed the runevery check, but the previous backup
 # is still running or was interrupted (i.e., the lockfile is still present):
 #
@@ -160,14 +170,14 @@
 ###ifrunning=
 
 #
-# path to the lock file
+# path to the alert-timestamp file (used to track ifrunning)
 #
-# (actually a directory for technical reasons, and since we have it, we can
-# put temp files in it)
+# * _not_ ignored, even if ifrunning=0
+# * if blank or unset, defaults to "[lockfile].alert"; e.g., if lockfile is
+#   set to "/var/run/aeolus/lock", alertfile will default to
+#   "/var/run/aeolus/lock.alert"
 #
-# * if blank or unset, defaults to "/var/run/aeolus/lock"
-#
-###lockfile=
+###alertfile=
 
 #
 # suppress email ("yes" or "no")?
@@ -198,16 +208,6 @@
 #   utility), or just "Aeolus alert" if the 'hostname' utility is not found
 #
 ###subject=
-
-#
-# path to the alert-timestamp file (used to track ifrunning)
-#
-# * _not_ ignored, even if ifrunning=0
-# * if blank or unset, defaults to "[lockfile].alert"; e.g., if lockfile is
-#   set to "/var/run/aeolus/lock", alertfile will default to
-#   "/var/run/aeolus/lock.alert"
-#
-###alertfile=
 
 #
 # path to the output log
