@@ -2277,7 +2277,7 @@ opensshtunnel () {
 # $1 is the name of a variable that contains the ssh PID, to differentiate
 # between multiple tunnels; if unset or null, it defaults to "sshpid"
 #
-# local vars: sshpid_var, sshpid_l
+# "local" vars: sshpid_var, sshpid_l
 # global vars: (contents of $1, or sshpid), tun_prefix
 # library functions: logstatus()
 # utilities: printf, kill, [
