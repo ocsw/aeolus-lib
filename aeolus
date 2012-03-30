@@ -348,8 +348,8 @@ mysql_subdirprefix_default="mysqldump"  # only if unset
 dbmslist="mysql"
 
 # names of tempfiles stored in the lockfile directory
-disable="disable"
 silencealerts="silencealerts"
+disable="disable"
 timetemp="timetemp"
 logfifo="logfifo"
 alldbs="alldbs"

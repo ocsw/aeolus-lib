@@ -1499,13 +1499,13 @@ do_config () {
 # disabled"
 #
 # global vars: no_error_exitval, lockfile_exitval, cleanup_on_exit,
-#              disable, silencealerts
+#              silencealerts, disable
 # config settings: runevery, startedfile, lockfile, ifrunning, alertfile
 # library functions: newerthan(), logstatus(), logalert(), sendalert(),
 #                    do_exit()
 # utilities: mkdir, rm, touch, [
-# files: $startedfile, $lockfile, $alertfile, $lockfile/$disable,
-#        $lockfile/$silencealerts
+# files: $startedfile, $lockfile, $alertfile, $lockfile/$silencealerts,
+#        $lockfile/$disable
 #
 checkstatus () {
   if [ "$runevery" != "0" ]; then
