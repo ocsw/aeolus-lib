@@ -616,11 +616,11 @@
 # "pipe")
 #
 # usually doesn't need to be specified; see the MySQL documentation for more
-# info, and mysql_socket, below
+# info, and mysql_socketfile, below
 #
-# specifying mysql_host, mysql_port, and/or mysql_socket may cause errors
-# depending on the value of this setting (e.g., "tcp" is incompatible with
-# mysql_socket)
+# specifying mysql_host, mysql_port, and/or mysql_socketfile may cause
+# errors depending on the value of this setting (e.g., "tcp" is incompatible
+# with mysql_socketfile)
 #
 # if mysql_usetunnel="yes", must be blank, unset, or "tcp"
 #
@@ -650,7 +650,7 @@
 ###mysql_port=
 
 #
-# socket path for connecting to the MySQL server
+# path to the socket file for connecting to the MySQL server
 #
 # typically /tmp/mysql.sock or /var/run/mysqld/mysqld.sock
 #
@@ -660,7 +660,7 @@
 #   is specified
 # * if blank or unset, MySQL's default will be used
 #
-###mysql_socket=
+###mysql_socketfile=
 
 #
 # which databases to dump

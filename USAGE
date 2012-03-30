@@ -147,7 +147,7 @@ CONTENTS
         [dbms]_alts (if [dbms]_altmode="file")
 
       rw (read/write), and x (execute) on the parent directory:
-        [dbms]_socket
+        [dbms]_socketfile
         [the dump files]
 
       rwx (read/write/execute), and x (execute) on the parent directory:

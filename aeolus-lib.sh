@@ -57,7 +57,7 @@ fi
 # $*_protocol: protocol (optional*)
 # $*_host: hostname (optional*)
 # $*_port: port (optional*)
-# $*_socket: socket path (optional*)
+# $*_socketfile: path to socket file (optional*)
 # $*_options: client options (optional*)
 # $*_dbname: database name (optional*)
 # $*_command: SQL command (or equivalent)
@@ -2337,10 +2337,10 @@ closesshtunnel () {
 # (in the notes below, [dbms] = the value of $dbms_prefix)
 # global vars: dbms_prefix
 # config settings: [dbms]_user, [dbms]_pwfile, [dbms]_protocol, [dbms]_host,
-#                  [dbms]_port, [dbms]_socket, [dbms]_options,
+#                  [dbms]_port, [dbms]_socketfile, [dbms]_options,
 #                  [dbms]_dbname, [dbms]_command
 # utilities: mysql
-# files: $[dbms]_pwfile, $[dbms]_socket
+# files: $[dbms]_pwfile, $[dbms]_socketfile
 #
 dbcmd () {
   case "$dbms_prefix" in
@@ -2353,7 +2353,7 @@ dbcmd () {
         ${mysql_protocol:+"--protocol=$mysql_protocol"} \
         ${mysql_host:+-h "$mysql_host"} \
         ${mysql_port:+-P "$mysql_port"} \
-        ${mysql_socket:+-S "$mysql_socket"} \
+        ${mysql_socketfile:+-S "$mysql_socketfile"} \
         ${mysql_options:+$mysql_options} \
         ${mysql_dbname:+"$mysql_dbname"} \
         ${mysql_command:+-e "$mysql_command"}
@@ -2371,9 +2371,9 @@ dbcmd () {
 # (in the notes below, [dbms] = the value of $dbms_prefix)
 # global vars: dbms_prefix
 # config settings: [dbms]_user, [dbms]_pwfile, [dbms]_protocol, [dbms]_host,
-#                  [dbms]_port, [dbms]_socket, [dbms]_options
+#                  [dbms]_port, [dbms]_socketfile, [dbms]_options
 # utilities: mysql
-# files: $[dbms]_pwfile, $[dbms]_socket
+# files: $[dbms]_pwfile, $[dbms]_socketfile
 #
 dblistcmd () {
   case "$dbms_prefix" in
@@ -2386,7 +2386,7 @@ dblistcmd () {
         ${mysql_protocol:+"--protocol=$mysql_protocol"} \
         ${mysql_host:+-h "$mysql_host"} \
         ${mysql_port:+-P "$mysql_port"} \
-        ${mysql_socket:+-S "$mysql_socket"} \
+        ${mysql_socketfile:+-S "$mysql_socketfile"} \
         ${mysql_options:+$mysql_options} \
         -BN -e "SHOW DATABASES;"
       ;;

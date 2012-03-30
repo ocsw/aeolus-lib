@@ -235,7 +235,7 @@ configsettings="
   mysql_protocol
   mysql_host
   mysql_port
-  mysql_socket
+  mysql_socketfile
   mysql_dbmode
   mysql_dbs
   mysql_splitdbs
@@ -467,7 +467,7 @@ switchtunnel () {
 #
 # global vars: *_datestring, dbms_prefix,
 #              dbms_dodump, dbms_usetunnel, dbms_user, dbms_pwfile,
-#              dbms_protocol, dbms_host, dbms_port, dbms_socket,
+#              dbms_protocol, dbms_host, dbms_port, dbms_socketfile,
 #              dbms_dbmode, dbms_dbs, dbms_splitdbs, dbms_clientoptions,
 #              dbms_dumpoptions, dbms_dumponeoptions, dbms_dumpmultoptions,
 #              dbms_dumpalloptions, dbms_altmode, dbms_alts, dbms_dumpdir,
@@ -476,12 +476,12 @@ switchtunnel () {
 #              dbms_numfiles, dbms_daysfiles, dbms_zipmode, dbms_zipoptions,
 #              dbms_preserve, dbms_datestring
 # config settings: *_dodump, *_usetunnel, *_user, *_pwfile, *_protocol,
-#                  *_host, *_port, *_socket, *_dbmode, *_dbs, *_splitdbs,
-#                  *_clientoptions, *_dumpoptions, *_dumponeoptions,
-#                  *_dumpmultoptions, *_dumpalloptions, *_altmode, *_alts,
-#                  *_dumpdir, *_layout, *_fileprefix, *_subdirprefix,
-#                  *_filedirsep, *_filedirdate, *_numfiles, *_daysfiles,
-#                  *_zipmode, *_zipoptions, *_preserve
+#                  *_host, *_port, *_socketfile, *_dbmode, *_dbs,
+#                  *_splitdbs, *_clientoptions, *_dumpoptions,
+#                  *_dumponeoptions, *_dumpmultoptions, *_dumpalloptions,
+#                  *_altmode, *_alts, *_dumpdir, *_layout, *_fileprefix,
+#                  *_subdirprefix, *_filedirsep, *_filedirdate, *_numfiles,
+#                  *_daysfiles, *_zipmode, *_zipoptions, *_preserve
 #
 switchdbms () {
   dbms_prefix="$1"
@@ -492,7 +492,7 @@ switchdbms () {
   eval "dbms_protocol=\"\$$(printf "%s" "$1")_protocol\""
   eval "dbms_host=\"\$$(printf "%s" "$1")_host\""
   eval "dbms_port=\"\$$(printf "%s" "$1")_port\""
-  eval "dbms_socket=\"\$$(printf "%s" "$1")_socket\""
+  eval "dbms_socketfile=\"\$$(printf "%s" "$1")_socketfile\""
   eval "dbms_dbmode=\"\$$(printf "%s" "$1")_dbmode\""
   eval "dbms_dbs=\"\$$(printf "%s" "$1")_dbs\""
   eval "dbms_splitdbs=\"\$$(printf "%s" "$1")_splitdbs\""
@@ -803,7 +803,7 @@ applydefaults () {
 # utilities: [
 # files: startedfile, lockfile, alertfile, outputlog, statuslog,
 #        rsync_sshkeyfile, rsync_pwfile, rsync_filterfile,
-#        [dbms]_sshkeyfile, [dbms]_socket, [dbms]_pwfile, [dbms]_alts,
+#        [dbms]_sshkeyfile, [dbms]_socketfile, [dbms]_pwfile, [dbms]_alts,
 #        [dbms]_dumpdir
 #
 validconf () {
@@ -895,24 +895,24 @@ validconf () {
         # ignore these
         eval "$(printf "%s" "$dbms")_host=\"localhost\""
         eval "$(printf "%s" "$dbms")_port=\"${dbms}_localport\""
-        eval "$(printf "%s" "$dbms")_socket=\"\""
+        eval "$(printf "%s" "$dbms")_socketfile=\"\""
         # also change the dbms_* variables, for completeness
         dbms_host="localhost"
         dbms_port="${dbms}_localport"
-        dbms_socket=""
+        dbms_socketfile=""
       else
         if [ "$dbms_host" != "" ]; then  # nothing to validate, but...
-          # ignore socket
-          eval "$(printf "%s" "$dbms")_socket=\"\""
-          dbms_socket=""  # for later tests
+          # ignore socketfile
+          eval "$(printf "%s" "$dbms")_socketfile=\"\""
+          dbms_socketfile=""  # for later tests
         fi
         if [ "$dbms_port" != "" ]; then
           validnum "${dbms}_port" 1 65535
-          # ignore socket
-          eval "$(printf "%s" "$dbms")_socket=\"\""
-          dbms_socket=""  # for later tests
+          # ignore socketfile
+          eval "$(printf "%s" "$dbms")_socketfile=\"\""
+          dbms_socketfile=""  # for later tests
         fi
-        [ "$dbms_socket" != "" ] && validrwfile "${dbms}_socket"
+        [ "$dbms_socketfile" != "" ] && validrwfile "${dbms}_socketfile"
       fi  # if [ "$dbms_usetunnel" = "yes" ]
       [ "$dbms_pwfile" != "" ] && validreadfile "${dbms}_pwfile"
       validlist "${dbms}_dbmode" "all" "include" "exclude" "includefile" \
@@ -1014,10 +1014,11 @@ checkusealtopts () {
 #
 # "local" vars: opts_l
 # global vars: dbms_prefix, altopts
-# config settings: *_user, *_pwfile, *_protocol, *_host, *_port, *_socket,
-#                  *_dumpoptions/*_dumponeoptions/etc. (depending on DBMS)
+# config settings: *_user, *_pwfile, *_protocol, *_host, *_port,
+#                  *_socketfile, *_dumpoptions/*_dumponeoptions/etc.
+#                  (depending on DBMS)
 # utilities: mysqldump, [
-# files: [dbms]_pwfile, [dbms]_socket
+# files: [dbms]_pwfile, [dbms]_socketfile
 #
 dbdumponecmd () {
   case "$dbms_prefix" in
@@ -1036,7 +1037,7 @@ dbdumponecmd () {
         ${mysql_protocol:+"--protocol=$mysql_protocol"} \
         ${mysql_host:+-h "$mysql_host"} \
         ${mysql_port:+-P "$mysql_port"} \
-        ${mysql_socket:+-S "$mysql_socket"} \
+        ${mysql_socketfile:+-S "$mysql_socketfile"} \
         ${opts_l:+$opts_l} \
         "$1"
       ;;
@@ -1054,10 +1055,11 @@ dbdumponecmd () {
 #    "... \"foo bar\" ..."))
 #
 # global vars: dbms_prefix
-# config settings: *_user, *_pwfile, *_protocol, *_host, *_port, *_socket,
-#                  *_dumpoptions/*_dumpmultoptions/etc. (depending on DBMS)
+# config settings: *_user, *_pwfile, *_protocol, *_host, *_port,
+#                  *_socketfile, *_dumpoptions/*_dumpmultoptions/etc.
+#                  (depending on DBMS)
 # utilities: mysqldump
-# files: [dbms]_pwfile, [dbms]_socket
+# files: [dbms]_pwfile, [dbms]_socketfile
 #
 dbdumpmultcmd () {
   case "$dbms_prefix" in
@@ -1070,7 +1072,7 @@ dbdumpmultcmd () {
         ${mysql_protocol:+"--protocol=$mysql_protocol"} \
         ${mysql_host:+-h "$mysql_host"} \
         ${mysql_port:+-P "$mysql_port"} \
-        ${mysql_socket:+-S "$mysql_socket"} \
+        ${mysql_socketfile:+-S "$mysql_socketfile"} \
         ${mysql_dumpoptions:+$mysql_dumpoptions} \
         -B $1
       ;;
@@ -1084,10 +1086,11 @@ dbdumpmultcmd () {
 # dbdumpmultcmd())
 #
 # global vars: dbms_prefix
-# config settings: *_user, *_pwfile, *_protocol, *_host, *_port, *_socket,
-#                  *_dumpoptions/*_dumpalloptions/etc. (depending on DBMS)
+# config settings: *_user, *_pwfile, *_protocol, *_host, *_port,
+#                  *_socketfile, *_dumpoptions/*_dumpalloptions/etc.
+#                  (depending on DBMS)
 # utilities: mysqldump
-# files: [dbms]_pwfile, [dbms]_socket
+# files: [dbms]_pwfile, [dbms]_socketfile
 #
 dbdumpallcmd () {
   case "$dbms_prefix" in
@@ -1100,7 +1103,7 @@ dbdumpallcmd () {
         ${mysql_protocol:+"--protocol=$mysql_protocol"} \
         ${mysql_host:+-h "$mysql_host"} \
         ${mysql_port:+-P "$mysql_port"} \
-        ${mysql_socket:+-S "$mysql_socket"} \
+        ${mysql_socketfile:+-S "$mysql_socketfile"} \
         ${mysql_dumpoptions:+$mysql_dumpoptions} \
         -A
       ;;
