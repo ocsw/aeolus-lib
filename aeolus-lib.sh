@@ -19,28 +19,6 @@
 #
 # do more to protect against leading - in settings?
 
-############
-# debugging
-############
-
-#
-# turn on debugging
-#
-do_debug () {
-  set -vx
-}
-
-# unlike the other settings, we use the value of debugme even before we
-# check the config file or validate anything, so we can debug those bits
-# (also, none of the other settings would do anything before then, anyway)
-#
-# however, this only applies if debugging is turned on on the command line;
-# see also below
-if [ "$debugme" = "yes" ]; then
-  do_debug
-fi
-
-
 #!!! [config settings]
 # $ssh_port: SSH port (optional)
 # $ssh_keyfile: path to key file (optional)
