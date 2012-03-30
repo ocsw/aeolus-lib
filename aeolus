@@ -106,6 +106,9 @@ do_debug () {
 #
 # however, this only applies if debugging is turned on on the command line;
 # see also below
+#
+# (note: setting isn't called 'debug' to avoid possible collisions)
+#
 if [ "$debugme" = "yes" ]; then
   do_debug
 fi
