@@ -174,9 +174,9 @@ checkextcmds () {
   echo
   for extcmd in $externalcmds; do
     if command -v "$extcmd" > /dev/null 2>&1; then
-      printf "%-10s\n" "$extcmd was found"
+      printf "%-9s %s\n" "$extcmd" "was found"
     else
-      printf "%-10s\n" "$extcmd was NOT found"
+      printf "%-9s %s\n" "$extcmd" "was NOT found"
     fi
   done
   echo
@@ -258,7 +258,7 @@ throwerr () {
 #
 # config settings: statuslog
 # utilities: printf, date, [
-# files: statuslog
+# files: $statuslog
 #
 logstatlog () {
   if [ "$statuslog" != "" ]; then
@@ -460,7 +460,7 @@ sendalert () {
 #                  outputlog_date, quiet
 # library functions: rotatepruneoutputlogs()
 # utilities: date, touch, mkfifo, tee, cat, [
-# files: logfifo, outputlog, (previous outputlogs)
+# files: $lockfile/$logfifo, $outputlog, (previous outputlogs)
 # FDs: 3
 #
 startoutputlog () {
@@ -520,7 +520,7 @@ startoutputlog () {
 # global vars: logfifo
 # config settings: lockfile
 # utilities: rm
-# files: logfifo
+# files: $lockfile/$logfifo
 # FDs: 3
 #
 stopoutputlog () {
@@ -1520,7 +1520,8 @@ do_config () {
 # library functions: newerthan(), logstatus(), logalert(), sendalert(),
 #                    do_exit()
 # utilities: mkdir, rm, touch, [
-# files: lockfile, disable, startedfile, alertfile, silencealerts
+# files: $lockfile, $lockfile/$disable, $startedfile, $alertfile,
+#        $lockfile/$silencealerts
 #
 checkstatus () {
   if [ "$runevery" != "0" ]; then
@@ -1616,7 +1617,7 @@ checkstatus () {
 # config settings: startedfile
 # library functions: logstatus()
 # utilities: touch, printf, date
-# files: startedfile
+# files: $startedfile
 # FDs: 3
 #
 do_start () {
@@ -1655,7 +1656,7 @@ do_finish () {
 # config settings: lockfile, quiet (value not actually used)
 # library functions: logclconfig(), logstatus(), do_exit()
 # utilities: touch, echo, [
-# files: lockfile, silencealerts
+# files: $lockfile, $lockfile/$silencealerts
 #
 silencelfalerts () {
   if [ ! -d "$lockfile" ]; then  # -e isn't portable
@@ -1683,7 +1684,7 @@ silencelfalerts () {
 # config settings: lockfile, quiet (value not actually used)
 # library functions: logclconfig(), logstatus(), do_exit()
 # utilities: rm, echo, [
-# files: silencealerts
+# files: $lockfile/$silencealerts
 #
 unsilencelfalerts () {
   if [ ! -f "$lockfile/$silencealerts" ]; then  # -e isn't portable
@@ -1711,7 +1712,7 @@ unsilencelfalerts () {
 # config settings: lockfile, quiet (value not actually used)
 # library functions: logclconfig(), logstatus(), do_exit()
 # utilities: mkdir, touch, printf, [
-# files: lockfile, disable
+# files: $lockfile, $lockfile/disable
 #
 disablescript () {
   if [ -f "$lockfile/$disable" ]; then  # -e isn't portable
@@ -1745,7 +1746,7 @@ disablescript () {
 # config settings: lockfile, quiet (value not actually used)
 # library functions: logclconfig(), logstatus(), do_exit()
 # utilities: rm, printf, [
-# files: disable
+# files: $lockfile/$disable
 #
 enablescript () {
   if [ ! -f "$lockfile/$disable" ]; then  # -e isn't portable
@@ -1775,7 +1776,7 @@ enablescript () {
 # config settings: lockfile, quiet (value not actually used)
 # library functions: logclconfig(), logstatus(), do_exit()
 # utilities: rm, echo, printf, [
-# files: lockfile
+# files: $lockfile
 #
 clearlock () {
   if [ ! -d "$lockfile" ]; then  # -e isn't portable
@@ -2135,7 +2136,7 @@ prunefiles () {
 #                  dayslogs
 # library functions: logstatus(), rotatenumfiles(), prunefiles()
 # utilities: [
-# files: outputlog, (previous outputlogs)
+# files: $outputlog, (previous outputlogs)
 #
 rotatepruneoutputlogs () {
   if [ "$outputlog" = "" ]; then
@@ -2198,7 +2199,7 @@ removefilezip () {
 # config settings: ssh_port, ssh_keyfile, ssh_options, ssh_user, ssh_host,
 #                  ssh_rcommand
 # utilities: ssh
-# files: ssh_keyfile
+# files: $ssh_keyfile
 #
 sshrcmdcmd () {
   # note no " on ssh_options
@@ -2217,7 +2218,7 @@ sshrcmdcmd () {
 # config settings: tun_sshlocalport, tun_sshremoteport, tun_sshport,
 #                  tun_sshkeyfile, tun_sshoptions, tun_sshuser, tun_sshhost
 # utilities: ssh
-# files: ssh_keyfile
+# files: $ssh_keyfile
 #
 sshtunnelcmd () {
   # note no " on tun_sshoptions
@@ -2355,7 +2356,7 @@ closesshtunnel () {
 #                  [dbms]_port, [dbms]_socket, [dbms]_options,
 #                  [dbms]_dbname, [dbms]_command
 # utilities: mysql
-# files: [dbms]_pwfile, [dbms]_socket
+# files: $[dbms]_pwfile, $[dbms]_socket
 #
 dbcmd () {
   case "$dbms_prefix" in
@@ -2388,7 +2389,7 @@ dbcmd () {
 # config settings: [dbms]_user, [dbms]_pwfile, [dbms]_protocol, [dbms]_host,
 #                  [dbms]_port, [dbms]_socket, [dbms]_options
 # utilities: mysql
-# files: [dbms]_pwfile, [dbms]_socket
+# files: $[dbms]_pwfile, $[dbms]_socket
 #
 dblistcmd () {
   case "$dbms_prefix" in
@@ -2449,7 +2450,7 @@ dbunescape () {
 #                  rsync_filterfile, rsync_options, rsync_add, rsync_source,
 #                  rsync_dest
 # utilities: rsync, (ssh)
-# files: rsync_sshkeyfile, rsync_pwfile, rsync_filterfile
+# files: $rsync_sshkeyfile, $rsync_pwfile, $rsync_filterfile
 #
 rsynccmd () {
   case "$rsync_mode" in
@@ -2499,15 +2500,3 @@ rsynccmd () {
       ;;
   esac
 }
-
-
-
-
-return
-##############################################################################
-
-
-  systemtest)
-    do_exit "$no_error_exitval"
-    ;;
-esac
