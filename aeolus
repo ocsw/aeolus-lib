@@ -46,7 +46,8 @@
 #   add vars to the sample config file, modeling after MySQL (but split up
 #     *_dump*options if necessary)
 #   add vars to the relevant variables/functions (see above)
-#   add to dblistcmd(), dbdump*cmd(), needdblist()
+#   add to dbdump*cmd(), getdblist()
+#   add to the database functions in the library
 #   add to dbmslist
 #   add to usage notes on installation and portability
 #
@@ -62,26 +63,6 @@
 # globbing in dblist?
 #
 # do more to protect against leading - in settings?
-
-# to test:
-# mysql
-# ssh key with ports
-# all do_exit (val, clean)
-# dblist in file
-# alt opts
-# better command-line option handling, e.g., wrt "-" for no config file
-# create clean conf
-# cl length limit - incl. $configsettings
-# what if re-run? - incl. if zip
-# stop on errors?
-# when skipping to next phase, have to do cleanup/logging
-# pigz
-# echo -> printf
-# config, status, systemtest modes, and mail alerts
-# validnochar
-# esc, seddelim funcs and uses
-# sed \t
-
 
 
 ######################
