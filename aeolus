@@ -392,7 +392,7 @@ rsync_exitval="10"
 # config settings: lockfile
 # library functions: closesshtunnel()
 # utilities: rm, [
-# files: lockfile, disable
+# files: $lockfile, $lockfile/$disable
 #
 do_exit_cleanup () {
   if [ "$sshpid" != "" ]; then
@@ -639,8 +639,9 @@ EOF
 # config settings: startedfile, lockfile, alertfile
 # library functions: getfilemetadata()
 # utilities: cat, echo, [
-# files: startedfile, alertfile, lockfile, silencealerts, disable, timetemp,
-#        logfifo, alldbs, alldbstmp
+# files: $startedfile, $alertfile, $lockfile, $lockfile/$silencealerts,
+#        $lockfile/$disable, $lockfile/$timetemp, $lockfile/$logfifo,
+#        $lockfile/$alldbs, $lockfile/$alldbstmp
 #
 printstatus () {
   cat <<-EOF
@@ -801,10 +802,10 @@ applydefaults () {
 #                    validnochar(), validrwxdir(), validcreate(),
 #                    validreadfile(), validrwfile(), validlist()
 # utilities: [
-# files: startedfile, lockfile, alertfile, outputlog, statuslog,
-#        rsync_sshkeyfile, rsync_pwfile, rsync_filterfile,
-#        [dbms]_sshkeyfile, [dbms]_socketfile, [dbms]_pwfile, [dbms]_alts,
-#        [dbms]_dumpdir
+# files: $startedfile, $lockfile, $alertfile, $outputlog, $statuslog,
+#        $rsync_sshkeyfile, $rsync_pwfile, $rsync_filterfile,
+#        $[dbms]_sshkeyfile, $[dbms]_socketfile, $[dbms]_pwfile,
+#        $[dbms]_alts, $[dbms]_dumpdir
 #
 validconf () {
   # housekeeping
@@ -1018,7 +1019,7 @@ checkusealtopts () {
 #                  *_socketfile, *_dumpoptions/*_dumponeoptions/etc.
 #                  (depending on DBMS)
 # utilities: mysqldump, [
-# files: [dbms]_pwfile, [dbms]_socketfile
+# files: $[dbms]_pwfile, $[dbms]_socketfile
 #
 dbdumponecmd () {
   case "$dbms_prefix" in
@@ -1059,7 +1060,7 @@ dbdumponecmd () {
 #                  *_socketfile, *_dumpoptions/*_dumpmultoptions/etc.
 #                  (depending on DBMS)
 # utilities: mysqldump
-# files: [dbms]_pwfile, [dbms]_socketfile
+# files: $[dbms]_pwfile, $[dbms]_socketfile
 #
 dbdumpmultcmd () {
   case "$dbms_prefix" in
@@ -1090,7 +1091,7 @@ dbdumpmultcmd () {
 #                  *_socketfile, *_dumpoptions/*_dumpalloptions/etc.
 #                  (depending on DBMS)
 # utilities: mysqldump
-# files: [dbms]_pwfile, [dbms]_socketfile
+# files: $[dbms]_pwfile, $[dbms]_socketfile
 #
 dbdumpallcmd () {
   case "$dbms_prefix" in
@@ -1123,7 +1124,7 @@ dbdumpallcmd () {
 # library functions: dblistcmd(), filecomp(), logstatusquiet(), logstatus(),
 #                    sendalert(), do_exit()
 # utilities: rm, tr, printf, [
-# files: alldbs, alldbstmp
+# files: $lockfile/$alldbs, $lockfile/$alldbstmp
 # FDs: 3
 #
 getdblist () {
@@ -1597,7 +1598,7 @@ do_dbdump () {
 # library vars: newline, tab
 # library functions: dbunescape()
 # utilities: [
-# files: alldbs
+# files: $lockfile/$alldbs
 #
 do_dbdumploop () {
   OLDIFS="$IFS"
