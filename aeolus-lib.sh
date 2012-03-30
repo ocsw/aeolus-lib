@@ -6,8 +6,6 @@
 # see ae_license() for license info
 #######################################################################
 
-# all commands used should be listed in $externalcmds and the usage notes
-
 # TODO:
 # prune dated files by number
 #
@@ -43,21 +41,6 @@ if [ "$debugme" = "yes" ]; then
 fi
 
 
-######################
-# hardcoded variables
-######################
-
-# a newline character
-# see section 8 of http://www.dwheeler.com/essays/filenames-in-shell.html
-newline=$(printf "\nX")
-newline="${newline%X}"
-
-# a tab character
-tab='	'
-
-
-
-
 #!!! [config settings]
 # $ssh_port: SSH port (optional)
 # $ssh_keyfile: path to key file (optional)
@@ -88,8 +71,50 @@ tab='	'
 #                  rsync_dest
 
 
-
 ############################################################################
+
+############
+# VARIABLES
+############
+
+
+###################
+# useful constants
+###################
+
+# a newline character
+# see section 8 of http://www.dwheeler.com/essays/filenames-in-shell.html
+newline=$(printf "\nX")
+newline="${newline%X}"
+
+# a tab character
+tab='	'
+
+
+#####################
+# initialize globals
+#####################
+
+#
+# centralized so it's clear what sourcing the library will create/change,
+# as opposed to what's only required if you use particular functions
+#
+
+# see setexitval()
+exitval="-1"
+
+# see do_exit()
+cleanup_on_exit="no"
+
+# see saveclset()
+clsetsaved="no"
+
+
+
+############
+# FUNCTIONS
+############
+
 
 ############
 # debugging
@@ -156,10 +181,9 @@ checkextcmds () {
 # so that we can return the value corresponding to
 # the first error encountered
 #
-# global vars: exitval
+# global vars: exitval (initialized to "-1", above)
 # utilities: [
 #
-exitval="-1"
 setexitval () {
   if [ "$exitval" = "-1" ]; then
     exitval="$1"
@@ -174,12 +198,11 @@ setexitval () {
 # if cleanup_on_exit="yes", calls do_exit_cleanup(), which must be defined
 # by the calling script
 #
-# global vars: cleanup_on_exit, exitval
+# global vars: cleanup_on_exit (initialized to "no", above), exitval
 # user-defined functions: do_exit_cleanup()
 # library functions: setexitval()
 # utilities: [
 #
-cleanup_on_exit="no"
 do_exit () {
   if [ "$cleanup_on_exit" = "yes" ]; then
     do_exit_cleanup
@@ -906,11 +929,10 @@ EOF
 # to null)
 #
 # "local" vars: setting, cmdtemp
-# global vars: configsettings, clsetsaved
+# global vars: configsettings, clsetsaved (initialized to "no", above)
 # config settings: (*, cl_*)
 # utilities: [
 #
-clsetsaved="no"
 saveclset () {
   # so we know if anything was saved, when we want to use logclconfig()
   clsetsaved="no"
