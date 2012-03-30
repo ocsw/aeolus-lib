@@ -158,6 +158,30 @@ clarifyargs () {
   printf "\n"
 }
 
+#
+# check for the existence of external commands in the PATH
+#
+# "local" vars: extcmd
+# global vars: externalcmds
+# utilities: printf, echo
+#
+checkextcmds () {
+  echo
+  echo "checking for commands in the PATH..."
+  echo "(note that missing commands may not matter, depending on the command"
+  echo "and the settings used; on the other hand, commands may be present"
+  echo "but not support required options)"
+  echo
+  for extcmd in $externalcmds; do
+    if command -v "$extcmd" > /dev/null 2>&1; then
+      printf "%-10s\n" "$extcmd was found"
+    else
+      printf "%-10s\n" "$extcmd was NOT found"
+    fi
+  done
+  echo
+}
+
 
 ###########################
 # shutdown and exit values
@@ -2484,20 +2508,6 @@ return
 
 
   systemtest)
-    echo
-    echo "checking for commands in the PATH..."
-    echo "(note that missing commands may not matter, depending on the command"
-    echo "and the settings used; on the other hand, commands may be present"
-    echo "but not support required options)"
-    echo
-    for cmd in $externalcmds; do
-      if command -v "$cmd" > /dev/null 2>&1; then
-        printf "%-10s\n" "$cmd was found"
-      else
-        printf "%-10s\n" "$cmd was NOT found"
-      fi
-    done
-    echo
     do_exit "$no_error_exitval"
     ;;
 esac
