@@ -61,7 +61,9 @@ CONTENTS
           followed by a space and the public key
           (The long string above should all be on one line with no spaces;
           replace LOCALIP with the local host's IP and correct the path to
-          nologin on the remote host if necessary.)
+          nologin on the remote host if necessary.  For functions other than
+          rsync, replace the port number; to allow multiple ports, add more
+          permitopen sections.)
 
    b) rsync
 
