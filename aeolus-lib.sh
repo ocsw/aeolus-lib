@@ -113,11 +113,21 @@ clarifyargs () {
 #
 # check for the existence of external commands in the PATH
 #
-# "local" vars: extcmd
+# "local" vars: extcmd, cmdlen
 # global vars: externalcmds
 # utilities: printf, echo
 #
 checkextcmds () {
+  # get column width
+  cmdlen=0
+  for extcmd in $externalcmds; do
+     # if [ "${#extcmd}" -gt "$cmdlen" ]; then
+     # slower but more portable; see http://mywiki.wooledge.org/BashFAQ/007
+     if [ "$(expr \( "X$extcmd" : ".*" \) - 1)" -gt "$cmdlen" ]; then
+      cmdlen="${#extcmd}"
+    fi
+  done
+
   echo
   echo "checking for commands in the PATH..."
   echo "(note that missing commands may not matter, depending on the command"
@@ -126,9 +136,9 @@ checkextcmds () {
   echo
   for extcmd in $externalcmds; do
     if command -v "$extcmd" > /dev/null 2>&1; then
-      printf "%-9s %s\n" "$extcmd" "was found"
+      printf "%-${cmdlen}s %s\n" "$extcmd" "was found"
     else
-      printf "%-9s %s\n" "$extcmd" "was NOT found"
+      printf "%-${cmdlen}s %s\n" "$extcmd" "was NOT found"
     fi
   done
   echo
