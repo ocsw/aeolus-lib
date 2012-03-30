@@ -55,19 +55,12 @@
 # of the defaults and the comments in the sample config file, etc.)
 
 # TODO:
-# prune dated files by number
-#
 # better handling of long errors?
 # i18n?
 # setup modes?
 # emulate mkdir -p?
-# pathological cases in getparentdir()?
-# squeeze // in parentdir() output?
-# strange test problems in validcreate()?
-# actually parse vars on cl, in config file?
-# queue sendalert()s for non-fatal messages (e.g., skipping many DB dumps)?
 # globbing in dblist?
-
+#
 # do more to protect against leading - in settings?
 
 # to test:

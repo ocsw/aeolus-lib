@@ -13,15 +13,12 @@
 #
 # better handling of long errors?
 # i18n?
-# setup modes?
-# emulate mkdir -p?
 # pathological cases in getparentdir()?
-# squeeze // in parentdir() output?
+# squeeze // in getparentdir() output?
 # strange test problems in validcreate()?
 # actually parse vars on cl, in config file?
 # queue sendalert()s for non-fatal messages (e.g., skipping many DB dumps)?
-# globbing in dblist?
-
+#
 # do more to protect against leading - in settings?
 
 ############
@@ -49,51 +46,6 @@ fi
 ######################
 # hardcoded variables
 ######################
-
-# external commands used (potentially)
-#
-# some things can probably be omitted, like 'set' and 'command';
-# they should always be builtins, and anyway, by the time we try to
-# test them...
-#
-externalcmds="
-rsync
-ssh
-nc
-mysql
-mysqldump
-gzip
-pigz
-bzip2
-lzip
-date
-hostname
-logger
-mailx
-grep
-awk
-gawk
-sed
-tr
-[
-expr
-echo
-printf
-cat
-tee
-ls
-find
-diff
-cmp
-touch
-mv
-rm
-mkdir
-mkfifo
-pwd
-kill
-sleep
-"
 
 # a newline character
 # see section 8 of http://www.dwheeler.com/essays/filenames-in-shell.html
