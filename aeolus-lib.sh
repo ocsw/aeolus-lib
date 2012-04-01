@@ -654,7 +654,7 @@ getparentdir () {
 
 #
 # escape shell glob metacharacters:
-#   * ? [
+#   * ? [ \
 #
 # usually, just enclosing strings in quotes suffices for the shell itself,
 # but some commands, such as find, take arguments which are then globbed
@@ -668,7 +668,9 @@ getparentdir () {
 # utilities: printf, sed
 #
 escglob () {
+  # note: \ must be first
   printf "%s\n" "$1" | sed \
+      -e 's/\\/\\\\/g' \
       -e 's/\*/\\*/g' \
       -e 's/\?/\\?/g' \
       -e 's/\[/\\[/g'
