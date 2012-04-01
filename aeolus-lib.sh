@@ -928,9 +928,9 @@ restoreclset () {
 logclconfig () {
   # $(pwd) is more portable than $PWD
   if [ "$noconfigfile" = "yes" ]; then
-    logstatus "no config file, cwd: \"$(pwd)\""
+    logstatus "no config file, cwd: '$(pwd)'"
   else
-    logstatus "using config file: \"$configfile\", cwd: \"$(pwd)\""
+    logstatus "using config file: '$configfile', cwd: '$(pwd)'"
   fi
 
   if [ "$clsetsaved" = "yes" ]; then
@@ -1082,7 +1082,7 @@ throwsettingerr () {
   vname="$1"
   eval "vval=\"\$$(printf "%s" "$vname")\""
 
-  throwstartuperr "Error: invalid setting for $vname (\"$vval\"); exiting."
+  throwstartuperr "Error: invalid setting for $vname ('$vval'); exiting."
 }
 
 #
@@ -1274,7 +1274,7 @@ validcreate () {
         fi
         ;;
       *)
-        throwstartuperr "Internal Error: illegal file-type value (\"$2\") in validcreate(); exiting."
+        throwstartuperr "Internal Error: illegal file-type value ('$2') in validcreate(); exiting."
         ;;
     esac
   fi
@@ -1284,7 +1284,7 @@ validcreate () {
   # [ dereferences symlinks for us
   if [ ! -d "$parentdir" ]; then
     # ... or a non-directory, but this is more concise
-    throwstartuperr "Error: $vname is in a non-existent directory (\"$parentdir\"); exiting."
+    throwstartuperr "Error: $vname is in a non-existent directory ('$parentdir'); exiting."
   fi
   if [ ! -w "$parentdir" ]; then
     throwstartuperr "Error: $vname is in a non-writable directory; exiting."
@@ -1320,7 +1320,7 @@ validreadfile () {
   # from here on, we will only be using $vname for printing purposes,
   # so we can doctor it
   if [ "$vname" = "configfile" ]; then
-    vname="config file \"$vval\""
+    vname="config file '$vval'"
   fi
 
   # not a file or symlink to one?
@@ -1613,7 +1613,7 @@ silencelfalerts () {
   echo "lockfile alerts have been silenced"
   quiet="yes"  # don't print to the terminal again
   logclconfig  # so we know what the status message means
-  logstatus "lockfile alerts have been silenced, lockfile=\"$lockfile\""
+  logstatus "lockfile alerts have been silenced, lockfile='$lockfile'"
   do_exit "$no_error_exitval"
 }
 
@@ -1635,7 +1635,7 @@ unsilencelfalerts () {
   echo "lockfile alerts have been unsilenced"
   quiet="yes"  # don't print to the terminal again
   logclconfig  # so we know what the status message means
-  logstatus "lockfile alerts have been unsilenced, lockfile=\"$lockfile\""
+  logstatus "lockfile alerts have been unsilenced, lockfile='$lockfile'"
   do_exit "$no_error_exitval"
 }
 
@@ -1669,7 +1669,7 @@ disablescript () {
   printf "%s\n" "$3 have been disabled; remember to re-enable them later!"
   quiet="yes"  # don't print to the terminal again
   logclconfig  # so we know what the status message means
-  logstatus "$3 have been disabled, lockfile=\"$lockfile\""
+  logstatus "$3 have been disabled, lockfile='$lockfile'"
   do_exit "$no_error_exitval"
 }
 
@@ -1699,7 +1699,7 @@ enablescript () {
   printf "%s\n" "with the unlock command"
   quiet="yes"  # don't print to the terminal again
   logclconfig  # so we know what the status message means
-  logstatus "$3 have been re-enabled, lockfile=\"$lockfile\""
+  logstatus "$3 have been re-enabled, lockfile='$lockfile'"
   do_exit "$no_error_exitval"
 }
 
@@ -1739,7 +1739,7 @@ clearlock () {
   echo "lockfile has been removed"
   quiet="yes"  # don't print to the terminal again
   logclconfig  # so we know what the status message means
-  logstatus "lockfile \"$lockfile\" has been manually removed"
+  logstatus "lockfile '$lockfile' has been manually removed"
   do_exit "$no_error_exitval"
 }
 
@@ -2277,7 +2277,7 @@ closesshtunnel () {
   kill "$sshpid_l"
   wait "$sshpid_l"
 
-  eval "$(printf "%s" "$sshpid_var")=\"\""  # so we know it's been closed
+  eval "$(printf "%s" "$sshpid_var")=''"  # so we know it's been closed
 
   logstatus "SSH tunnel for $tun_prefix closed"
 }
