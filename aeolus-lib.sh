@@ -24,7 +24,6 @@
 #                                VARIABLES
 ############################################################################
 
-
 ###################
 # useful constants
 ###################
@@ -495,6 +494,8 @@ newerthan () {
       curtime=$(date "+%s")
       filetime=$(date -r "$1" "+%s")
       # expr is more portable than $(())
+      # note that expr returns an integer; unclear if it's rounded or
+      # truncated
       timediff=$(expr \( "$curtime" - "$filetime" \) / 60)
       [ "$timediff" -lt "$2" ]
       return
@@ -525,6 +526,9 @@ newerthan () {
 # $1, $2: file paths
 #
 # returns 0 (true) / 1 (false) / 2 (error), so test for success, not failure
+#
+# stderr is left alone; redirect it for completely silent operation even
+# under error conditions
 #
 # config settings: filecomptype
 # utilities: cmp, diff

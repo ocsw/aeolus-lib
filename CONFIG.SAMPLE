@@ -40,6 +40,10 @@
 # "date-d", "awk", and "gawk" also require touch -t timestamp and
 # find . -newer fileref, but those should usually be available
 #
+# note that the rounding behavior of the various options may differ;
+# "date-d", "awk", and "gawk" should be accurate to within one second, but
+# the other options may have up to a 59-second lag
+#
 # * must have a value, but is currently only used if runevery is not 0
 #   and/or ifrunning is not 0
 # * if blank or unset, defaults to "find"

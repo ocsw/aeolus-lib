@@ -5,4 +5,6 @@ self-updating? (2x md5, global lock)
 postgres
 rsync log (incl. rotation)
 rdiff
--> library?
+
+script, docs re library install and source
+warn re num/date?
