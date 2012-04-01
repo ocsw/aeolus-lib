@@ -792,11 +792,13 @@ getseddelim () {
   for char in '/' '?' '.' ',' '<' '>' ';' ':' '|' '[' ']' '{' '}' \
               '=' '+' '_' '-' '(' ')' '*' '&' '^' '%' '#' '@' '!' '~' \
               A B C D E F G H I J K L M N O P Q R S T U V W X Y Z \
-              a b c d e f g h i j k l m n o p q r s t u v w x y z ; do
+              a b c d e f g h i j k l m n o p q r s t u v w x y z \
+              ' ' "$tab" ; do
     # use tr instead of grep so we don't have to worry about metacharacters
     # (we could use escregex(), but that's rather heavyweight for this)
     if [ "$1" = "$(printf "%s\n" "$1" | tr -d "$char")" ]; then
       seddelim="$char"
+      break
     fi
   done
 
