@@ -56,11 +56,14 @@
 # of the defaults and the comments in the sample config file, etc.)
 
 # TODO:
+# globbing in dblist?
+#
 # better handling of long errors?
 # i18n?
 # setup modes?
 # emulate mkdir -p?
-# globbing in dblist?
+# allow char devs / fifos in cases where we currently test for -f?
+#  (but could cause problems with, e.g., rm...)
 #
 # do more to protect against leading - in settings?
 
@@ -1174,7 +1177,7 @@ getdblist () {
       rm -f "$lockfile/$alldbstmp"  # to prevent noclobber-type issues
       tr -d "'\"\`$" < "$lockfile/$alldbs" \
                      > "$lockfile/$alldbstmp"
-      if filecomp "$lockfile/$alldbs" "$lockfile/$alldbstmp"; then
+      if filecomp "$lockfile/$alldbs" "$lockfile/$alldbstmp" 2>/dev/null; then
         :  # avoid non-portable 'if !'
       else  # cover both mismatch and error
         sendalert "the list of $dbms_prefix databases contains a dangerous character; exiting" log

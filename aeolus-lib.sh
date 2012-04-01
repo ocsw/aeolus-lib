@@ -16,6 +16,8 @@
 # strange test problems in validcreate()?
 # actually parse vars on cl, in config file?
 # queue sendalert()s for non-fatal messages (e.g., skipping many DB dumps)?
+# allow char devs / fifos in cases where we currently test for -f?
+#  (but could cause problems with, e.g., rm...)
 #
 # do more to protect against leading - in settings?
 
@@ -608,7 +610,7 @@ getparentdir () {
   printf "%s\n" "$parentdir"
 }
 
-# tests for getparentdir:
+# tests for getparentdir():
 #getparentdir //                   # /
 #getparentdir //foo                # /
 #getparentdir //foo//              # /
@@ -1445,13 +1447,13 @@ do_config () {
 # disabled"
 #
 # global vars: no_error_exitval, lockfile_exitval, cleanup_on_exit,
-#              silencealerts, disable
+#              silencealerts, disable, timetemp
 # config settings: runevery, startedfile, lockfile, ifrunning, alertfile
 # library functions: newerthan(), logstatus(), logalert(), sendalert(),
 #                    do_exit()
 # utilities: mkdir, rm, touch, [
 # files: $startedfile, $lockfile, $alertfile, $lockfile/$silencealerts,
-#        $lockfile/$disable
+#        $lockfile/$disable, $lockfile/timetemp
 #
 checkstatus () {
   if [ "$runevery" != "0" ]; then
@@ -1460,7 +1462,9 @@ checkstatus () {
     #
     # if $startedfile exists and is newer than $runevery, exit
     # (-f instead of -e because it's more portable)
-    if [ -f "$startedfile" ] && newerthan "$startedfile" "$runevery"; then
+    if [ -f "$startedfile" ] \
+       && \
+       newerthan "$startedfile" "$runevery" "$lockfile/$timetemp"; then
       logstatus "$1 interval has not expired; exiting"
       do_exit "$no_error_exitval"
     else
@@ -1523,7 +1527,7 @@ checkstatus () {
     fi
 
     # if $alertfile is newer than $ifrunning, log it but don't send email
-    if newerthan "$alertfile" "$ifrunning"; then
+    if newerthan "$alertfile" "$ifrunning" "$lockfile/$timetemp"; then
       logalert "alert interval has not expired; no email sent"
       do_exit "$lockfile_exitval"
     fi
