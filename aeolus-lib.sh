@@ -917,7 +917,7 @@ restoreclset () {
 # log config file, current working directory, and setting variables supplied
 # on the command line
 #
-# saveclset() must be called before function, to set up $cl_*
+# saveclset() must be called before this function, to set up $cl_*
 #
 # "local" vars: setting, cmdtemp
 # global vars: configsettings, noconfigfile, configfile, clsetsaved
@@ -948,8 +948,8 @@ logclconfig () {
 #
 # print all of the current config settings
 #
-# will print settings with '""' and "\"\"" sub-quoting correctly,
-# but not "''" (prints as '''')
+# note: does not print all types of sub-quoting correctly (i.e., in a format
+# that can be used on the command line or in a config file)
 #
 # "local" vars: setting, sval
 # global vars: configsettings
@@ -960,7 +960,7 @@ printsettings () {
   for setting in $configsettings; do
     # split into two lines for readability
     eval "sval=\"\$$(printf "%s" "$setting")\""
-    printf "%s\n" "$setting=\"$sval\""
+    printf "%s\n" "$setting='$sval'"
   done
 }
 
@@ -989,6 +989,8 @@ printconfig () {
 	Current Settings:
 	-----------------
 
+	(check quoting before re-using)
+
 	Config file: $cfgfilestring
 	CWD: $(pwd)
 
@@ -1010,7 +1012,7 @@ printconfig () {
 # "local" vars: setting
 # global vars: configfile, noconfigfile, configsettings
 # utilities: printf, [
-# FDs: 3
+# FDs: 4
 #
 createblankconfig () {
   if [ "$noconfigfile" = "no" ] && [ "$configfile" != "" ]; then
@@ -1018,7 +1020,7 @@ createblankconfig () {
       return 1
     else
       # use a separate FD to make the code cleaner
-      exec 3>&1  # save for later
+      exec 4>&1  # save for later
       exec 1>"$configfile"
     fi
   fi
@@ -1034,7 +1036,7 @@ createblankconfig () {
   done
 
   if [ "$noconfigfile" = "no" ] && [ "$configfile" != "" ]; then
-    exec 1>&3  # put stdout back
+    exec 1>&4  # put stdout back
   fi
 
   return 0

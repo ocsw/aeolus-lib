@@ -1817,7 +1817,7 @@ case "$mode" in
     ;;
   create)
     createblankconfig "# see CONFIG for details"
-    if [ "$!" = "1" ]; then
+    if [ "$?" = "1" ]; then
       throwusageerr "Error: specified config file already exists; exiting."
     else
       do_exit "$no_error_exitval"
