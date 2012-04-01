@@ -8,3 +8,4 @@ rdiff
 
 script, docs re library install and source
 warn re num/date?
+reorder rsync opts (ssh)

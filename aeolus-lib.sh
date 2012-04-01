@@ -1161,7 +1161,7 @@ validnum () {
 # $1 = variable name
 # $2 = character
 #
-# "local" vars: vname, vval, char
+# "local" vars: vname, vval, nochar
 # config settings: (contents of $1)
 # library functions: throwstartuperr()
 # utilities: printf, tr, [
@@ -1169,12 +1169,12 @@ validnum () {
 validnochar () {
   vname="$1"
   eval "vval=\"\$$(printf "%s" "$vname")\""
-  char="$2"
+  nochar="$2"
 
   # use tr so we don't have to worry about metacharacters
   # (we could use escregex(), but that's rather heavyweight for this)
-  if [ "$vval" != "$(printf "%s\n" "$vval" | tr -d "$char")" ]; then
-    throwstartuperr "Error: $vname cannot contain '$char' characters; exiting."
+  if [ "$vval" != "$(printf "%s\n" "$vval" | tr -d "$nochar")" ]; then
+    throwstartuperr "Error: $vname cannot contain '$nochar' characters; exiting."
   fi
 }
 
