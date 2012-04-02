@@ -1658,7 +1658,7 @@ unsilencelfalerts () {
 # global vars: no_error_exitval, startup_exitval, disable
 # config settings: lockfile, quiet (value not actually used)
 # library functions: logclconfig(), logstatus(), do_exit()
-# utilities: mkdir, touch, printf, [
+# utilities: mkdir, touch, echo, printf, [
 # files: $lockfile, $lockfile/disable
 #
 disablescript () {
@@ -1695,7 +1695,7 @@ disablescript () {
 # global vars: no_error_exitval, startup_exitval, disable
 # config settings: lockfile, quiet (value not actually used)
 # library functions: logclconfig(), logstatus(), do_exit()
-# utilities: rm, printf, [
+# utilities: rm, echo, printf, [
 # files: $lockfile/$disable
 #
 enablescript () {
