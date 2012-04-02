@@ -401,7 +401,9 @@ startoutputlog () {
       outputlog_datestring=$(date)
     fi
     outputlog_filename="$outputlog_filename$outputlog_sep$outputlog_datestring"
-    touch "$outputlog_filename"  # needed for prunedayslogs()
+
+    # needed for prunedayslogs(), for pruning by number
+    touch "$outputlog_filename"
   fi
 
   mkfifo "$lockfile/$logfifo"
@@ -1967,7 +1969,7 @@ prunenumfiles () {
     filenum=$(printf "%s\n" "$filename" | \
               sed "s$D^$(escregex "$prefix$sep")\\([0-9][0-9]*\\)$(escregex "$suffix").*\$$D\\1$D")
 
-    # check number and delete
+    # check the number and delete
     if [ "$numf" != "0" ] && [ "$filenum" -ge "$numf" ]; then
       # -r for dirs
       rm -rf "$filename"
@@ -2039,7 +2041,7 @@ prunedatefiles () {
         continue
       fi
 
-      # delete
+      # delete by date
       #
       # -r for dirs
       find "$filename" -mtime +"$daysf" -exec rm -rf {} \;
@@ -2052,6 +2054,7 @@ prunedatefiles () {
 #
 # dated files are only pruned by date; _should_ also prune by number,
 # but it's practically impossible to do it properly in pure shell
+# (see prunedatefiles())
 #
 # $1: layout type
 #
@@ -2160,7 +2163,7 @@ removefilezip () {
 # files: $ssh_keyfile
 #
 sshrcmdcmd () {
-  # note no " on ssh_options
+  # note no " around ssh_options
   ssh \
     ${ssh_port:+-p "$ssh_port"} \
     ${ssh_keyfile:+-i "$ssh_keyfile"} \
@@ -2179,7 +2182,7 @@ sshrcmdcmd () {
 # files: $ssh_keyfile
 #
 sshtunnelcmd () {
-  # note no " on tun_sshoptions
+  # note no " around tun_sshoptions
   ssh \
     -L "$ssh_localport:localhost:$ssh_remoteport" -N \
     ${tun_sshport:+-p "$tun_sshport"} \
@@ -2320,7 +2323,7 @@ dbcmd () {
   case "$dbms_prefix" in
     mysql)
       # --defaults-extra-file must be the first option if present
-      # note no " on mysql_options
+      # note no " around mysql_options
       mysql \
         ${mysql_pwfile:+"--defaults-extra-file=$mysql_pwfile"} \
         ${mysql_user:+-u "$mysql_user"} \
@@ -2353,7 +2356,7 @@ dblistcmd () {
   case "$dbms_prefix" in
     mysql)
       # --defaults-extra-file must be the first option if present
-      # note no " on mysql_options
+      # note no " around mysql_options
       mysql \
         ${mysql_pwfile:+"--defaults-extra-file=$mysql_pwfile"} \
         ${mysql_user:+-u "$mysql_user"} \
@@ -2413,7 +2416,7 @@ dbunescape () {
 rsynccmd () {
   case "$rsync_mode" in
     tunnel)
-      # note no " on rsync_options, rsync_add, rsync_source
+      # note no " around rsync_options, rsync_add, rsync_source
       rsync \
         ${rsync_pwfile:+"--password-file=$rsync_pwfile"} \
         "--port=$rsync_localport" \
@@ -2424,7 +2427,7 @@ rsynccmd () {
         "$rsync_dest"
       ;;
     direct)
-      # note no " on rsync_options, rsync_add, rsync_source
+      # note no " around rsync_options, rsync_add, rsync_source
       rsync \
         ${rsync_pwfile:+"--password-file=$rsync_pwfile"} \
         ${rsync_port:+"--port=$rsync_port"} \
@@ -2435,7 +2438,7 @@ rsynccmd () {
         "$rsync_dest"
       ;;
     nodaemon)
-      # note no " on rsync_sshoptions, rsync_options, rsync_add,
+      # note no " around rsync_sshoptions, rsync_options, rsync_add,
       # rsync_source
       rsync \
         -e "ssh
@@ -2449,7 +2452,7 @@ rsynccmd () {
         "$rsync_dest"
       ;;
     local)
-      # note no " on rsync_options, rsync_add, rsync_source
+      # note no " around rsync_options, rsync_add, rsync_source
       rsync \
         ${rsync_filterfile:+-f "merge $rsync_filterfile"} \
         ${rsync_options:+$rsync_options} \

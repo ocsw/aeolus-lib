@@ -1023,7 +1023,7 @@ dbdumponecmd () {
       fi
 
       # --defaults-extra-file must be the first option if present
-      # note no " on opts_l
+      # note no " around opts_l
       mysqldump \
         ${mysql_pwfile:+"--defaults-extra-file=$mysql_pwfile"} \
         ${mysql_user:+-u "$mysql_user"} \
@@ -1058,7 +1058,7 @@ dbdumpmultcmd () {
   case "$dbms_prefix" in
     mysql)
       # --defaults-extra-file must be the first option if present
-      # note no " on mysql_dumpoptions, $1
+      # note no " around mysql_dumpoptions, $1
       mysqldump \
         ${mysql_pwfile:+"--defaults-extra-file=$mysql_pwfile"} \
         ${mysql_user:+-u "$mysql_user"} \
@@ -1089,7 +1089,7 @@ dbdumpallcmd () {
   case "$dbms_prefix" in
     mysql)
       # --defaults-extra-file must be the first option if present
-      # note no " on mysql_dumpoptions
+      # note no " around mysql_dumpoptions
       mysqldump \
         ${mysql_pwfile:+"--defaults-extra-file=$mysql_pwfile"} \
         ${mysql_user:+-u "$mysql_user"} \
@@ -1438,10 +1438,12 @@ do_dbdump () {
       rm -f "$dumpprefix$dbname$dumpsuffix$dumptmp"  # safer for >
       case "$dumptype" in
         one)
-          dbdumponecmd "$dbstring" > "$dumpprefix$dbname$dumpsuffix$dumptmp" 2>&3
+          # note no " around $dbstring
+          dbdumponecmd $dbstring > "$dumpprefix$dbname$dumpsuffix$dumptmp" 2>&3
           ;;
         mult)
-          dbdumpmultcmd "$dbstring" > "$dumpprefix$dbname$dumpsuffix$dumptmp" 2>&3
+          # note no " around $dbstring
+          dbdumpmultcmd $dbstring > "$dumpprefix$dbname$dumpsuffix$dumptmp" 2>&3
           ;;
         all)
           dbdumpallcmd > "$dumpprefix$dbname$dumpsuffix$dumptmp" 2>&3
@@ -1451,10 +1453,12 @@ do_dbdump () {
     space)
       case "$dumptype" in
         one)
-          dbdumponecmd "$dbstring" > "$dumpprefix$dbname$dumpsuffix" 2>&3
+          # note no " around $dbstring
+          dbdumponecmd $dbstring > "$dumpprefix$dbname$dumpsuffix" 2>&3
           ;;
         mult)
-          dbdumpmultcmd "$dbstring" > "$dumpprefix$dbname$dumpsuffix" 2>&3
+          # note no " around $dbstring
+          dbdumpmultcmd $dbstring > "$dumpprefix$dbname$dumpsuffix" 2>&3
           ;;
         all)
           dbdumpallcmd > "$dumpprefix$dbname$dumpsuffix" 2>&3
