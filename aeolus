@@ -377,14 +377,16 @@ rsync_exitval="10"
 # serves as notice that something went wrong previously;
 # this is also the reason for not using -f
 #
-# global vars: sshpid, disable
+# global vars: tunpid, disable
 # config settings: lockfile
 # library functions: closesshtunnel()
 # utilities: rm, [
 # files: $lockfile, $lockfile/$disable
 #
 do_exit_cleanup () {
-  if [ "$sshpid" != "" ]; then
+  # closesshtunnel() can be run after the tunnel was already closed,
+  # but should not be run if it was never started
+  if [ "$tunpid_prefix" != "" ]; then
     closesshtunnel
   fi
 

@@ -2169,7 +2169,7 @@ removefilezip () {
 # utilities: ssh
 # files: $ssh_keyfile
 #
-sshrcmdcmd () {
+sshremotecmd () {
   # note no " around ssh_options
   ssh \
     ${ssh_port:+-p "$ssh_port"} \
@@ -2181,29 +2181,145 @@ sshrcmdcmd () {
 }
 
 #
-# run an ssh tunnel command
+# run a remote ssh command in the background
 #
-# config settings: tun_localport, tun_remoteport, tun_sshport,
-#                  tun_sshkeyfile, tun_sshoptions, tun_sshuser, tun_sshhost
+# $1 is the name of a variable to store the ssh PID in, to differentiate
+# between multiple commands; if unset or null, it defaults to "sshpid"
+#
+# "local" vars: sshpid_var, sshpid_l
+# global vars: (contents of $1, or sshpid)
+# config settings: ssh_port, ssh_keyfile, ssh_options, ssh_user, ssh_host,
+#                  ssh_rcommand
 # utilities: ssh
 # files: $ssh_keyfile
 #
+sshremotebgcmd () {
+  # apply default
+  sshpid_var="sshpid"
+
+  # get value, if set
+  [ "$1" != "" ] && sshpid_var="$1"
+
+  # run the command
+  #
+  # note no " around ssh_options
+  ssh \
+    ${ssh_port:+-p "$ssh_port"} \
+    ${ssh_keyfile:+-i "$ssh_keyfile"} \
+    ${ssh_options:+ $ssh_options} \
+    ${ssh_user:+-l "$ssh_user"} \
+    "$ssh_host" \
+    ${ssh_rcommand:+ "$ssh_rcommand"} \
+    &
+
+  # get the PID
+  sshpid_l="$!"
+  eval "$(printf "%s" "$sshpid_var")=\"$sshpid_l\""  # set the global
+}
+
+#
+# kill a backgrounded remote ssh command
+#
+# $1 is the name of a variable that contains the ssh PID, to differentiate
+# between multiple commands; if unset or null, it defaults to "sshpid"
+#
+# can be run even if the command was already killed / died
+#
+# "local" vars: sshpid_var, sshpid_l
+# global vars: (contents of $1, or sshpid)
+# utilities: printf, kill, [
+#
+killsshremotebg () {
+  # apply default
+  sshpid_var="sshpid"
+
+  # get value, if set
+  [ "$1" != "" ] && sshpid_var="$1"
+
+  # get the PID
+  eval "sshpid_l=\"\$$(printf "%s" "$sshpid_var")\""
+
+  if [ "$sshpid_l" != "" ]; then
+    kill "$sshpid_l"
+    wait "$sshpid_l"
+    eval "$(printf "%s" "$sshpid_var")=''"  # so we know it's been killed
+  fi
+}
+
+#
+# run an ssh tunnel command
+#
+# $1 is the name of a variable to store the ssh PID in, to differentiate
+# between multiple tunnels; if unset or null, it defaults to "tunpid"
+#
+# "local" vars: tunpid_var, tunpid_l
+# global vars: (contents of $1, or tunpid)
+# config settings: tun_localport, tun_remoteport, tun_sshport,
+#                  tun_sshkeyfile, tun_sshoptions, tun_sshuser, tun_sshhost
+# utilities: ssh
+# files: $tun_sshkeyfile
+#
 sshtunnelcmd () {
+  # apply default
+  tunpid_var="tunpid"
+
+  # get value, if set
+  [ "$1" != "" ] && tunpid_var="$1"
+
+  # run the command
+  #
   # note no " around tun_sshoptions
   ssh \
-    -L "$ssh_localport:localhost:$ssh_remoteport" -N \
+    -L "$tun_localport:localhost:$tun_remoteport" -N \
     ${tun_sshport:+-p "$tun_sshport"} \
     ${tun_sshkeyfile:+-i "$tun_sshkeyfile"} \
     ${tun_sshoptions:+ $tun_sshoptions} \
     ${tun_sshuser:+-l "$tun_sshuser"} \
-    "$tun_sshhost"
+    "$tun_sshhost" \
+    &
+
+  # get the PID
+  tunpid_l="$!"
+  eval "$(printf "%s" "$tunpid_var")=\"$tunpid_l\""  # set the global
 }
 
 #
-# open an SSH tunnel
+# kill an SSH tunnel (no logging)
+#
+# $1 is the name of a variable that contains the ssh PID, to differentiate
+# between multiple tunnels; if unset or null, it defaults to "tunpid"
+#
+# can be run even if the tunnel was already closed/killed/died
+#
+# "local" vars: tunpid_var, tunpid_l
+# global vars: (contents of $1, or tunpid)
+# utilities: printf, kill, [
+#
+killsshtunnel () {
+  # apply default
+  tunpid_var="tunpid"
+
+  # get value, if set
+  [ "$1" != "" ] && tunpid_var="$1"
+
+  # get the PID
+  eval "tunpid_l=\"\$$(printf "%s" "$tunpid_var")\""
+
+  if [ "$tunpid_l" != "" ]; then
+    kill "$tunpid_l"
+    wait "$tunpid_l"
+    eval "$(printf "%s" "$tunpid_var")=''"  # so we know it's been killed
+  fi
+}
+
+#
+# open an SSH tunnel, including testing and logging
 #
 # $1 is the name of a variable to store the ssh PID in, to differentiate
-# between multiple tunnels; if unset or null, it defaults to "sshpid"
+# between multiple tunnels; if unset or null, it defaults to "tunpid"
+
+# a variable with this name and "_prefix" (i.e., the default is
+# "tunpid_prefix") will be used to save the current value of tun_prefix
 #
 # returns 0 on success
 # on error, calls sendalert(), then acts according to the value of
@@ -2216,9 +2332,9 @@ sshtunnelcmd () {
 # FD 3 gets a start message and the actual output (stdout and stderr) of
 # ssh
 #
-# "local" vars: waited, sshexit, sshpid_var, sshpid_l, on_err_l, exitval_l
-# global vars: (contents of $1, or sshpid), tun_prefix,
-#              sshtunnel_exitval (optional)
+# "local" vars: waited, sshexit, tunpid_var, tunpid_l, on_err_l, exitval_l
+# global vars: (contents of $1, or tunpid, and the corresponding *_prefix),
+#              tun_prefix, sshtunnel_exitval (optional)
 # config settings: tun_localport, tun_sshtimeout, on_ssherr (optional)
 # library functions: sshtunnelcmd(), logstatus(), logstatusquiet(),
 #                    sendalert(), do_exit()
@@ -2226,35 +2342,41 @@ sshtunnelcmd () {
 # FDs: 3
 #
 opensshtunnel () {
-  # apply some defaults
-  sshpid_var="sshpid"
-  [ "$1" != "" ] && sshpid_var="$1"
+  # apply defaults
+  tunpid_var="tunpid"
   on_err_l="exit"
-  [ "$on_ssherr" != "" ] && on_err_l="$on_ssherr"
   exitval_l=1
+
+  # get values, if set
+  [ "$1" != "" ] && tunpid_var="$1"
+  [ "$on_ssherr" != "" ] && on_err_l="$on_ssherr"
   [ "$sshtunnel_exitval" != "" ] && exitval_l="$sshtunnel_exitval"
+
+  # save tun_prefix
+  eval "$(printf "%s" "${tunpid_var}_prefix")=\"$tun_prefix\""
 
   # log that we're running the command
   logstatusquiet "running SSH tunnel command for $tun_prefix"
   printf "%s\n" "running SSH tunnel command for $tun_prefix" >&3
 
   # run the command and get the PID
-  sshtunnelcmd >&3 2>&1 &
-  sshpid_l="$!"
-  eval "$(printf "%s" "$sshpid_var")=\"$sshpid_l\""  # set the global
+  sshtunnelcmd "$tunpid_var" >&3 2>&1
+  eval "tunpid_l=\"\$$(printf "%s" "$tunpid_var")\""
 
   # make sure it's actually working;
   # see http://mywiki.wooledge.org/ProcessManagement#Starting_a_.22daemon.22_and_checking_whether_it_started_successfully
   waited="0"
   while sleep 1; do
     nc -z localhost "$tun_localport" && break
-    if kill -0 "$sshpid_l"; then
+    if kill -0 "$tunpid_l" > /dev/null 2>&1; then
       # expr is more portable than $(())
       waited=$(expr "$waited" + 1)
       if [ "$waited" -ge "$tun_sshtimeout" ]; then
         sendalert "could not establish SSH tunnel for $tun_prefix (timed out); exiting" log
-        kill "$sshpid_l"
-        wait "$sshpid_l"
+        kill "$tunpid_l"
+        wait "$tunpid_l"
+        # so we know it's not running anymore
+        eval "$(printf "%s" "$tunpid_var")=''"
         case "$on_err_l" in
           exit)
             do_exit "$exitval_l"
@@ -2265,9 +2387,11 @@ opensshtunnel () {
         esac
       fi
     else
-      wait "$sshpid_l"
+      wait "$tunpid_l"
       sshexit="$?"
       sendalert "could not establish SSH tunnel for $tun_prefix (error code $sshexit); exiting" log
+      # so we know it's not running anymore
+      eval "$(printf "%s" "$tunpid_var")=''"
       case "$on_err_l" in
         exit)
           do_exit "$exitval_l"
@@ -2285,29 +2409,40 @@ opensshtunnel () {
 }
 
 #
-# close an SSH tunnel
+# close an SSH tunnel, including logging
+# (tunnel must have been opened with opensshtunnel())
 #
 # $1 is the name of a variable that contains the ssh PID, to differentiate
-# between multiple tunnels; if unset or null, it defaults to "sshpid"
+# between multiple tunnels; if unset or null, it defaults to "tunpid"
 #
-# "local" vars: sshpid_var, sshpid_l
-# global vars: (contents of $1, or sshpid), tun_prefix
+# can be run even if the tunnel was already closed/killed/died, but should
+# not be run before the tunnel was started, or the logs won't make sense
+#
+# "local" vars: tunpid_var, tunpid_l, prefix_l
+# global vars: (contents of $1, or tunpid, and the corresponding *_prefix)
 # library functions: logstatus()
 # utilities: printf, kill, [
 #
 closesshtunnel () {
   # apply default
-  sshpid_var="sshpid"
-  [ "$1" != "" ] && sshpid_var="$1"
+  tunpid_var="tunpid"
 
-  eval "sshpid_l=\"\$$(printf "%s" "$sshpid_var")\""
+  # get value, if set
+  [ "$1" != "" ] && tunpid_var="$1"
 
-  kill "$sshpid_l"
-  wait "$sshpid_l"
+  # get the PID and the prefix
+  eval "tunpid_l=\"\$$(printf "%s" "$tunpid_var")\""
+  eval "prefix_l=\"\$$(printf "%s" "${tunpid_var}_prefix")\""
 
-  eval "$(printf "%s" "$sshpid_var")=''"  # so we know it's been closed
+  if [ "$tunpid_l" != "" ]; then
+    kill "$tunpid_l"
+    wait "$tunpid_l"
+    eval "$(printf "%s" "$tunpid_var")=''"  # so we know it's been closed
 
-  logstatus "SSH tunnel for $tun_prefix closed"
+    logstatus "SSH tunnel for $prefix_l closed"
+  else
+    logstatus "SSH tunnel for $prefix_l was already closed"
+  fi
 }
 
 
