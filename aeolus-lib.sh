@@ -1599,18 +1599,22 @@ do_finish () {
 # files: $lockfile, $lockfile/$silencealerts
 #
 silencelfalerts () {
+  echo
   if [ ! -d "$lockfile" ]; then  # -e isn't portable
     echo "lockfile directory doesn't exist; nothing to silence"
+    echo
     do_exit "$startup_exitval"
   fi
   if [ -f "$lockfile/$silencealerts" ]; then  # -e isn't portable
     echo "lockfile alerts were already silenced"
+    echo
     do_exit "$startup_exitval"
   fi
   # using a file in the lockfile dir means that we automatically
   # get the silencing cleared when the lockfile is removed
   touch "$lockfile/$silencealerts"
   echo "lockfile alerts have been silenced"
+  echo
   quiet="yes"  # don't print to the terminal again
   logclconfig  # so we know what the status message means
   logstatus "lockfile alerts have been silenced, lockfile='$lockfile'"
@@ -1627,12 +1631,15 @@ silencelfalerts () {
 # files: $lockfile/$silencealerts
 #
 unsilencelfalerts () {
+  echo
   if [ ! -f "$lockfile/$silencealerts" ]; then  # -e isn't portable
     echo "lockfile alerts were already unsilenced"
+    echo
     do_exit "$startup_exitval"
   fi
   rm -f "$lockfile/$silencealerts"
   echo "lockfile alerts have been unsilenced"
+  echo
   quiet="yes"  # don't print to the terminal again
   logclconfig  # so we know what the status message means
   logstatus "lockfile alerts have been unsilenced, lockfile='$lockfile'"
@@ -1655,18 +1662,21 @@ unsilencelfalerts () {
 # files: $lockfile, $lockfile/disable
 #
 disablescript () {
+  echo
   if [ -f "$lockfile/$disable" ]; then  # -e isn't portable
     printf "%s\n" "$3 were already disabled"
+    echo
     do_exit "$startup_exitval"
   fi
   if [ -d "$lockfile" ]; then  # -e isn't portable
     printf "%s\n" "lockfile directory exists; $1 $2 is probably running"
     printf "%s\n" "disable command will take effect after the current $2 finishes"
-    printf "\n"
+    echo
   fi
   mkdir "$lockfile" > /dev/null 2>&1  # ignore already-exists errors
   touch "$lockfile/$disable"
   printf "%s\n" "$3 have been disabled; remember to re-enable them later!"
+  echo
   quiet="yes"  # don't print to the terminal again
   logclconfig  # so we know what the status message means
   logstatus "$3 have been disabled, lockfile='$lockfile'"
@@ -1689,14 +1699,18 @@ disablescript () {
 # files: $lockfile/$disable
 #
 enablescript () {
+  echo
   if [ ! -f "$lockfile/$disable" ]; then  # -e isn't portable
     printf "%s\n" "$3 were already enabled"
+    echo
     do_exit "$startup_exitval"
   fi
   rm -f "$lockfile/$disable"
   printf "%s\n" "$3 have been re-enabled"
+  echo
   printf "%s\n" "if $1 $2 is not currently running, you should now remove the lockfile"
   printf "%s\n" "with the unlock command"
+  echo
   quiet="yes"  # don't print to the terminal again
   logclconfig  # so we know what the status message means
   logstatus "$3 have been re-enabled, lockfile='$lockfile'"
@@ -1719,11 +1733,12 @@ enablescript () {
 # files: $lockfile
 #
 clearlock () {
+  echo
   if [ ! -d "$lockfile" ]; then  # -e isn't portable
     echo "lockfile has already been removed"
+    echo
     do_exit "$startup_exitval"
   fi
-  printf "\n"
   printf "%s\n" "WARNING: the lockfile should only be removed if you're sure $1 $2 is not"
   printf "%s\n" "currently running."
   printf "%s\n" "Type 'y' (without the quotes) to continue."
@@ -1731,12 +1746,15 @@ clearlock () {
   # but the portability issues aren't worth it for this
   read type_y
   if [ "$type_y" != "y" ]; then
+    echo
     echo "Exiting."
+    echo
     do_exit "$no_error_exitval"
   fi
-  echo
   rm -rf "$lockfile"
+  echo
   echo "lockfile has been removed"
+  echo
   quiet="yes"  # don't print to the terminal again
   logclconfig  # so we know what the status message means
   logstatus "lockfile '$lockfile' has been manually removed"
