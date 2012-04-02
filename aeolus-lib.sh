@@ -2126,7 +2126,8 @@ rotatepruneoutputlogs () {
 # remove a file, including zipped versions of it
 #
 # $1 = file to remove
-# $2 = type of zip to remove (same options as *_zipmode)
+# $2 = type of zip to remove (same options as *_zipmode, or "all" for all
+#      available modes)
 #
 # utilities: rm
 #
@@ -2144,6 +2145,12 @@ removefilezip () {
       rm -f "$1.bz2"
       ;;
     lzip)
+      rm -f "$1.lz"
+      ;;
+    all)
+      rm -f "$1.gz"
+      rm -f "$1.bz"
+      rm -f "$1.bz2"
       rm -f "$1.lz"
       ;;
   esac

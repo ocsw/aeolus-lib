@@ -1412,7 +1412,7 @@ do_dbdump () {
 
     # remove any current dumpfile that's in the way ("single"/"singledir",
     # or from, e.g., rerunning the backup)
-    removefilezip "$dumpprefix$dbname$dumpsuffix"
+    removefilezip "$dumpprefix$dbname$dumpsuffix" "$dbms_zipmode"
   fi
 
   # if we're dumping a single database, log the name
@@ -1512,7 +1512,7 @@ do_dbdump () {
     # place
     #
     # only really need the zip part of this, since we use mv -f
-    removefilezip "$dumpprefix$dbname$dumpsuffix"
+    removefilezip "$dumpprefix$dbname$dumpsuffix" "$dbms_zipmode"
     mv -f "$dumpprefix$dbname$dumpsuffix$dumptmp" \
           "$dumpprefix$dbname$dumpsuffix"
 
