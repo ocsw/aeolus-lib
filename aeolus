@@ -2028,7 +2028,7 @@ while true; do  # only here to allow us to easily skip to the next phase
     if [ "$rsync_mode" = "tunnel" ]; then
       switchtunnel "rsync"
       opensshtunnel
-      [ "$?" = "1" ] && skip_rsync && continue  # skip to the next phase
+      [ "$?" = "1" ] && skip_rsync && break  # skip to the next phase
     fi
 
     # log that we're running the command
