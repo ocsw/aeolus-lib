@@ -2376,6 +2376,7 @@ opensshtunnel () {
   waited="0"
   while sleep 1; do
     nc -z localhost "$tun_localport" && break
+    # not working yet, but is it still running?
     if kill -0 "$tunpid_l" > /dev/null 2>&1; then  # quiet if already dead
       # expr is more portable than $(())
       waited=$(expr "$waited" + 1)
@@ -2394,7 +2395,7 @@ opensshtunnel () {
             ;;
         esac
       fi
-    else
+    else  # process is already dead
       wait "$tunpid_l"
       sshexit="$?"
       sendalert "could not establish SSH tunnel for $tun_prefix (error code $sshexit); exiting" log
@@ -2408,8 +2409,8 @@ opensshtunnel () {
           return 1  # skip to the next phase
           ;;
       esac
-    fi
-  done
+    fi  # if kill -0
+  done  # while sleep 1
 
   logstatus "SSH tunnel for $tun_prefix established"
 
