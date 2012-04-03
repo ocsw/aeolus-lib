@@ -2183,14 +2183,15 @@ sshremotecmd () {
 #
 # run a remote ssh command in the background
 #
-# $1 is the name of a variable to store the ssh PID in, to differentiate
-# between multiple commands; if unset or null, it defaults to "sshpid"
+# $1 is the name of a global variable to store the ssh PID in, to
+# differentiate between multiple commands; if unset or null, it defaults to
+# "sshpid"
 #
 # "local" vars: sshpid_var, sshpid_l
 # global vars: (contents of $1, or sshpid)
 # config settings: ssh_port, ssh_keyfile, ssh_options, ssh_user, ssh_host,
 #                  ssh_rcommand
-# utilities: ssh
+# utilities: ssh, printf, [
 # files: $ssh_keyfile
 #
 sshremotebgcmd () {
@@ -2220,8 +2221,9 @@ sshremotebgcmd () {
 #
 # kill a backgrounded remote ssh command
 #
-# $1 is the name of a variable that contains the ssh PID, to differentiate
-# between multiple commands; if unset or null, it defaults to "sshpid"
+# $1 is the name of a global variable that contains the ssh PID, to
+# differentiate between multiple commands; if unset or null, it defaults to
+# "sshpid"
 #
 # can be run even if the command was already killed / died
 #
@@ -2249,14 +2251,15 @@ killsshremotebg () {
 #
 # run an ssh tunnel command
 #
-# $1 is the name of a variable to store the ssh PID in, to differentiate
-# between multiple tunnels; if unset or null, it defaults to "tunpid"
+# $1 is the name of a global variable to store the ssh PID in, to
+# differentiate between multiple tunnels; if unset or null, it defaults to
+# "tunpid"
 #
 # "local" vars: tunpid_var, tunpid_l
 # global vars: (contents of $1, or tunpid)
 # config settings: tun_localport, tun_remoteport, tun_sshport,
 #                  tun_sshkeyfile, tun_sshoptions, tun_sshuser, tun_sshhost
-# utilities: ssh
+# utilities: ssh, printf, [
 # files: $tun_sshkeyfile
 #
 sshtunnelcmd () {
@@ -2284,12 +2287,13 @@ sshtunnelcmd () {
 }
 
 #
-# kill an SSH tunnel (no logging)
+# kill an SSH tunnel
 #
-# $1 is the name of a variable that contains the ssh PID, to differentiate
-# between multiple tunnels; if unset or null, it defaults to "tunpid"
+# $1 is the name of a global variable that contains the ssh PID, to
+# differentiate between multiple tunnels; if unset or null, it defaults to
+# "tunpid"
 #
-# can be run even if the tunnel was already closed/killed/died
+# can be run even if the tunnel already died / was closed / was killed
 #
 # "local" vars: tunpid_var, tunpid_l
 # global vars: (contents of $1, or tunpid)
@@ -2315,10 +2319,11 @@ killsshtunnel () {
 #
 # open an SSH tunnel, including testing and logging
 #
-# $1 is the name of a variable to store the ssh PID in, to differentiate
-# between multiple tunnels; if unset or null, it defaults to "tunpid"
-
-# a variable with this name and "_prefix" (i.e., the default is
+# $1 is the name of a global variable to store the ssh PID in, to
+# differentiate between multiple tunnels; if unset or null, it defaults to
+# "tunpid"
+#
+# a global variable with this name plus "_prefix" (i.e., the default is
 # "tunpid_prefix") will be used to save the current value of tun_prefix
 #
 # returns 0 on success
@@ -2332,7 +2337,7 @@ killsshtunnel () {
 # FD 3 gets a start message and the actual output (stdout and stderr) of
 # ssh
 #
-# "local" vars: waited, sshexit, tunpid_var, tunpid_l, on_err_l, exitval_l
+# "local" vars: tunpid_var, tunpid_l, on_err_l, exitval_l, waited, sshexit
 # global vars: (contents of $1, or tunpid, and the corresponding *_prefix),
 #              tun_prefix, sshtunnel_exitval (optional)
 # config settings: tun_localport, tun_sshtimeout, on_ssherr (optional)
@@ -2412,11 +2417,13 @@ opensshtunnel () {
 # close an SSH tunnel, including logging
 # (tunnel must have been opened with opensshtunnel())
 #
-# $1 is the name of a variable that contains the ssh PID, to differentiate
-# between multiple tunnels; if unset or null, it defaults to "tunpid"
+# $1 is the name of a global variable that contains the ssh PID, to
+# differentiate between multiple tunnels; if unset or null, it defaults to
+# "tunpid"
 #
-# can be run even if the tunnel was already closed/killed/died, but should
-# not be run before the tunnel was started, or the logs won't make sense
+# can be run even if the tunnel already died / was closed / was killed,
+# but should not be run before the tunnel was started, or the logs won't
+# make sense
 #
 # "local" vars: tunpid_var, tunpid_l, prefix_l
 # global vars: (contents of $1, or tunpid, and the corresponding *_prefix)
