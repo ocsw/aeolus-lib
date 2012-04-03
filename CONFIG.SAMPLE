@@ -84,7 +84,7 @@
 #
 # error       | explanation
 # -------------------------
-#   ssherr    | error opening SSH tunnel
+#   tunerr    | error opening SSH tunnel
 #   dblisterr | error getting DB list
 #   dbcharerr | problem with contents of DB list (e.g., unsafe characters)
 #   dbduplerr | DB dumpfile already exists
@@ -93,7 +93,7 @@
 #
 # error       | allowed vals   | default
 # --------------------------------------
-#   ssherr    |          ph ex | "phase"
+#   tunerr    |          ph ex | "phase"
 #   dblisterr |          ph ex | "phase"
 #   dbcharerr |          ph ex | "phase"
 #   dbduplerr | ig wa db ph ex | "db"
@@ -103,13 +103,13 @@
 # note:
 #   -= dbduplerr does not apply in single/singledir modes (it is always
 #      ignored)
-#   -= ssherr applies to all tunnels, including for rsync
+#   -= tunerr applies to all tunnels, including for rsync
 #   -= however, there is no rsyncerr, because a) there isn't really anything
 #      to skip to, and b) rsync errors are always treated as warnings since
 #      they're usually caused by non-fatal problems like files being deleted
 #      during the backup
 #
-###on_ssherr=
+###on_tunerr=
 ###on_dblisterr=
 ###on_dbcharerr=
 ###on_dbduplerr=
@@ -579,7 +579,7 @@
 # slow the process down, but increase security
 #
 # MySQL does have SSL support, but it's not directly supported by this
-# script; see mysql_clientoptions and mysql_dumpoptions
+# script; see mysql_options and mysql_dumpoptions
 #
 # * if mysql_usetunnel="no", the rest of these are ignored
 #
@@ -725,14 +725,14 @@
 # if connecting with SSL, add your SSL options here
 #
 # any options containing spaces must be in nested quotes (e.g.,
-# mysql_clientoptions='"space here" otheropt' or "\"space here\" otheropt")
+# mysql_options='"space here" otheropt' or "\"space here\" otheropt")
 #
 # * for MySQL, ignored unless either mysql_dbmode="all" and
 #   mysql_splitdbs="yes", or mysql_dbmode="exclude" (may be different for
 #   other DBMSes)
 # * can be blank or unset
 #
-###mysql_clientoptions=
+###mysql_options=
 
 #
 # options to pass to the mysqldump utility
@@ -744,7 +744,10 @@
 #
 # if connecting with SSL, add your SSL options here
 #
-# usually "--opt -Q", but other (potentially) useful options include:
+# mysql_options will NOT be included
+#
+# the usual options are "--opt -Q", but other (potentially) useful options
+# include:
 #   "-R": include stored procedures and functions
 #         NOTE: may not work with DBs with newlines in their names;
 #               this may be a bug in MySQL

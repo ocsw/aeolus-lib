@@ -166,7 +166,7 @@ configsettings="
   timecomptype
   filecomptype
   debugme
-  on_ssherr
+  on_tunerr
   on_dblisterr
   on_dbcharerr
   on_dbduplerr
@@ -228,7 +228,7 @@ configsettings="
   mysql_dbmode
   mysql_dbs
   mysql_splitdbs
-  mysql_clientoptions
+  mysql_options
   mysql_dumpoptions
   mysql_altmode
   mysql_alts
@@ -256,7 +256,7 @@ configsettings="
 timecomptype_default="find"
 filecomptype_default="cmp"
 debugme_default="no"
-on_ssherr_default="phase"
+on_tunerr_default="phase"
 on_dblisterr_default="phase"
 on_dbcharerr_default="phase"
 on_dbduplerr_default="db"
@@ -433,6 +433,11 @@ sendalert_body () {
 # $1 is the prefix for the settings to use (e.g., "rsync" or a member of
 # $dbmslist)
 #
+# note: the *_ settings may still be used in addition to or instead of the
+# tun_ globals; keep them in sync while in use
+# (on the other hand, use of the *_ settings is to be avoided whenever
+# possible, for clarity and ease of maintenance)
+#
 # global vars: tun_prefix, tun_sshuser, tun_sshhost, tun_sshkeyfile,
 #              tun_sshport, tun_localport, tun_remoteport,
 #              tun_sshoptions, tun_sshtimeout
@@ -456,8 +461,10 @@ switchtunnel () {
 #
 # $1 is the prefix for the settings to use (which must be in $dbmslist)
 #
-# note that the global for *_clientoptions is dbms_options, NOT
-# clientoptions
+# note: the *_ settings may still be used in addition to or instead of the
+# dbms_ globals; keep them in sync while in use
+# (on the other hand, use of the *_ settings is to be avoided whenever
+# possible, for clarity and ease of maintenance)
 #
 # global vars: *_datestring, dbms_prefix,
 #              dbms_dodump, dbms_usetunnel, dbms_user, dbms_pwfile,
@@ -471,11 +478,11 @@ switchtunnel () {
 #              dbms_preserve, dbms_datestring
 # config settings: *_dodump, *_usetunnel, *_user, *_pwfile, *_protocol,
 #                  *_host, *_port, *_socketfile, *_dbmode, *_dbs,
-#                  *_splitdbs, *_clientoptions, *_dumpoptions,
-#                  *_dumponeoptions, *_dumpmultoptions, *_dumpalloptions,
-#                  *_altmode, *_alts, *_dumpdir, *_layout, *_fileprefix,
-#                  *_subdirprefix, *_filedirsep, *_filedirdate, *_numfiles,
-#                  *_daysfiles, *_zipmode, *_zipoptions, *_preserve
+#                  *_splitdbs, *_options, *_dumpoptions, *_dumponeoptions,
+#                  *_dumpmultoptions, *_dumpalloptions, *_altmode, *_alts,
+#                  *_dumpdir, *_layout, *_fileprefix, *_subdirprefix,
+#                  *_filedirsep, *_filedirdate, *_numfiles, *_daysfiles,
+#                  *_zipmode, *_zipoptions, *_preserve
 #
 switchdbms () {
   dbms_prefix="$1"
@@ -490,7 +497,7 @@ switchdbms () {
   eval "dbms_dbmode=\"\$$(printf "%s" "$1")_dbmode\""
   eval "dbms_dbs=\"\$$(printf "%s" "$1")_dbs\""
   eval "dbms_splitdbs=\"\$$(printf "%s" "$1")_splitdbs\""
-  eval "dbms_options=\"\$$(printf "%s" "$1")_clientoptions\""
+  eval "dbms_options=\"\$$(printf "%s" "$1")_options\""
   eval "dbms_dumpoptions=\"\$$(printf "%s" "$1")_dumpoptions\""
   eval "dbms_dumponeoptions=\"\$$(printf "%s" "$1")_dumponeoptions\""
   eval "dbms_dumpmultoptions=\"\$$(printf "%s" "$1")_dumpmultoptions\""
@@ -718,7 +725,7 @@ applydefaults () {
   [ "$timecomptype" = "" ] && timecomptype="$timecomptype_default"
   [ "$filecomptype" = "" ] && filecomptype="$filecomptype_default"
   [ "$debugme" = "" ] && debugme="$debugme_default"
-  [ "$on_ssherr" = "" ] && on_ssherr="$on_ssherr_default"
+  [ "$on_tunerr" = "" ] && on_tunerr="$on_tunerr_default"
   [ "$on_dblisterr" = "" ] && on_dblisterr="$on_dblisterr_default"
   [ "$on_dbcharerr" = "" ] && on_dbcharerr="$on_dbcharerr_default"
   [ "$on_dbduplerr" = "" ] && on_dbduplerr="$on_dbduplerr_default"
@@ -789,7 +796,7 @@ applydefaults () {
 # config settings: (all except usepath, useumask, outputlog_sep,
 #              outputlog_date, syslogtag, *_sshuser, *_sshoptions,
 #              rsync_options, rsync_add,
-#              [DBMS]: *_user, *_protocol, *_clientoptions, *_dumpoptions,
+#              [DBMS]: *_user, *_protocol, *_options, *_dumpoptions,
 #              *_dumponeoptions, *_dumpmultoptions, *_dumpalloptions,
 #              *_filedirsep, *_filedirdate, *_zipoptions)
 # library functions: validnoblank(), validnotbothblank(), validnum(),
@@ -809,7 +816,7 @@ validconf () {
   validlist "timecomptype" "find" "date-r" "date-d" "awk" "gawk"
   validlist "filecomptype" "cmp" "diff"
   validlist "debugme" "yes" "no"
-  validlist "on_ssherr" "phase" "exit"
+  validlist "on_tunerr" "phase" "exit"
   validlist "on_dblisterr" "phase" "exit"
   validlist "on_dbcharerr" "phase" "exit"
   validlist "on_dbduplerr" "ignore" "warn" "db" "phase" "exit"

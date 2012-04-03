@@ -2331,7 +2331,7 @@ killsshtunnel () {
 #
 # returns 0 on success
 # on error, calls sendalert(), then acts according to the value of
-# $on_ssherr:
+# $on_tunerr:
 #   "exit": exits with exitval $sshtunnel_exitval (*)
 #   "phase": returns 1 ("skip to the next phase of the script")
 #   unset or null: defaults to "exit"
@@ -2343,7 +2343,7 @@ killsshtunnel () {
 # "local" vars: tunpid_var, tunpid_l, on_err_l, exitval_l, waited, sshexit
 # global vars: (contents of $1, or tunpid, and the corresponding *_prefix),
 #              tun_prefix, sshtunnel_exitval (optional)
-# config settings: tun_localport, tun_sshtimeout, on_ssherr (optional)
+# config settings: tun_localport, tun_sshtimeout, on_tunerr (optional)
 # library functions: sshtunnelcmd(), logstatus(), logstatusquiet(),
 #                    sendalert(), do_exit()
 # utilities: nc, printf, sleep, kill, expr, [
@@ -2357,7 +2357,7 @@ opensshtunnel () {
 
   # get values, if set
   [ "$1" != "" ] && tunpid_var="$1"
-  [ "$on_ssherr" != "" ] && on_err_l="$on_ssherr"
+  [ "$on_tunerr" != "" ] && on_err_l="$on_tunerr"
   [ "$sshtunnel_exitval" != "" ] && exitval_l="$sshtunnel_exitval"
 
   # save tun_prefix
