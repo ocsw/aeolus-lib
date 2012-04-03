@@ -2242,7 +2242,7 @@ killsshremotebg () {
   eval "sshpid_l=\"\$$(printf "%s" "$sshpid_var")\""
 
   if [ "$sshpid_l" != "" ]; then
-    kill "$sshpid_l"
+    kill "$sshpid_l" > /dev/null 2>&1  # don't complain if it's already dead
     wait "$sshpid_l"
     eval "$(printf "%s" "$sshpid_var")=''"  # so we know it's been killed
   fi
@@ -2295,6 +2295,9 @@ sshtunnelcmd () {
 #
 # can be run even if the tunnel already died / was closed / was killed
 #
+# note: this will hang if the remote port isn't open; you should be using
+# opensshtunnel(), or duplicating its functionality
+#
 # "local" vars: tunpid_var, tunpid_l
 # global vars: (contents of $1, or tunpid)
 # utilities: printf, kill, [
@@ -2310,7 +2313,7 @@ killsshtunnel () {
   eval "tunpid_l=\"\$$(printf "%s" "$tunpid_var")\""
 
   if [ "$tunpid_l" != "" ]; then
-    kill "$tunpid_l"
+    kill "$tunpid_l" > /dev/null 2>&1  # don't complain if it's already dead
     wait "$tunpid_l"
     eval "$(printf "%s" "$tunpid_var")=''"  # so we know it's been killed
   fi
@@ -2373,12 +2376,12 @@ opensshtunnel () {
   waited="0"
   while sleep 1; do
     nc -z localhost "$tun_localport" && break
-    if kill -0 "$tunpid_l" > /dev/null 2>&1; then
+    if kill -0 "$tunpid_l" > /dev/null 2>&1; then  # quiet if already dead
       # expr is more portable than $(())
       waited=$(expr "$waited" + 1)
       if [ "$waited" -ge "$tun_sshtimeout" ]; then
         sendalert "could not establish SSH tunnel for $tun_prefix (timed out); exiting" log
-        kill "$tunpid_l"
+        kill "$tunpid_l" > /dev/null 2>&1  # quiet if it's already dead
         wait "$tunpid_l"
         # so we know it's not running anymore
         eval "$(printf "%s" "$tunpid_var")=''"
@@ -2442,7 +2445,7 @@ closesshtunnel () {
   eval "prefix_l=\"\$$(printf "%s" "${tunpid_var}_prefix")\""
 
   if [ "$tunpid_l" != "" ]; then
-    kill "$tunpid_l"
+    kill "$tunpid_l" > /dev/null 2>&1  # don't complain if it's already dead
     wait "$tunpid_l"
     eval "$(printf "%s" "$tunpid_var")=''"  # so we know it's been closed
 
