@@ -2376,16 +2376,20 @@ opensshtunnel () {
   waited="0"
   while sleep 1; do
     nc -z localhost "$tun_localport" && break
+
     # not working yet, but is it still running?
     if kill -0 "$tunpid_l" > /dev/null 2>&1; then  # quiet if already dead
       # expr is more portable than $(())
       waited=$(expr "$waited" + 1)
+
       if [ "$waited" -ge "$tun_sshtimeout" ]; then
         sendalert "could not establish SSH tunnel for $tun_prefix (timed out); exiting" log
+
         kill "$tunpid_l" > /dev/null 2>&1  # quiet if it's already dead
         wait "$tunpid_l"
         # so we know it's not running anymore
         eval "$(printf "%s" "$tunpid_var")=''"
+
         case "$on_err_l" in
           exit)
             do_exit "$exitval_l"
@@ -2398,9 +2402,12 @@ opensshtunnel () {
     else  # process is already dead
       wait "$tunpid_l"
       sshexit="$?"
+
       sendalert "could not establish SSH tunnel for $tun_prefix (error code $sshexit); exiting" log
+
       # so we know it's not running anymore
       eval "$(printf "%s" "$tunpid_var")=''"
+
       case "$on_err_l" in
         exit)
           do_exit "$exitval_l"
