@@ -2157,12 +2157,12 @@ removefilezip () {
 }
 
 
-################
-# SSH functions
-################
+##################################
+# SSH remote commands and tunnels
+##################################
 
 #
-# run a remote ssh command
+# run a remote SSH command
 #
 # config settings: ssh_port, ssh_keyfile, ssh_options, ssh_user, ssh_host,
 #                  ssh_rcommand
@@ -2181,7 +2181,7 @@ sshremotecmd () {
 }
 
 #
-# run a remote ssh command in the background
+# run a remote SSH command in the background
 #
 # $1 is the name of a global variable to store the ssh PID in, to
 # differentiate between multiple commands; if unset or null, it defaults to
@@ -2219,7 +2219,7 @@ sshremotebgcmd () {
 }
 
 #
-# kill a backgrounded remote ssh command
+# kill a backgrounded remote SSH command
 #
 # $1 is the name of a global variable that contains the ssh PID, to
 # differentiate between multiple commands; if unset or null, it defaults to
@@ -2249,7 +2249,7 @@ killsshremotebg () {
 }
 
 #
-# run an ssh tunnel command
+# run an SSH tunnel command
 #
 # $1 is the name of a global variable to store the ssh PID in, to
 # differentiate between multiple tunnels; if unset or null, it defaults to
@@ -2464,9 +2464,9 @@ closesshtunnel () {
 }
 
 
-#####################
-# database functions
-#####################
+###################################
+# database calls and manipulations
+###################################
 
 #
 # run a database command
@@ -2559,9 +2559,9 @@ dbunescape () {
 }
 
 
-##################
-# rsync functions
-##################
+################
+# rsync backups
+################
 
 #
 # run an rsync command
