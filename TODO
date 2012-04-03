@@ -12,3 +12,4 @@ reorder rsync opts (ssh)
 2012-04-02 01:00:19 backup for db0 completed succesfully in 3 seconds, 1504645 bytes, name /backups/mysql/04-02-2012-14/db0.2012040201.sql.gz
 gzip "do you want to overwrite"
 splitdbs - rotate dir AFTER all dumped
+pause when rotating logs

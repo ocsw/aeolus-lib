@@ -2537,10 +2537,14 @@ dblistcmd () {
 # $1 = DB name to un-escape
 #
 # sequences to un-escape:
+#
 #   MySQL:
-#     newline -> \n
-#     tab -> \t
-#     \ -> \\
+#     \n -> newline
+#     \t -> tab
+#     \\ -> \
+#
+# (that is, this function will carry out the mappings above, which are the
+# reverse of the mappings used by the DBMSes)
 #
 # global vars: dbms_prefix, tab
 # utilities: printf, sed
