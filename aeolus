@@ -82,6 +82,8 @@
 #
 # turn on debugging
 #
+# note: this function must be idempotent
+#
 do_debug () {
   set -vx
 }
