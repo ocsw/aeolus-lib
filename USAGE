@@ -369,8 +369,7 @@ CONTENTS
       For this mode:
         * rsync_mode="direct"
         * all of the ssh options are ignored
-        * rsync_port applies
-        * the rest of the rsync options apply
+        * all of the rsync options apply, including rsync_port
 
       Source and destination are specified as follows:
         * if pushing to a remote host:
@@ -394,8 +393,8 @@ CONTENTS
       For this mode:
         * rsync_mode="nodaemon"
         * rsync_sshuser, rsync_sshhost, rsync_localport, rsync_remoteport,
-          and rsync_sshtimeout are ignored (rsync_sshuser/host are merged
-          into rsync_source/rsync_dest)
+          and rsync_sshtimeout are ignored (user/host must be included in
+          rsync_source/rsync_dest; see below)
         * rsync_sshkeyfile, rsync_sshport, and rsync_sshoptions apply
         * rsync_port and rsync_pwfile are ignored
         * if rsync_options includes -e, you must manually include
