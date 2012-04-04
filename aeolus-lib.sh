@@ -2631,6 +2631,7 @@ rsynccmd () {
         ${rsync_options:+$rsync_options} \
         ${rsync_add:+$rsync_add} \
         $rsync_source \
+        "$rsync_dest"
       ;;
   esac
 }
