@@ -2471,6 +2471,9 @@ closesshtunnel () {
 #
 # run a database command
 #
+# note: dbms_prefix must be one of the accepted values (currently only
+# "mysql"
+#
 # (in the notes below, [dbms] = the value of $dbms_prefix)
 # global vars: dbms_prefix
 # config settings: [dbms]_user, [dbms]_pwfile, [dbms]_protocol, [dbms]_host,
@@ -2504,6 +2507,9 @@ dbcmd () {
 # (may not be possible/straightforward for all DBMSes)
 #
 # for MySQL, '-BN' is already included in the options
+#
+# note: dbms_prefix must be one of the accepted values (currently only
+# "mysql"
 #
 # (in the notes below, [dbms] = the value of $dbms_prefix)
 # global vars: dbms_prefix
@@ -2545,6 +2551,9 @@ dblistcmd () {
 #
 # (that is, this function will carry out the mappings above, which are the
 # reverse of the mappings used by the DBMSes)
+#
+# note: dbms_prefix must be one of the accepted values (currently only
+# "mysql"
 #
 # global vars: dbms_prefix, tab
 # utilities: printf, sed

@@ -437,8 +437,6 @@ sendalert_body () {
 #
 # note: the *_ settings may still be used in addition to or instead of the
 # tun_ globals; keep them in sync while in use
-# (on the other hand, use of the *_ settings is to be avoided whenever
-# possible, for clarity and ease of maintenance)
 #
 # global vars: tun_prefix, tun_sshuser, tun_sshhost, tun_sshkeyfile,
 #              tun_sshport, tun_localport, tun_remoteport,
@@ -465,8 +463,6 @@ switchtunnel () {
 #
 # note: the *_ settings may still be used in addition to or instead of the
 # dbms_ globals; keep them in sync while in use
-# (on the other hand, use of the *_ settings is to be avoided whenever
-# possible, for clarity and ease of maintenance)
 #
 # global vars: *_datestring, dbms_prefix,
 #              dbms_dodump, dbms_usetunnel, dbms_user, dbms_pwfile,
