@@ -2471,8 +2471,11 @@ closesshtunnel () {
 #
 # run a database command
 #
-# note: dbms_prefix must be one of the accepted values (currently only
+# dbms_prefix must be one of the accepted values (currently only
 # "mysql"
+#
+# when using an SSH tunnel, set host to "localhost" and port to the local
+# port of the tunnel
 #
 # (in the notes below, [dbms] = the value of $dbms_prefix)
 # global vars: dbms_prefix
@@ -2506,10 +2509,13 @@ dbcmd () {
 #
 # (may not be possible/straightforward for all DBMSes)
 #
-# for MySQL, '-BN' is already included in the options
-#
-# note: dbms_prefix must be one of the accepted values (currently only
+# dbms_prefix must be one of the accepted values (currently only
 # "mysql"
+#
+# when using an SSH tunnel, set host to "localhost" and port to the local
+# port of the tunnel
+#
+# for MySQL, '-BN' is already included in the options
 #
 # (in the notes below, [dbms] = the value of $dbms_prefix)
 # global vars: dbms_prefix
@@ -2552,7 +2558,7 @@ dblistcmd () {
 # (that is, this function will carry out the mappings above, which are the
 # reverse of the mappings used by the DBMSes)
 #
-# note: dbms_prefix must be one of the accepted values (currently only
+# dbms_prefix must be one of the accepted values (currently only
 # "mysql"
 #
 # global vars: dbms_prefix, tab
@@ -2579,27 +2585,19 @@ dbunescape () {
 #
 # run an rsync command
 #
-# config settings: rsync_mode, rsync_pwfile, rsync_localport, rsync_port,
-#                  rsync_sshport, rsync_sshkeyfile, rsync_sshoptions,
-#                  rsync_filterfile, rsync_options, rsync_add, rsync_source,
-#                  rsync_dest
+# for "tunnel" mode, SSH tunnel must be opened/closed separately; use
+# "localhost" for the host (in rsync_source/dest) and set rsync_port to the
+# local port of the tunnel
+#
+# config settings: rsync_mode, rsync_pwfile, rsync_port, rsync_sshport,
+#                  rsync_sshkeyfile, rsync_sshoptions, rsync_filterfile,
+#                  rsync_options, rsync_add, rsync_source, rsync_dest
 # utilities: rsync, (ssh)
 # files: $rsync_sshkeyfile, $rsync_pwfile, $rsync_filterfile
 #
 rsynccmd () {
   case "$rsync_mode" in
-    tunnel)
-      # note no " around rsync_options, rsync_add, rsync_source
-      rsync \
-        ${rsync_pwfile:+"--password-file=$rsync_pwfile"} \
-        "--port=$rsync_localport" \
-        ${rsync_filterfile:+-f "merge $rsync_filterfile"} \
-        ${rsync_options:+$rsync_options} \
-        ${rsync_add:+$rsync_add} \
-        $rsync_source \
-        "$rsync_dest"
-      ;;
-    direct)
+    tunnel|direct)
       # note no " around rsync_options, rsync_add, rsync_source
       rsync \
         ${rsync_pwfile:+"--password-file=$rsync_pwfile"} \

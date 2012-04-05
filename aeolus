@@ -789,6 +789,10 @@ applydefaults () {
 #
 # validate the configuration settings
 #
+# also adjusts/blanks some settings based on others;
+# e.g., host/port -> "localhost"/local port when using tunnels,
+# ignore socketfile when using TCP
+#
 # "local" vars: dbms
 # global vars: dbmslist
 # config settings: (all except usepath, useumask, outputlog_sep,
@@ -855,6 +859,8 @@ validconf () {
       validnum "rsync_localport" 1 65535
       validnum "rsync_remoteport" 1 65535
       validnum "rsync_sshtimeout" 1
+      # use the local port for rsync_port
+      rsync_port="$rsync_localport"
     fi
     if [ "$rsync_mode" = "tunnel" ] || [ "$rsync_mode" = "nodaemon" ]; then
       [ "$rsync_sshkeyfile" != "" ] && validreadfile "rsync_sshkeyfile"
@@ -892,11 +898,11 @@ validconf () {
         validnum "${dbms}_localport" 1 65535
         validnum "${dbms}_remoteport" 1 65535
         validnum "${dbms}_sshtimeout" 1
-        # ignore these
+        # adjust/ignore these
         eval "$(printf "%s" "$dbms")_host=\"localhost\""
         eval "$(printf "%s" "$dbms")_port=\"${dbms}_localport\""
         eval "$(printf "%s" "$dbms")_socketfile=\"\""
-        # also change the dbms_* variables, for completeness
+        # also change the dbms_* variables
         dbms_host="localhost"
         dbms_port="${dbms}_localport"
         dbms_socketfile=""
@@ -1012,6 +1018,11 @@ checkusealtopts () {
 #
 # $1 is the name of the database to dump
 #
+# dbms_prefix must be one of the accepted values (see dbmslist)
+#
+# when using an SSH tunnel, set host to "localhost" and port to the local
+# port of the tunnel
+#
 # "local" vars: opts_l
 # global vars: dbms_prefix, altopts
 # config settings: *_user, *_pwfile, *_protocol, *_host, *_port,
@@ -1054,6 +1065,11 @@ dbdumponecmd () {
 #    containing spaces must be sub-quoted (e.g., '... "foo bar" ...' or
 #    "... \"foo bar\" ..."))
 #
+# dbms_prefix must be one of the accepted values (see dbmslist)
+#
+# when using an SSH tunnel, set host to "localhost" and port to the local
+# port of the tunnel
+#
 # global vars: dbms_prefix
 # config settings: *_user, *_pwfile, *_protocol, *_host, *_port,
 #                  *_socketfile, *_dumpoptions/*_dumpmultoptions/etc.
@@ -1085,6 +1101,11 @@ dbdumpmultcmd () {
 # (may not be possible with all DBMSes; see also dbdumponecmd(),
 # dbdumpmultcmd())
 #
+# dbms_prefix must be one of the accepted values (see dbmslist)
+#
+# when using an SSH tunnel, set host to "localhost" and port to the local
+# port of the tunnel
+#
 # global vars: dbms_prefix
 # config settings: *_user, *_pwfile, *_protocol, *_host, *_port,
 #                  *_socketfile, *_dumpoptions/*_dumpalloptions/etc.
@@ -1115,6 +1136,8 @@ dbdumpallcmd () {
 # get the list of all DBs if necessary
 #
 # returns 1 to mean "skip to the next phase of the backup", else 0
+#
+# dbms_prefix must be one of the accepted values (see dbmslist)
 #
 # global vars: dbms_prefix, dbms_dbmode, dbms_splitdbs, alldbs, alldbstmp,
 #              getdblist_exitval, dblistchar_exitval
