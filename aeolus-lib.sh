@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 #######################################################################
 # Aeolus library (originally factored out of the Aeolus backup script)
@@ -54,6 +54,75 @@ tab='	'
 ############################################################################
 #                                FUNCTIONS
 ############################################################################
+
+####################
+# variable handling
+####################
+
+#
+# check if an array specified by name is set
+#
+# an array is considered set if it has any set elements, even if those
+# elements are blank
+#
+# $1 = the name of the array to check
+#
+# utilities: [
+# bashisms: arrays
+#
+arrayisset () {
+  eval "[ \"\${#${1}[@]}\" != \"0\" ]"
+}
+
+#
+# copy an array between variables specified by name
+#
+# $1 = name of source array
+# $2 = name of destination array
+#
+# "local" vars: akey, akeys
+# bashisms: arrays
+#
+copyarray () {
+  eval "akeys=(\${!${1}[@]})"
+
+  for akey in "${akeys[@]}"; do
+    eval "${2}[\"$akey\"]=\"\${${1}[\"$akey\"]}\""
+  done
+}
+
+#
+# print the contents of an array specified by name
+#
+# $1 = the name of the array to print
+# $2 = if not null, print the keys as well as the values (suggested
+#      value: "keys")
+#
+# output format, $2 null:
+#    ( 'value1' 'value2' ... )
+# output format, $2 not null:
+#    ( ['key1']='value1' ['key2']='value2' ... )
+#
+# "local" vars: akey, akeys
+# utilities: printf, [
+# bashisms: arrays
+#
+printarray () {
+  eval "akeys=(\${!${1}[@]})"
+
+  printf "%s" "( "
+  if [ "$2" = "" ]; then  # just print values
+    for akey in "${akeys[@]}"; do
+      eval "printf \"%s\" \"'\${${1}[\"$akey\"]}' \""
+    done
+  else  # include keys
+    for akey in "${akeys[@]}"; do
+      eval "printf \"%s\" \"['$akey']='\${${1}[\"$akey\"]}' \""
+    done
+  fi
+  printf "%s\n" ")"
+}
+
 
 ############
 # debugging
@@ -882,9 +951,14 @@ EOF
 # save setting variables supplied on the command line (even if they're set
 # to null)
 #
+# the calling script must define configsettingisarray(), which takes the
+# name of a config setting and returns 0 (true) or 1 (false)
+#
 # "local" vars: setting, cmdtemp
 # global vars: configsettings, clsetsaved
 # config settings: (*, cl_*)
+# user-defined functions: configsettingisarray()
+# library functions: arrayisset(), copyarray()
 # utilities: [
 #
 saveclset () {
@@ -892,9 +966,15 @@ saveclset () {
   clsetsaved="no"
 
   for setting in $configsettings; do
-    cmdtemp="[ \"\${$setting+X}\" = \"X\" ] &&"
-    cmdtemp="$cmdtemp cl_$setting=\"\$$setting\" && clsetsaved=\"yes\""
-    eval "$cmdtemp"  # doesn't work if combined into one line
+    if configsettingisarray "$setting"; then
+      arrayisset "$setting" && \
+        copyarray "$setting" "cl_$setting" && \
+        clsetsaved="yes"
+    else
+      cmdtemp="[ \"\${$setting+X}\" = \"X\" ] &&"
+      cmdtemp="$cmdtemp cl_$setting=\"\$$setting\" && clsetsaved=\"yes\""
+      eval "$cmdtemp"  # doesn't work if combined into one line
+    fi
   done
 }
 
@@ -902,16 +982,26 @@ saveclset () {
 # restore setting variables supplied on the command line, overriding the
 # config file
 #
+# the calling script must define configsettingisarray(), which takes the
+# name of a config setting and returns 0 (true) or 1 (false)
+#
 # "local" vars: setting, cmdtemp
 # global vars: configsettings
 # config settings: (*, cl_*)
+# user-defined functions: configsettingisarray()
+# library functions: arrayisset(), copyarray()
 # utilities: [
 #
 restoreclset () {
   for setting in $configsettings; do
-    cmdtemp="[ \"\${cl_$setting+X}\" = \"X\" ] &&"
-    cmdtemp="$cmdtemp $setting=\"\$cl_$setting\""
-    eval "$cmdtemp"  # doesn't work if combined into one line
+    if configsettingisarray "$setting"; then
+      arrayisset "cl_$setting" && \
+        copyarray "cl_$setting" "$setting"
+    else
+      cmdtemp="[ \"\${cl_$setting+X}\" = \"X\" ] &&"
+      cmdtemp="$cmdtemp $setting=\"\$cl_$setting\""
+      eval "$cmdtemp"  # doesn't work if combined into one line
+    fi
   done
 }
 
@@ -921,10 +1011,14 @@ restoreclset () {
 #
 # saveclset() must be called before this function, to set up $cl_*
 #
+# the calling script must define configsettingisarray(), which takes the
+# name of a config setting and returns 0 (true) or 1 (false)
+#
 # "local" vars: setting, cmdtemp
 # global vars: configsettings, noconfigfile, configfile, clsetsaved
 # config settings: (*, cl_*)
-# library functions: logstatus()
+# user-defined functions: configsettingisarray()
+# library functions: arrayisset(), printarray(), logstatus()
 # utilities: pwd, [
 #
 logclconfig () {
@@ -938,9 +1032,14 @@ logclconfig () {
   if [ "$clsetsaved" = "yes" ]; then
     logstatus "settings passed on the command line:"
     for setting in $configsettings; do
-      cmdtemp="[ \"\${cl_$setting+X}\" = \"X\" ] &&"
-      cmdtemp="$cmdtemp logstatus \"$setting='\$cl_$setting'\""
-      eval "$cmdtemp"  # doesn't work if combined into one line
+      if configsettingisarray "$setting"; then
+        arrayisset "cl_$setting" && \
+          logstatus "$setting='$(printarray "cl_$setting")'"
+      else
+        cmdtemp="[ \"\${cl_$setting+X}\" = \"X\" ] &&"
+        cmdtemp="$cmdtemp logstatus \"$setting='\$cl_$setting'\""
+        eval "$cmdtemp"  # doesn't work if combined into one line
+      fi
     done
   else
     logstatus "no settings passed on the command line"
@@ -953,16 +1052,25 @@ logclconfig () {
 # note: does not print all types of sub-quoting correctly (i.e., in a format
 # that can be used on the command line or in a config file)
 #
+# the calling script must define configsettingisarray(), which takes the
+# name of a config setting and returns 0 (true) or 1 (false)
+#
 # "local" vars: setting, sval
 # global vars: configsettings
 # config settings: (all)
+# user-defined functions: configsettingisarray()
+# library functions: printarray()
 # utilities: printf
 #
 printsettings () {
   for setting in $configsettings; do
-    # split into two lines for readability
-    eval "sval=\"\$$(printf "%s" "$setting")\""
-    printf "%s\n" "$setting='$sval'"
+    if configsettingisarray "$setting"; then
+      printf "%s\n" "$setting=$(printarray "$setting")"
+    else
+      # split into two lines for readability
+      eval "sval=\"\$$(printf "%s" "$setting")\""
+      printf "%s\n" "$setting='$sval'"
+    fi
   done
 }
 
@@ -1008,11 +1116,15 @@ printconfig () {
 #
 # returns 1 if the config file already exists, else 0
 #
+# the calling script must define configsettingisarray(), which takes the
+# name of a config setting and returns 0 (true) or 1 (false)
+#
 # note: this function is mostly meant to be run from a manual command line
 # mode, but for flexibility, it does not call do_exit() itself
 #
 # "local" vars: setting
 # global vars: configfile, noconfigfile, configsettings
+# user-defined functions: configsettingisarray()
 # utilities: printf, [
 # FDs: 4
 #
@@ -1034,7 +1146,11 @@ createblankconfig () {
 
   # config settings
   for setting in $configsettings; do
-    printf "%s\n" "#$setting=\"\""
+    if configsettingisarray "$setting"; then
+      printf "%s\n" "#$setting=()"
+    else
+      printf "%s\n" "#$setting=\"\""
+    fi
   done
 
   if [ "$noconfigfile" = "no" ] && [ "$configfile" != "" ]; then
@@ -1104,6 +1220,33 @@ validnoblank () {
   if [ "$vval" = "" ]; then
     throwstartuperr "Error: $vname is unset or blank; exiting."
   fi
+}
+
+#
+# validate an array setting that can't be blank
+# (i.e. there must be at least one non-null member of the array)
+#
+# $1 = variable name
+#
+# "local" vars: vname, vval, val
+# config settings: (contents of $1)
+# library functions: throwstartuperr()
+# utilities: [
+# bashisms: arrays
+#
+validnoblankarr () {
+  vname="$1"
+  eval "vval=(\"\${${vname}[@]}\")"
+
+  # go through the array; if we use [*] or [@] we won't we able to tell the
+  # difference between ("" "") and (" ")
+  for val in "${vval[@]}"; do
+    if [ "$val" != "" ]; then
+      return
+    fi
+  done
+
+  throwstartuperr "Error: $vname is unset or blank; exiting."
 }
 
 #
@@ -2164,20 +2307,22 @@ removefilezip () {
 #
 # run a remote SSH command
 #
+# ssh_options and ssh_rcommand must be indexed, non-sparse arrays
+#
 # config settings: ssh_port, ssh_keyfile, ssh_options, ssh_user, ssh_host,
 #                  ssh_rcommand
 # utilities: ssh
 # files: $ssh_keyfile
+# bashisms: arrays
 #
 sshremotecmd () {
-  # note no " around ssh_options
   ssh \
     ${ssh_port:+-p "$ssh_port"} \
     ${ssh_keyfile:+-i "$ssh_keyfile"} \
-    ${ssh_options:+ $ssh_options} \
+    ${ssh_options+"${ssh_options[@]}"} \
     ${ssh_user:+-l "$ssh_user"} \
     "$ssh_host" \
-    ${ssh_rcommand:+ "$ssh_rcommand"}
+    ${ssh_rcommand+"${ssh_rcommand[@]}"}
 }
 
 #
@@ -2187,12 +2332,15 @@ sshremotecmd () {
 # differentiate between multiple commands; if unset or null, it defaults to
 # "sshpid"
 #
+# ssh_options and ssh_rcommand must be indexed, non-sparse arrays
+#
 # "local" vars: sshpid_var, sshpid_l
 # global vars: (contents of $1, or sshpid)
 # config settings: ssh_port, ssh_keyfile, ssh_options, ssh_user, ssh_host,
 #                  ssh_rcommand
 # utilities: ssh, printf, [
 # files: $ssh_keyfile
+# bashisms: arrays
 #
 sshremotebgcmd () {
   # apply default
@@ -2202,15 +2350,13 @@ sshremotebgcmd () {
   [ "$1" != "" ] && sshpid_var="$1"
 
   # run the command
-  #
-  # note no " around ssh_options
   ssh \
     ${ssh_port:+-p "$ssh_port"} \
     ${ssh_keyfile:+-i "$ssh_keyfile"} \
-    ${ssh_options:+ $ssh_options} \
+    ${ssh_options+"${ssh_options[@]}"} \
     ${ssh_user:+-l "$ssh_user"} \
     "$ssh_host" \
-    ${ssh_rcommand:+ "$ssh_rcommand"} \
+    ${ssh_rcommand+"${ssh_rcommand[@]}"} \
     &
 
   # get the PID
@@ -2255,12 +2401,15 @@ killsshremotebg () {
 # differentiate between multiple tunnels; if unset or null, it defaults to
 # "tunpid"
 #
+# tun_sshoptions must be an indexed, non-sparse array
+#
 # "local" vars: tunpid_var, tunpid_l
 # global vars: (contents of $1, or tunpid)
 # config settings: tun_localport, tun_remoteport, tun_sshport,
 #                  tun_sshkeyfile, tun_sshoptions, tun_sshuser, tun_sshhost
 # utilities: ssh, printf, [
 # files: $tun_sshkeyfile
+# bashisms: arrays
 #
 sshtunnelcmd () {
   # apply default
@@ -2270,13 +2419,11 @@ sshtunnelcmd () {
   [ "$1" != "" ] && tunpid_var="$1"
 
   # run the command
-  #
-  # note no " around tun_sshoptions
   ssh \
     -L "$tun_localport:localhost:$tun_remoteport" -N \
     ${tun_sshport:+-p "$tun_sshport"} \
     ${tun_sshkeyfile:+-i "$tun_sshkeyfile"} \
-    ${tun_sshoptions:+ $tun_sshoptions} \
+    ${tun_sshoptions+"${tun_sshoptions[@]}"} \
     ${tun_sshuser:+-l "$tun_sshuser"} \
     "$tun_sshhost" \
     &
@@ -2478,18 +2625,21 @@ closesshtunnel () {
 # port of the tunnel
 #
 # (in the notes below, [dbms] = the value of $dbms_prefix)
+#
+# [dbms]_options and [dbms]_command must be indexed, non-sparse arrays
+#
 # global vars: dbms_prefix
 # config settings: [dbms]_user, [dbms]_pwfile, [dbms]_protocol, [dbms]_host,
 #                  [dbms]_port, [dbms]_socketfile, [dbms]_options,
 #                  [dbms]_dbname, [dbms]_command
 # utilities: mysql
 # files: $[dbms]_pwfile, $[dbms]_socketfile
+# bashisms: arrays
 #
 dbcmd () {
   case "$dbms_prefix" in
     mysql)
       # --defaults-extra-file must be the first option if present
-      # note no " around mysql_options
       mysql \
         ${mysql_pwfile:+"--defaults-extra-file=$mysql_pwfile"} \
         ${mysql_user:+-u "$mysql_user"} \
@@ -2497,9 +2647,9 @@ dbcmd () {
         ${mysql_host:+-h "$mysql_host"} \
         ${mysql_port:+-P "$mysql_port"} \
         ${mysql_socketfile:+-S "$mysql_socketfile"} \
-        ${mysql_options:+$mysql_options} \
+        ${mysql_options+"${mysql_options[@]}"} \
         ${mysql_dbname:+"$mysql_dbname"} \
-        ${mysql_command:+-e "$mysql_command"}
+        ${mysql_command+-e "${mysql_command[@]}"}
       ;;
   esac
 }
@@ -2518,17 +2668,20 @@ dbcmd () {
 # for MySQL, '-BN' is already included in the options
 #
 # (in the notes below, [dbms] = the value of $dbms_prefix)
+#
+# [dbms]_options must be an indexed, non-sparse array
+#
 # global vars: dbms_prefix
 # config settings: [dbms]_user, [dbms]_pwfile, [dbms]_protocol, [dbms]_host,
 #                  [dbms]_port, [dbms]_socketfile, [dbms]_options
 # utilities: mysql
 # files: $[dbms]_pwfile, $[dbms]_socketfile
+# bashisms: arrays
 #
 dblistcmd () {
   case "$dbms_prefix" in
     mysql)
       # --defaults-extra-file must be the first option if present
-      # note no " around mysql_options
       mysql \
         ${mysql_pwfile:+"--defaults-extra-file=$mysql_pwfile"} \
         ${mysql_user:+-u "$mysql_user"} \
@@ -2536,7 +2689,7 @@ dblistcmd () {
         ${mysql_host:+-h "$mysql_host"} \
         ${mysql_port:+-P "$mysql_port"} \
         ${mysql_socketfile:+-S "$mysql_socketfile"} \
-        ${mysql_options:+$mysql_options} \
+        ${mysql_options+"${mysql_options[@]}"} \
         -BN -e "SHOW DATABASES;"
       ;;
   esac
@@ -2589,46 +2742,46 @@ dbunescape () {
 # "localhost" for the host (in rsync_source/dest) and set rsync_port to the
 # local port of the tunnel
 #
+# rsync_sshoptions, rsync_options, rsync_add, and rsync_source must be
+# indexed, non-sparse arrays
+#
 # config settings: rsync_mode, rsync_pwfile, rsync_port, rsync_sshport,
 #                  rsync_sshkeyfile, rsync_sshoptions, rsync_filterfile,
 #                  rsync_options, rsync_add, rsync_source, rsync_dest
 # utilities: rsync, (ssh)
 # files: $rsync_sshkeyfile, $rsync_pwfile, $rsync_filterfile
+# bashisms: arrays
 #
 rsynccmd () {
   case "$rsync_mode" in
     tunnel|direct)
-      # note no " around rsync_options, rsync_add, rsync_source
       rsync \
         ${rsync_pwfile:+"--password-file=$rsync_pwfile"} \
         ${rsync_port:+"--port=$rsync_port"} \
         ${rsync_filterfile:+-f "merge $rsync_filterfile"} \
-        ${rsync_options:+$rsync_options} \
-        ${rsync_add:+$rsync_add} \
-        $rsync_source \
+        ${rsync_options+"${rsync_options[@]}"} \
+        ${rsync_add+"${rsync_add[@]}"} \
+        "${rsync_source[@]}" \
         "$rsync_dest"
       ;;
     nodaemon)
-      # note no " around rsync_sshoptions, rsync_options, rsync_add,
-      # rsync_source
       rsync \
         -e "ssh
             ${rsync_sshport:+-p "$rsync_sshport"} \
             ${rsync_sshkeyfile:+-i "$rsync_sshkeyfile"} \
-            ${rsync_sshoptions:+$rsync_sshoptions}" \
+            ${rsync_sshoptions+"${rsync_sshoptions[@]}"}" \
         ${rsync_filterfile:+-f "merge $rsync_filterfile"} \
-        ${rsync_options:+$rsync_options} \
-        ${rsync_add:+$rsync_add} \
-        $rsync_source \
+        ${rsync_options+"${rsync_options[@]}"} \
+        ${rsync_add+"${rsync_add[@]}"} \
+        "${rsync_source[@]}" \
         "$rsync_dest"
       ;;
     local)
-      # note no " around rsync_options, rsync_add, rsync_source
       rsync \
         ${rsync_filterfile:+-f "merge $rsync_filterfile"} \
-        ${rsync_options:+$rsync_options} \
-        ${rsync_add:+$rsync_add} \
-        $rsync_source \
+        ${rsync_options+"${rsync_options[@]}"} \
+        ${rsync_add+"${rsync_add[@]}"} \
+        "${rsync_source[@]}" \
         "$rsync_dest"
       ;;
   esac

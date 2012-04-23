@@ -13,3 +13,32 @@ reorder rsync opts (ssh)
 gzip "do you want to overwrite"
 splitdbs - rotate dir AFTER all dumped
 pause when rotating logs
+*_
+eval
+copyvar()
+isset()
+unsparse()
+bash version check
+
+rsync_sshoptions
+rsync_source
+rsync_options
+rsync_add
+mysql_sshoptions
+mysql_options
+mysql_dumpoptions
+mysql_zipoptions
+tun_sshoptions
+ssh_options
+dbms_options
+dbms_dumpoptions
+dbms_zipoptions
+ssh rcmd, dbms cmd
+create mode
+printarray()
+arrayisset()
+
+mysql_dbs
+mysql_alts
+
+passing dbs to dumpmult/dodbdump

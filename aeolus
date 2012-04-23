@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 #######################################################################
 # Aeolus
@@ -36,8 +36,9 @@
 #
 # any change to the setting variables (additions, deletions, name changes,
 # type changes, etc.) must be reflected in: the sample config file,
-# $configsettings, the default settings section, some of switch*()
-# [possibly], applydefaults() [probably], and validconf()
+# $configsettings, configsettingisarray() [possibly], the default settings
+# section, some of switch*() [possibly], applydefaults() [probably], and
+# validconf()
 #
 # all external commands used should be listed in $externalcmds and the usage
 # notes (including those used in library functions)
@@ -161,7 +162,7 @@ externalcmds="
 # change usage notes if you change this
 defaultconfigfile="/etc/aeolus/aeolus.conf"
 
-# names of all config file settings
+# names of all config file settings, in logical order
 configsettings="
   usepath
   useumask
@@ -249,6 +250,30 @@ configsettings="
 "
 
 #
+# which settings are arrays?
+#
+# (this is the only reasonable way I have come up with to handle this,
+# without requiring bash4 for associative arrays)
+#
+# $1 is the name of a config setting
+#
+# returns 0 (true) if the setting is an array, 1 (false) if not
+#
+configsettingisarray () {
+  # break this up for readability
+  case "$1" in
+    rsync_sshoptions|rsync_source|rsync_options|rsync_add)
+      return 0  # true
+      ;;
+    mysql_sshoptions|mysql_options|mysql_dumpoptions|mysql_zipoptions)
+      return 0  # true
+      ;;
+  esac
+
+  return 1  # false
+}
+
+#
 # default settings
 #
 # change comments in sample config file if you change these
@@ -318,7 +343,7 @@ dbms_preserve_default="data"
 mysql_pwfile_default="/etc/aeolus/mysql.pw"  # only if unset
 mysql_dbmode_default="all"
 mysql_splitdbs_default="no"
-mysql_dumpoptions_default="--opt -Q -R -c"  # only if unset
+mysql_dumpoptions_default=(--opt -Q -R -c)  # only if unset
 mysql_altmode_default="none"
 mysql_fileprefix_default="mysqldump"  # only if unset
 mysql_subdirprefix_default="mysqldump"  # only if unset
@@ -438,11 +463,14 @@ sendalert_body () {
 # note: the *_ settings may still be used in addition to or instead of the
 # tun_ globals; keep them in sync while in use
 #
+# *_sshoptions must be an indexed, non-sparse array
+#
 # global vars: tun_prefix, tun_sshuser, tun_sshhost, tun_sshkeyfile,
 #              tun_sshport, tun_localport, tun_remoteport,
 #              tun_sshoptions, tun_sshtimeout
 # config settings: *_sshuser, *_sshhost, *_sshkeyfile, *_sshport,
 #                  *_localport, *_remoteport, *_sshoptions, *_sshtimeout
+# library functions: copyarray()
 #
 switchtunnel () {
   tun_prefix="$1"
@@ -452,7 +480,7 @@ switchtunnel () {
   eval "tun_sshport=\"\$$(printf "%s" "$1")_sshport\""
   eval "tun_localport=\"\$$(printf "%s" "$1")_localport\""
   eval "tun_remoteport=\"\$$(printf "%s" "$1")_remoteport\""
-  eval "tun_sshoptions=\"\$$(printf "%s" "$1")_sshoptions\""
+  copyarray "${1}_sshoptions" "tun_sshoptions"
   eval "tun_sshtimeout=\"\$$(printf "%s" "$1")_sshtimeout\""
 }
 
@@ -463,6 +491,9 @@ switchtunnel () {
 #
 # note: the *_ settings may still be used in addition to or instead of the
 # dbms_ globals; keep them in sync while in use
+#
+# *_options, *_dumpoptions, *_dumponeoptions, *_dumpmultoptions,
+# *_dumpalloptions, and *_zipoptions must be indexed, non-sparse arrays
 #
 # global vars: *_datestring, dbms_prefix,
 #              dbms_dodump, dbms_usetunnel, dbms_user, dbms_pwfile,
@@ -481,6 +512,7 @@ switchtunnel () {
 #                  *_dumpdir, *_layout, *_fileprefix, *_subdirprefix,
 #                  *_filedirsep, *_filedirdate, *_numfiles, *_daysfiles,
 #                  *_zipmode, *_zipoptions, *_preserve
+# library functions: copyarray()
 #
 switchdbms () {
   dbms_prefix="$1"
@@ -495,11 +527,11 @@ switchdbms () {
   eval "dbms_dbmode=\"\$$(printf "%s" "$1")_dbmode\""
   eval "dbms_dbs=\"\$$(printf "%s" "$1")_dbs\""
   eval "dbms_splitdbs=\"\$$(printf "%s" "$1")_splitdbs\""
-  eval "dbms_options=\"\$$(printf "%s" "$1")_options\""
-  eval "dbms_dumpoptions=\"\$$(printf "%s" "$1")_dumpoptions\""
-  eval "dbms_dumponeoptions=\"\$$(printf "%s" "$1")_dumponeoptions\""
-  eval "dbms_dumpmultoptions=\"\$$(printf "%s" "$1")_dumpmultoptions\""
-  eval "dbms_dumpalloptions=\"\$$(printf "%s" "$1")_dumpalloptions\""
+  copyarray "${1}_options" "dbms_options"
+  copyarray "${1}_dumpoptions" "dbms_dumpoptions"
+  copyarray "${1}_dumponeoptions" "dbms_dumponeoptions"
+  copyarray "${1}_dumpmultoptions" "dbms_dumpmultoptions"
+  copyarray "${1}_dumpalloptions" "dbms_dumpalloptions"
   eval "dbms_altmode=\"\$$(printf "%s" "$1")_altmode\""
   eval "dbms_alts=\"\$$(printf "%s" "$1")_alts\""
   eval "dbms_dumpdir=\"\$$(printf "%s" "$1")_dumpdir\""
@@ -512,7 +544,7 @@ switchdbms () {
   eval "dbms_numfiles=\"\$$(printf "%s" "$1")_numfiles\""
   eval "dbms_daysfiles=\"\$$(printf "%s" "$1")_daysfiles\""
   eval "dbms_zipmode=\"\$$(printf "%s" "$1")_zipmode\""
-  eval "dbms_zipoptions=\"\$$(printf "%s" "$1")_zipoptions\""
+  copyarray "${1}_zipoptions" "dbms_zipoptions"
   eval "dbms_preserve=\"\$$(printf "%s" "$1")_preserve\""
   # internal, not from config
   eval "dbms_datestring=\"\$$(printf "%s" "$1")_datestring\""
@@ -716,7 +748,9 @@ printstatus () {
 #
 # global vars: (setting _defaults)
 # config settings: (most of them)
+# library functions: copyarray()
 # utilities: [
+# bashisms: arrays
 #
 applydefaults () {
   # housekeeping
@@ -780,7 +814,7 @@ applydefaults () {
   [ "${mysql_pwfile+X}" = "" ] && mysql_pwfile="$mysql_pwfile_default"
   [ "$mysql_dbmode" = "" ] && mysql_dbmode="$mysql_dbmode_default"
   [ "$mysql_splitdbs" = "" ] && mysql_splitdbs="$mysql_splitdbs_default"
-  [ "${mysql_dumpoptions+X}" = "" ] && mysql_dumpoptions="$mysql_dumpoptions_default"
+  [ "${#mysql_dumpoptions[@]}" = "0" ] && copyarray "mysql_dumpoptions_default" "$mysql_dumpoptions"
   [ "$mysql_altmode" = "" ] && mysql_altmode="$mysql_altmode_default"
   [ "${mysql_fileprefix+X}" = "" ] && mysql_fileprefix="$mysql_fileprefix_default"
   [ "${mysql_subdirprefix+X}" = "" ] && mysql_subdirprefix="$mysql_subdirprefix_default"
@@ -801,9 +835,10 @@ applydefaults () {
 #              [DBMS]: *_user, *_protocol, *_options, *_dumpoptions,
 #              *_dumponeoptions, *_dumpmultoptions, *_dumpalloptions,
 #              *_filedirsep, *_filedirdate, *_zipoptions)
-# library functions: validnoblank(), validnotbothblank(), validnum(),
-#                    validnochar(), validrwxdir(), validcreate(),
-#                    validreadfile(), validrwfile(), validlist()
+# library functions: validnoblank(), validnoblankarr(), validnotbothblank(),
+#                    validnum(), validnochar(), validrwxdir(),
+#                    validcreate(), validreadfile(), validrwfile(),
+#                    validlist()
 # utilities: [
 # files: $startedfile, $lockfile, $alertfile, $outputlog, $statuslog,
 #        $rsync_sshkeyfile, $rsync_pwfile, $rsync_filterfile,
@@ -866,7 +901,7 @@ validconf () {
       [ "$rsync_sshkeyfile" != "" ] && validreadfile "rsync_sshkeyfile"
       [ "$rsync_sshport" != "" ] && validnum "rsync_sshport" 1 65535
     fi
-    validnoblank "rsync_source"
+    validnoblankarr "rsync_source"
     validnoblank "rsync_dest"
     if [ "$rsync_mode" = "direct" ]; then
       [ "$rsync_port" != "" ] && validnum "rsync_port" 1 65535
@@ -1023,25 +1058,28 @@ checkusealtopts () {
 # when using an SSH tunnel, set host to "localhost" and port to the local
 # port of the tunnel
 #
+# *_dumpoptions/*_dumponeoptions/etc. must be indexed, non-sparse arrays
+#
 # "local" vars: opts_l
 # global vars: dbms_prefix, altopts
 # config settings: *_user, *_pwfile, *_protocol, *_host, *_port,
 #                  *_socketfile, *_dumpoptions/*_dumponeoptions/etc.
 #                  (depending on DBMS)
+# library functions: copyarray()
 # utilities: mysqldump, [
 # files: $[dbms]_pwfile, $[dbms]_socketfile
+# bashisms: arrays
 #
 dbdumponecmd () {
   case "$dbms_prefix" in
     mysql)
       if checkusealtopts "$1"; then
-        opts_l="$altopts"
+        copyarray "altopts" "opts_l"
       else
-        opts_l="$mysql_dumpoptions"
+        copyarray "mysql_dumpoptions" "opts_l"
       fi
 
       # --defaults-extra-file must be the first option if present
-      # note no " around opts_l
       mysqldump \
         ${mysql_pwfile:+"--defaults-extra-file=$mysql_pwfile"} \
         ${mysql_user:+-u "$mysql_user"} \
@@ -1049,7 +1087,7 @@ dbdumponecmd () {
         ${mysql_host:+-h "$mysql_host"} \
         ${mysql_port:+-P "$mysql_port"} \
         ${mysql_socketfile:+-S "$mysql_socketfile"} \
-        ${opts_l:+$opts_l} \
+        ${opts_l+"${opts_l[@]}"} \
         "$1"
       ;;
   esac
@@ -1070,18 +1108,21 @@ dbdumponecmd () {
 # when using an SSH tunnel, set host to "localhost" and port to the local
 # port of the tunnel
 #
+# *_dumpoptions/*_dumpmultoptions/etc. must be indexed, non-sparse arrays
+#
 # global vars: dbms_prefix
 # config settings: *_user, *_pwfile, *_protocol, *_host, *_port,
 #                  *_socketfile, *_dumpoptions/*_dumpmultoptions/etc.
 #                  (depending on DBMS)
 # utilities: mysqldump
 # files: $[dbms]_pwfile, $[dbms]_socketfile
+# bashisms: arrays
 #
 dbdumpmultcmd () {
   case "$dbms_prefix" in
     mysql)
       # --defaults-extra-file must be the first option if present
-      # note no " around mysql_dumpoptions, $1
+      # note no " around $1
       mysqldump \
         ${mysql_pwfile:+"--defaults-extra-file=$mysql_pwfile"} \
         ${mysql_user:+-u "$mysql_user"} \
@@ -1089,7 +1130,7 @@ dbdumpmultcmd () {
         ${mysql_host:+-h "$mysql_host"} \
         ${mysql_port:+-P "$mysql_port"} \
         ${mysql_socketfile:+-S "$mysql_socketfile"} \
-        ${mysql_dumpoptions:+$mysql_dumpoptions} \
+        ${mysql_dumpoptions+"${mysql_dumpoptions[@]}"} \
         -B $1
       ;;
   esac
@@ -1106,18 +1147,20 @@ dbdumpmultcmd () {
 # when using an SSH tunnel, set host to "localhost" and port to the local
 # port of the tunnel
 #
+# *_dumpoptions/*_dumpalloptions/etc. must be indexed, non-sparse arrays
+#
 # global vars: dbms_prefix
 # config settings: *_user, *_pwfile, *_protocol, *_host, *_port,
 #                  *_socketfile, *_dumpoptions/*_dumpalloptions/etc.
 #                  (depending on DBMS)
 # utilities: mysqldump
 # files: $[dbms]_pwfile, $[dbms]_socketfile
+# bashisms: arrays
 #
 dbdumpallcmd () {
   case "$dbms_prefix" in
     mysql)
       # --defaults-extra-file must be the first option if present
-      # note no " around mysql_dumpoptions
       mysqldump \
         ${mysql_pwfile:+"--defaults-extra-file=$mysql_pwfile"} \
         ${mysql_user:+-u "$mysql_user"} \
@@ -1125,7 +1168,7 @@ dbdumpallcmd () {
         ${mysql_host:+-h "$mysql_host"} \
         ${mysql_port:+-P "$mysql_port"} \
         ${mysql_socketfile:+-S "$mysql_socketfile"} \
-        ${mysql_dumpoptions:+$mysql_dumpoptions} \
+        ${mysql_dumpoptions+"${mysql_dumpoptions[@]}"} \
         -A
       ;;
   esac
@@ -1334,6 +1377,8 @@ getdumppaths () {
 #
 # see getdumppaths() for info about dumpprefix/dumpsep/dumpsuffix
 #
+# dbms_zipoptions must be an indexed, non-sparse array
+#
 # "local" vars: dumptype, dbstring, dbname, fileexists
 # global vars: dumptmp, dumpprefix, dumpsuffix, rotateprefix,
 #              rotatesep, rotatesuffix, dbms_prefix, dbms_layout,
@@ -1347,6 +1392,7 @@ getdumppaths () {
 #                    sendalert(), logstatus(), logstatusquiet(), do_exit()
 # utilities: (allowed values of $dbms_zipmode), rm, mv, date, printf, [
 # FDs: 3
+# bashisms: arrays
 #
 do_dbdump () {
   dumptype="$1"
@@ -1567,8 +1613,9 @@ do_dbdump () {
     # starting timestamp
     printf "%s\n" "$dbms_zipmode started $(date)" >&3
 
-    # no " so we can specify multiple options
-    "$dbms_zipmode" $dbms_zipoptions "$dumpprefix$dbname$dumpsuffix" >&3 2>&1
+    # do the zip
+    "$dbms_zipmode" "${dbms_zipoptions[@]}" \
+                    "$dumpprefix$dbname$dumpsuffix" >&3 2>&1
 
     # check status
     if [ "$?" != 0 ]; then

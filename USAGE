@@ -212,21 +212,36 @@ CONTENTS
 4) How To Use The Config File
 -----------------------------
 
-   a) The config file is a shell script; lines are in the format:
+   a) The config file is a shell script; lines are in one of two formats,
+      regular variables:
         variable=value
-      with no spaces allowed around the =
+      or arrays:
+        variable=(value1 value2 etc.)
+      No spaces are allowed around the =; extra spaces _should_ be ignored
+      within the parentheses, but it's safer to avoid them.  The notes in
+      the sample config file indicate which settings are arrays, and the
+      'create' mode will include parentheses on the appropriate lines.
 
       Values containing whitespace or certain characters, including:
         " # $ & ' ( ) * ; < = > ? [ \ ` |
-      must be enclosed in single- or double-quotes.
+      must be enclosed in single- or double-quotes.  This includes
+      individual values in arrays.
 
       Double-quotes can be included in a double-quoted value by preceding
       them with \ (i.e., " becomes \"), but single-quotes cannot be included
       in a single-quoted value (there are other differences between the two
       types of quotes; see the documentation for your shell).
 
-      To leave a setting blank, omit the value entirely (i.e., variable=),
-      or use '' or "" (variable='').
+      To leave a regular setting blank, omit the value entirely (i.e.,
+      variable=), or use an empty string ('' or "", i.e., variable='').
+      This is not the same as leaving the variable unset (i.e., not setting
+      it at all); these two cases are treated differently for some settings.
+      (See the sample config file for more information.)
+
+      To leave an array "blank", use an empty string (i.e., variable=("") or
+      variable=('')).  An array with no elements (i.e., variable=()) is
+      considered unset; as with regular settings, this is treated
+      differently from a "blank" value in some cases.
 
    b) Comments beginning with # are allowed on their own lines or after
       values.
@@ -350,11 +365,11 @@ CONTENTS
 
       Source and destination are specified as follows:
         * if pushing to a remote host:
-            rsync_source="local files and/or directories"
-            rsync_dest="user@localhost::remotepath" (note two colons)
+            rsync_source=("local files" "and/or directories")
+            rsync_dest="user@localhost::remotepath" [note two colons]
         * if pulling from a remote host:
-            rsync_source="user@localhost::remotepath" (note two colons)
-            rsync_dest="localpath"
+            rsync_source=("user@localhost::remotepath") [note two colons]
+            rsync_dest="local path"
       where:
         * 'user' is a username specified in the remote rsyncd.conf
         * 'localhost' should be used literally (but without the single
@@ -373,11 +388,11 @@ CONTENTS
 
       Source and destination are specified as follows:
         * if pushing to a remote host:
-            rsync_source="local files and/or directories"
-            rsync_dest="user@remotehost::remotepath" (note two colons)
+            rsync_source=("local files" "and/or directories")
+            rsync_dest="user@remotehost::remotepath" [note two colons]
         * if pulling from a remote host:
-            rsync_source="user@remotehost::remotepath" (note two colons)
-            rsync_dest="localpath"
+            rsync_source=("user@remotehost::remotepath") [note two colons]
+            rsync_dest="local path"
       where:
         * 'user' is a username specified in the remote rsyncd.conf
 
@@ -403,11 +418,11 @@ CONTENTS
 
       Source and destination are specified as follows:
         * if pushing to a remote host:
-            rsync_source="local files and/or directories"
-            rsync_dest="user@remotehost:remotepath" (note one colon)
+            rsync_source=("local files" "and/or directories")
+            rsync_dest="user@remotehost:remotepath" [note one colon]
         * if pulling from a remote host:
-            rsync_source="user@remotehost:remotepath" (note one colon)
-            rsync_dest="localpath"
+            rsync_source=("user@remotehost:remotepath") [note one colon]
+            rsync_dest="local path"
       where:
         * 'user' is a shell user on the remote host
 
@@ -423,23 +438,27 @@ CONTENTS
         * the rest of the rsync options apply
 
       Source and destination are specified as follows:
-        * rsync_source="local files and/or directories"
-        * rsync_dest="localpath"
+        * rsync_source=("local files" "and/or directories")
+        * rsync_dest="local path"
 
 
 7) Portability
 --------------
 
-   a) The script requires that /bin/sh be reasonably POSIX-compliant; for
-      example, it must support:
+   a) The script must be run with a shell that supports:
+        * arrays
+        * var+=(v1 v2) for arrays
+      and POSIX features such as:
         * $()
         * -x as an argument to [
         * -r as an argument to read
         * ${parameter%word} and ${parameter#word}
 
-      On systems with unsupported shells, run the script with (e.g.):
-        bash /path/to/aeolus
-      or modify the first line of the script to point to a decent shell.
+      Specifically, the script was tested with bash, version 3.1+, but some
+      other shells may work (such as ksh93).  If you don't have (or don't
+      want to use) /bin/bash, run the script with (e.g.):
+        /path/to/bash /path/to/aeolus
+      or modify the first line of the script to point to a suitable shell.
 
    b) The script uses these utilities:
         awk, bzip2, cat, cmp, date, diff, expr, find, gawk, grep, gzip,
