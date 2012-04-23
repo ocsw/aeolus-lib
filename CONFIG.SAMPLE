@@ -10,7 +10,7 @@
 
 #
 # search path for executables
-# (see usage note on portability)
+# (see usage notes on portability)
 #
 # typical safe value:
 # usepath="/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin"
@@ -185,7 +185,7 @@
 
 #
 # suppress email ("yes" or "no")?
-# (see usage note on output)
+# (see usage notes on output)
 #
 # * if blank or unset, defaults to "no"
 #
@@ -215,7 +215,7 @@
 
 #
 # path to the output log
-# (see usage note on output)
+# (see usage notes on output)
 #
 # this log gets a copy of the output of ssh, the DBMS commands, and rsync,
 # plus a few timestamps and diagnostics
@@ -314,7 +314,7 @@
 
 #
 # use syslog ("yes" or "no")?
-# (see usage note on output)
+# (see usage notes on output)
 #
 # * if blank or unset, defaults to "yes"
 #
@@ -352,7 +352,7 @@
 
 #
 # print to stdout/stderr ("yes" or "no")?
-# (see usage note on output)
+# (see usage notes on output)
 #
 # * if blank or unset, defaults to "no"
 #
@@ -360,7 +360,7 @@
 
 #
 # path to the status log
-# (see usage note on output)
+# (see usage notes on output)
 #
 # this gets a copy of all intentional script output except what goes in
 # the output log
@@ -465,7 +465,7 @@
 
 #
 # mode of operation ("tunnel", "direct", "nodaemon", or "local")
-# (see usage note on rsync modes)
+# (see usage notes on rsync modes)
 #
 # * if blank or unset, defaults to "tunnel"
 #
@@ -473,7 +473,7 @@
 
 #
 # source files and/or directories
-# (see usage note on rsync modes)
+# (see usage notes on rsync modes)
 #
 # note that directories ending with / will have their _contents_ transferred,
 # while directories not ending with / will be transferred themselves
@@ -484,13 +484,13 @@
 
 #
 # destination
-# (see usage note on rsync modes)
+# (see usage notes on rsync modes)
 #
 ###rsync_dest=
 
 #
 # remote rsyncd port
-# (see usage note on rsync modes)
+# (see usage notes on rsync modes)
 #
 # * ignored if rsync_mode is not "direct"
 # * if blank or unset, the rsync utility's default will be used (generally
