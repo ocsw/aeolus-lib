@@ -146,7 +146,6 @@ CONTENTS
         [dbms]_sshkeyfile
         [dbms]_pwfile
         [dbms]_dbs (if [dbms]_dbmode="includefile" or "excludefile")
-        [dbms]_alts (if [dbms]_altmode="file")
 
       rw (read/write), and x (execute) on the parent directory:
         [dbms]_socketfile
@@ -180,6 +179,12 @@ CONTENTS
       This includes modes to print various diagnostics, (un)silence alerts,
       disable/enable backups, create config file templates, etc.
 
+      It also shows how to override the config file by specifying settings
+      on the command line; note, however, that some settings have associated
+      shell functions, which cannot be included in the script invocation.
+      If you are running bash, you can specify these functions outside the
+      config file by defining them, then running 'export -f functionname'.
+
    b) The script is designed to be run fairly frequently from cron (e.g.,
       every hour) and to determine for itself when to run a backup; this is
       so that backups will be eventually be run even on systems that aren't
@@ -212,8 +217,8 @@ CONTENTS
 4) How To Use The Config File
 -----------------------------
 
-   a) The config file is a shell script; lines are in one of two formats,
-      regular variables:
+   a) The config file is a shell script; setting lines are in one of two
+      formats, regular variables:
         variable=value
       or arrays:
         variable=(value1 value2 etc.)
@@ -243,19 +248,23 @@ CONTENTS
       considered unset; as with regular settings, this is treated
       differently from a "blank" value in some cases.
 
-   b) Comments beginning with # are allowed on their own lines or after
+   b) The usage of some settings requires the definition of shell functions;
+      see the sample config file for examples, and the shell documentation
+      for further assistance.
+
+   c) Comments beginning with # are allowed on their own lines or after
       values.
 
-   c) Values that require file paths will be interpreted relative to the
+   d) Values that require file paths will be interpreted relative to the
       current working directory if not specified as absolute paths
       (i.e., beginning with /).
 
-   d) Paths can contain spaces (if quoted), but whitespace and symbols
+   e) Paths can contain spaces (if quoted), but whitespace and symbols
       should be avoided if possible, as they may break the script (although
       an effort has been made to prevent this).  The symbols listed in (a)
       are particularly likely to cause problems.
 
-   e) Additional files can be included using '.' but must have full paths;
+   f) Additional files can be included using '.' but must have full paths;
       for example:
         . /etc/aeolus/aeolus.conf.more
 

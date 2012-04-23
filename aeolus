@@ -233,8 +233,7 @@ configsettings="
   mysql_splitdbs
   mysql_options
   mysql_dumpoptions
-  mysql_altmode
-  mysql_alts
+  mysql_usealtopts
   mysql_dumpdir
   mysql_layout
   mysql_fileprefix
@@ -344,7 +343,7 @@ mysql_pwfile_default="/etc/aeolus/mysql.pw"  # only if unset
 mysql_dbmode_default="all"
 mysql_splitdbs_default="no"
 mysql_dumpoptions_default=(--opt -Q -R -c)  # only if unset
-mysql_altmode_default="none"
+mysql_usealtopts_default="no"
 mysql_fileprefix_default="mysqldump"  # only if unset
 mysql_subdirprefix_default="mysqldump"  # only if unset
 
@@ -355,7 +354,6 @@ mysql_subdirprefix_default="mysqldump"  # only if unset
 # rsync_source
 # rsync_dest
 # *_dbs
-# *_alts (if in "file" mode)
 
 # supported DBMSes, separated by spaces
 # must correspond to the relevant variable prefixes
@@ -387,6 +385,53 @@ dumpexists_exitval="7"
 dbdump_exitval="8"
 dbzip_exitval="9"
 rsync_exitval="10"
+
+
+###########################
+# default config functions
+###########################
+
+#
+# these are functions associated with config settings, and defined by the
+# user; they can be:
+# - defined and exported from the invoking shell, in which case we don't
+#   redefine them
+# - undefined, in which case these defaults will apply
+# - defined in the config file, in which case those definitions will
+#   override these
+#
+
+#
+# for mysql_usealtopts
+#
+# $1 = the name of a database
+#
+# returns 1 (false) if mysql_dumpoptions should be used
+# otherwise, returns 0 (true) and sets altopts array
+#
+# global vars: altopts
+# config settings: mysql_dumpoptions
+# library functions: copyarray()
+# bashisms: if !, declare -F, array+=() [v3.1]
+#
+if ! declare -F mysql_altopts > /dev/null 2>&1; then
+  mysql_altopts () {
+    case "$1" in
+      information_schema)
+        copyarray "mysql_dumpoptions" "altopts"  # include regular options
+        altopts+=(--skip-lock-tables)
+        return 0
+        ;;
+      mysql)
+        copyarray "mysql_dumpoptions" "altopts"  # include regular options
+        altopts+=(--skip-extended-insert)
+        return 0
+        ;;
+    esac
+
+    return 1
+  }
+fi
 
 
 #################################
@@ -500,7 +545,7 @@ switchtunnel () {
 #              dbms_protocol, dbms_host, dbms_port, dbms_socketfile,
 #              dbms_dbmode, dbms_dbs, dbms_splitdbs, dbms_options,
 #              dbms_dumpoptions, dbms_dumponeoptions, dbms_dumpmultoptions,
-#              dbms_dumpalloptions, dbms_altmode, dbms_alts, dbms_dumpdir,
+#              dbms_dumpalloptions, dbms_usealtopts, dbms_dumpdir,
 #              dbms_layout, dbms_fileprefix, dbms_filesuffix,
 #              dbms_subdirprefix, dbms_filedirsep, dbms_filedirdate,
 #              dbms_numfiles, dbms_daysfiles, dbms_zipmode, dbms_zipoptions,
@@ -508,7 +553,7 @@ switchtunnel () {
 # config settings: *_dodump, *_usetunnel, *_user, *_pwfile, *_protocol,
 #                  *_host, *_port, *_socketfile, *_dbmode, *_dbs,
 #                  *_splitdbs, *_options, *_dumpoptions, *_dumponeoptions,
-#                  *_dumpmultoptions, *_dumpalloptions, *_altmode, *_alts,
+#                  *_dumpmultoptions, *_dumpalloptions, *_usealtopts,
 #                  *_dumpdir, *_layout, *_fileprefix, *_subdirprefix,
 #                  *_filedirsep, *_filedirdate, *_numfiles, *_daysfiles,
 #                  *_zipmode, *_zipoptions, *_preserve
@@ -532,8 +577,7 @@ switchdbms () {
   copyarray "${1}_dumponeoptions" "dbms_dumponeoptions"
   copyarray "${1}_dumpmultoptions" "dbms_dumpmultoptions"
   copyarray "${1}_dumpalloptions" "dbms_dumpalloptions"
-  eval "dbms_altmode=\"\$$(printf "%s" "$1")_altmode\""
-  eval "dbms_alts=\"\$$(printf "%s" "$1")_alts\""
+  eval "dbms_usealtopts=\"\$$(printf "%s" "$1")_usealtopts\""
   eval "dbms_dumpdir=\"\$$(printf "%s" "$1")_dumpdir\""
   eval "dbms_layout=\"\$$(printf "%s" "$1")_layout\""
   eval "dbms_fileprefix=\"\$$(printf "%s" "$1")_fileprefix\""
@@ -815,7 +859,7 @@ applydefaults () {
   [ "$mysql_dbmode" = "" ] && mysql_dbmode="$mysql_dbmode_default"
   [ "$mysql_splitdbs" = "" ] && mysql_splitdbs="$mysql_splitdbs_default"
   [ "${#mysql_dumpoptions[@]}" = "0" ] && copyarray "mysql_dumpoptions_default" "$mysql_dumpoptions"
-  [ "$mysql_altmode" = "" ] && mysql_altmode="$mysql_altmode_default"
+  [ "$mysql_usealtopts" = "" ] && mysql_usealtopts="$mysql_usealtopts_default"
   [ "${mysql_fileprefix+X}" = "" ] && mysql_fileprefix="$mysql_fileprefix_default"
   [ "${mysql_subdirprefix+X}" = "" ] && mysql_subdirprefix="$mysql_subdirprefix_default"
 }
@@ -843,7 +887,7 @@ applydefaults () {
 # files: $startedfile, $lockfile, $alertfile, $outputlog, $statuslog,
 #        $rsync_sshkeyfile, $rsync_pwfile, $rsync_filterfile,
 #        $[dbms]_sshkeyfile, $[dbms]_socketfile, $[dbms]_pwfile,
-#        $[dbms]_alts, $[dbms]_dumpdir
+#        $[dbms]_dumpdir
 #
 validconf () {
   # housekeeping
@@ -960,8 +1004,7 @@ validconf () {
                                  "excludefile"
       [ "$dbms_dbmode" != "all" ] && validnoblank "${dbms}_dbs"
       validlist "${dbms}_splitdbs" "yes" "no"
-      validlist "${dbms}_altmode" "none" "list" "file"
-      [ "$dbms_altmode" = "file" ] && validreadfile "${dbms}_alts"
+      validlist "${dbms}_usealtopts" "yes" "no"
       validrwxdir "${dbms}_dumpdir"
       validlist "${dbms}_layout" "single" "number" "date" "singledir" \
                 "numberdir" "datedir"
@@ -990,62 +1033,6 @@ validconf () {
 ###########################
 
 #
-# check if dbdumponecmd() should be using alternate options
-#
-# $1 is the name of the database to dump
-#
-# "local" vars: OLDIFS, dbname, altline_esc, altdb_esc, altopts_esc, altdb
-# global vars: IFS, dbms_altmode, dbms_alts, altopts
-# library vars: newline, tab
-# library functions: dbunescape()
-# utilities: printf, sed, [
-#
-checkusealtopts () {
-  OLDIFS="$IFS"
-  dbname="$1"
-
-  case "$dbms_altmode" in
-    none)
-      return 1  # false
-      ;;
-    list)
-      IFS="$newline"
-      for altline_esc in $(printf "%s" "$dbms_alts"); do
-        IFS="$OLDIFS"
-        # \t isn't portable in sed
-        altdb_esc=$(printf "%s\n" "$altline_esc" | sed "s/$tab.*\$//")
-        altopts_esc=$(printf "%s\n" "$altline_esc" | sed "s/^.*$tab//")
-        altdb=$(dbunescape "$altdb_esc")
-        altopts=$(dbunescape "$altopts_esc")
-        if [ "$dbname" = "$altdb" ]; then
-          return 0  # true
-        fi
-        IFS="$newline"
-      done
-      IFS="$OLDIFS"
-      return 1  # false
-      ;;
-    file)
-      IFS=""
-      while read -r altline_esc; do  # < "$dbms_alts"
-        IFS="$OLDIFS"
-        # \t isn't portable in sed
-        altdb_esc=$(printf "%s\n" "$altline_esc" | sed "s/$tab.*\$//")
-        altopts_esc=$(printf "%s\n" "$altline_esc" | sed "s/^.*$tab//")
-        altdb=$(dbunescape "$altdb_esc")
-        altopts=$(dbunescape "$altopts_esc")
-        if [ "$dbname" = "$altdb" ]; then
-          return 0  # true
-        fi
-        IFS=""
-      done < "$dbms_alts"
-      IFS="$OLDIFS"
-      return 1  # false
-      ;;
-  esac
-}
-
-#
 # run a command to dump a single database to stdout
 #
 # (may not be possible with all DBMSes; see also dbdumpmultcmd(),
@@ -1063,8 +1050,10 @@ checkusealtopts () {
 # "local" vars: opts_l
 # global vars: dbms_prefix, altopts
 # config settings: *_user, *_pwfile, *_protocol, *_host, *_port,
-#                  *_socketfile, *_dumpoptions/*_dumponeoptions/etc.
-#                  (depending on DBMS)
+#                  *_socketfile, *_splitdbs,
+#                  *_dumpoptions/*_dumponeoptions/etc. (depending on DBMS),
+#                  *_usealtopts
+# config functions: *_altopts()
 # library functions: copyarray()
 # utilities: mysqldump, [
 # files: $[dbms]_pwfile, $[dbms]_socketfile
@@ -1073,7 +1062,8 @@ checkusealtopts () {
 dbdumponecmd () {
   case "$dbms_prefix" in
     mysql)
-      if checkusealtopts "$1"; then
+      if [ "$mysql_splitdbs" = "yes" ] && \
+         [ "$mysql_usealtopts" = "yes" ] && mysql_altopts "$1"; then
         copyarray "altopts" "opts_l"
       else
         copyarray "mysql_dumpoptions" "opts_l"

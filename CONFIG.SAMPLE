@@ -673,7 +673,7 @@
 # truly large number of DBs or a truly small length limit)
 #
 # if you get table-locking errors trying to dump the special
-# 'information_schema' database, see mysql_alts
+# 'information_schema' database, see mysql_usealtopts
 #
 # * if blank or unset, defaults to "all"
 #
@@ -760,29 +760,24 @@
 # this feature allows you to selectively override mysql_dumpoptions, but
 # only if mysql_splitdbs="yes"
 #
-# mysql_altmode can be set to:
-#   "none" = just use mysql_dumpoptions
-#   "list" = mysql_alts is a list
-#   "file" = mysql_alts is the path to a file containing a list
-#            (e.g., "/etc/aeolus/mysql.alts"; see mysql_dbmode for comments)
+# mysql_usealtopts can be "yes" or "no"
 #
-# in the latter two cases, the list must be formatted as follows:
-#   -= each line contains a DB name and an option string
-#   -= lines are separated by newlines
-#   -= DB names and option strings are separated by a tab character
-#   -= both DB names and option strings are encoded (same as mysql_dbs):
-#        tab -> \t
-#        newline -> \n
-#        \ -> \\
-#   -= option strings do not need quotes around them, but any individual
-#      options containing spaces must be quoted
-#   -= option strings completely override mysql_dumpoptions; any options
-#      set there must be repeated for each DB in the list if they are to be
-#      used
+# if "yes", you must define a function called mysql_altopts which
+#   - takes the name of a database
+#   - returns 1 (false) if mysql_dumpoptions should be used
+#   - otherwise, returns 0 (true) and sets a global array called altopts
 #
-# this is particularly useful for the special 'information_schema' DB -
-# use the same options as in mysql_dumpoptions, plus '--skip-lock-tables';
-# however, note the following, from the mysqldump man page:
+# you can also set mysql_usealtopts to "yes" but not define the function,
+# in which case the default is used (see below; see also the usage notes
+# on the config file)
+#
+# alternate options completely override mysql_dumpoptions; any options
+# set there must be repeated in the altopts array if they are to be used
+#
+# this feature is particularly useful for the special 'information_schema'
+# DB - use the same options as in mysql_dumpoptions, plus
+# '--skip-lock-tables'; however, note the following, from the mysqldump man
+# page:
 #     mysqldump does not dump the INFORMATION_SCHEMA database by default.
 #     As of MySQL 5.1.38, mysqldump dumps INFORMATION_SCHEMA if you name it
 #     explicitly on the command line, although you must also use the
@@ -793,14 +788,42 @@
 # it can also be useful for dumping the grants DB with
 # "--skip-extended-insert" while not wasting space in the other dumps
 #
-# * both settings are ignored if mysql_splitdbs="no"; mysql_alts is also
-#   ignored if mysql_altmode="none"
-# * if blank or unset, mysql_altmode defaults to "none"; mysql_alts can be
-#   blank or unset if mysql_altmode="list", and the file can be empty if
-#   mysql_altmode="file"
+# default function (also useful as a template):
 #
-###mysql_altmode=
-###mysql_alts=
+# ----------
+# #
+# # if the function already exists, don't redefine it;
+# # use this technique with your functions if you want to be able to
+# # override them from the command line
+# #
+# if ! declare -F mysql_altopts > /dev/null 2>&1; then
+#   mysql_altopts () {
+#     case "$1" in
+#       information_schema)
+#         # copyarray() is a useful library function included by the script
+#         copyarray "mysql_dumpoptions" "altopts"  # include regular opts
+#         altopts+=(--skip-lock-tables)
+#         return 0
+#         ;;
+#       mysql)
+#         copyarray "mysql_dumpoptions" "altopts"  # include regular opts
+#         altopts+=(--skip-extended-insert)
+#         return 0
+#         ;;
+#     esac
+#
+#     return 1
+#   }
+# fi
+# ----------
+#
+# * setting and function are ignored if mysql_splitdbs="no"; function is
+#   also ignored if setting is "no"
+# * if blank or unset, setting defaults to "no"; see above for function
+#   default
+#
+###mysql_usealtopts=
+###mysql_altopts () { }
 
 #
 # path to a directory that will contain the dumps
