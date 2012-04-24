@@ -81,7 +81,7 @@ arrayisset () {
 # $2 = name of destination array
 #
 # "local" vars: akey, akeys
-# bashisms: arrays
+# bashisms: ${!array[@]} [v3.0]
 #
 copyarray () {
   eval "akeys=(\${!${1}[@]})"
@@ -105,7 +105,7 @@ copyarray () {
 #
 # "local" vars: akey, akeys
 # utilities: printf, [
-# bashisms: arrays
+# bashisms: ${!array[@]} [v3.0]
 #
 printarray () {
   eval "akeys=(\${!${1}[@]})"

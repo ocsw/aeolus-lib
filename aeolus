@@ -1043,7 +1043,8 @@ validconf () {
 # when using an SSH tunnel, set host to "localhost" and port to the local
 # port of the tunnel
 #
-# *_dumpoptions/*_dumponeoptions/etc. must be indexed, non-sparse arrays
+# altopts and *_dumpoptions/*_dumponeoptions/etc. must be indexed,
+# non-sparse arrays
 #
 # "local" vars: opts_l
 # global vars: dbms_prefix, altopts
@@ -1503,6 +1504,7 @@ do_dbdump () {
           dbdumponecmd "$dbname" > "$dumpprefix$dbstring$dumpsuffix$dumptmp" 2>&3
           ;;
         mult)
+          # uses dbnames array
           dbdumpmultcmd > "$dumpprefix$dbstring$dumpsuffix$dumptmp" 2>&3
           ;;
         all)
@@ -1516,6 +1518,7 @@ do_dbdump () {
           dbdumponecmd "$dbname" > "$dumpprefix$dbstring$dumpsuffix" 2>&3
           ;;
         mult)
+          # uses dbnames array
           dbdumpmultcmd > "$dumpprefix$dbstring$dumpsuffix" 2>&3
           ;;
         all)
