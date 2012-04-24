@@ -1650,6 +1650,8 @@ do_dbdump () {
 #
 # returns 1 to mean "skip to the next phase of the backup", else 0
 #
+# dbms_dblist must be an indexed, non-sparse array
+#
 # "local" vars: OLDIFS, dbname_esc, dbname, exclude
 # global vars: IFS, dbnames, dbms_dbmode, dbms_dblist, dbms_splitdbs, alldbs
 # config settings: lockfile
