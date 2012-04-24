@@ -37,8 +37,7 @@ ssh rcmd, dbms cmd
 create mode
 printarray()
 arrayisset()
-
-mysql_dbs
 mysql_alts
 
+mysql_dbs, incl. rename
 passing dbs to dumpmult/dodbdump

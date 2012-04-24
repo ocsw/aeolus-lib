@@ -660,17 +660,11 @@
 ###mysql_socketfile=
 
 #
-# which databases to dump
+# dump all databases?
 #
 # "all" to dump everything
 # "include" to dump only those databases listed in mysql_dbs
 # "exclude" to dump everything _except_ those DBs listed in mysql_dbs
-# "includefile" and "excludefile" are like "include" and "exclude", but
-# mysql_dbs must be the path to a file containing the list
-#
-# the file options can be useful for scripting or permissions purposes, and
-# also allow you to get around command-length limits (should you have a
-# truly large number of DBs or a truly small length limit)
 #
 # if you get table-locking errors trying to dump the special
 # 'information_schema' database, see mysql_usealtopts
@@ -680,24 +674,15 @@
 ###mysql_dbmode=
 
 #
-# a list of databases, or the path to one
-# (see mysql_dbmode for usage)
+# list of databases
 #
-# if this is the list itself, the DB names must be separated by tabs or
-# newlines, and the names themselves must have the following encoding
-# applied to them:
-#   tab -> \t
-#   newline -> \n
-#   \ -> \\
+# see mysql_dbmode for usage
 #
-# if this is a file path (e.g., "/etc/aeolus/mysql.dbs"), the same rules
-# apply, but the names must be separated by newlines; tabs are not allowed
-#
+# * must be an array (see usage notes on the config file)
 # * ignored if mysql_dbmode="all"
-# * can be blank or unset if mysql_dbmode="include" or "exclude", and the
-#   file can be empty if mysql_dbmode="includefile" or "excludefile"
+# * can be blank or unset if mysql_dbmode="include" or "exclude"
 #
-###mysql_dbs=
+###mysql_dbs=()
 
 #
 # put each database in a separate file ("yes"), or put all of the dumped

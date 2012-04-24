@@ -145,7 +145,6 @@ CONTENTS
         rsync_filterfile
         [dbms]_sshkeyfile
         [dbms]_pwfile
-        [dbms]_dbs (if [dbms]_dbmode="includefile" or "excludefile")
 
       rw (read/write), and x (execute) on the parent directory:
         [dbms]_socketfile
