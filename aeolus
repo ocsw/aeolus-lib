@@ -229,7 +229,7 @@ configsettings="
   mysql_port
   mysql_socketfile
   mysql_dbmode
-  mysql_dbs
+  mysql_dblist
   mysql_splitdbs
   mysql_options
   mysql_dumpoptions
@@ -264,7 +264,7 @@ configsettingisarray () {
     rsync_sshoptions|rsync_source|rsync_options|rsync_add)
       return 0  # true
       ;;
-    mysql_sshoptions|mysql_dbs|mysql_options|mysql_dumpoptions|mysql_zipoptions)
+    mysql_sshoptions|mysql_dblist|mysql_options|mysql_dumpoptions|mysql_zipoptions)
       return 0  # true
       ;;
   esac
@@ -353,7 +353,7 @@ mysql_subdirprefix_default="mysqldump"  # only if unset
 # *_sshhost
 # rsync_source
 # rsync_dest
-# *_dbs
+# *_dblist
 
 # supported DBMSes, separated by spaces
 # must correspond to the relevant variable prefixes
@@ -537,13 +537,13 @@ switchtunnel () {
 # note: the *_ settings may still be used in addition to or instead of the
 # dbms_ globals; keep them in sync while in use
 #
-# *_dbs, *_options, *_dumpoptions, *_dumponeoptions, *_dumpmultoptions,
+# *_dblist, *_options, *_dumpoptions, *_dumponeoptions, *_dumpmultoptions,
 # *_dumpalloptions, and *_zipoptions must be indexed, non-sparse arrays
 #
 # global vars: *_datestring, dbms_prefix,
 #              dbms_dodump, dbms_usetunnel, dbms_user, dbms_pwfile,
 #              dbms_protocol, dbms_host, dbms_port, dbms_socketfile,
-#              dbms_dbmode, dbms_dbs, dbms_splitdbs, dbms_options,
+#              dbms_dbmode, dbms_dblist, dbms_splitdbs, dbms_options,
 #              dbms_dumpoptions, dbms_dumponeoptions, dbms_dumpmultoptions,
 #              dbms_dumpalloptions, dbms_usealtopts, dbms_dumpdir,
 #              dbms_layout, dbms_fileprefix, dbms_filesuffix,
@@ -551,7 +551,7 @@ switchtunnel () {
 #              dbms_numfiles, dbms_daysfiles, dbms_zipmode, dbms_zipoptions,
 #              dbms_preserve, dbms_datestring
 # config settings: *_dodump, *_usetunnel, *_user, *_pwfile, *_protocol,
-#                  *_host, *_port, *_socketfile, *_dbmode, *_dbs,
+#                  *_host, *_port, *_socketfile, *_dbmode, *_dblist,
 #                  *_splitdbs, *_options, *_dumpoptions, *_dumponeoptions,
 #                  *_dumpmultoptions, *_dumpalloptions, *_usealtopts,
 #                  *_dumpdir, *_layout, *_fileprefix, *_subdirprefix,
@@ -570,7 +570,7 @@ switchdbms () {
   eval "dbms_port=\"\$$(printf "%s" "$1")_port\""
   eval "dbms_socketfile=\"\$$(printf "%s" "$1")_socketfile\""
   eval "dbms_dbmode=\"\$$(printf "%s" "$1")_dbmode\""
-  copyarray "${1}_dbs" "dbms_dbs"
+  copyarray "${1}_dblist" "dbms_dblist"
   eval "dbms_splitdbs=\"\$$(printf "%s" "$1")_splitdbs\""
   copyarray "${1}_options" "dbms_options"
   copyarray "${1}_dumpoptions" "dbms_dumpoptions"
@@ -1648,7 +1648,7 @@ do_dbdump () {
 # returns 1 to mean "skip to the next phase of the backup", else 0
 #
 # "local" vars: OLDIFS, dbname_esc, dbname, exclude
-# global vars: IFS, dbnames, dbms_dbmode, dbms_dbs, dbms_splitdbs, alldbs
+# global vars: IFS, dbnames, dbms_dbmode, dbms_dblist, dbms_splitdbs, alldbs
 # config settings: lockfile
 # library functions: copyarray(), dbunescape()
 # utilities: [
@@ -1665,7 +1665,7 @@ do_dbdumploop () {
         [ "$?" = "1" ] && return 1  # skip to the next phase
         ;;
       include)
-        copyarray "dbms_dbs" "dbnames"
+        copyarray "dbms_dblist" "dbnames"
 
         do_dbdump "mult"
         [ "$?" = "1" ] && return 1  # skip to the next phase
@@ -1677,7 +1677,7 @@ do_dbdumploop () {
           IFS="$OLDIFS"
           dbname=$(dbunescape "$dbname_esc")
 
-          for exclude in "${dbms_dbs[@]}"; do
+          for exclude in "${dbms_dblist[@]}"; do
             if [ "$dbname" = "$exclude" ]; then
               continue 2
             fi
@@ -1708,7 +1708,7 @@ do_dbdumploop () {
         IFS="$OLDIFS"
         ;;
       include)
-        for dbname in "${dbms_dbs[@]}"; do
+        for dbname in "${dbms_dblist[@]}"; do
           do_dbdump "one" "$dbname"
           [ "$?" = "1" ] && return 1  # skip to the next phase
         done
@@ -1719,7 +1719,7 @@ do_dbdumploop () {
           IFS="$OLDIFS"
           dbname=$(dbunescape "$dbname_esc")
 
-          for exclude in "${dbms_dbs[@]}"; do
+          for exclude in "${dbms_dblist[@]}"; do
             if [ "$dbname" = "$exclude" ]; then
               continue 2
             fi

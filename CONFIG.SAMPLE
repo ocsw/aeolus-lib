@@ -663,8 +663,8 @@
 # dump all databases?
 #
 # "all" to dump everything
-# "include" to dump only those databases listed in mysql_dbs
-# "exclude" to dump everything _except_ those DBs listed in mysql_dbs
+# "include" to dump only those databases listed in mysql_dblist
+# "exclude" to dump everything _except_ those DBs listed in mysql_dblist
 #
 # if you get table-locking errors trying to dump the special
 # 'information_schema' database, see mysql_usealtopts
@@ -682,7 +682,7 @@
 # * ignored if mysql_dbmode="all"
 # * can be blank or unset if mysql_dbmode="include" or "exclude"
 #
-###mysql_dbs=()
+###mysql_dblist=()
 
 #
 # put each database in a separate file ("yes"), or put all of the dumped
