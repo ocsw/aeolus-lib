@@ -45,7 +45,7 @@
 #
 # adding a DBMS:
 #   add vars to the sample config file, modeling after MySQL (but split up
-#     *_dump*options if necessary)
+#     [dbms]_dump*options if necessary)
 #   add vars to the relevant variables/functions (see above)
 #   add to dbdump*cmd(), getdblist()
 #   add to the database functions in the library
@@ -368,10 +368,10 @@ mysql_subdirprefix_default="mysqldump"  # only if unset
 # settings that have no default, and can't be blank
 # (but may be ignored, depending on other settings)
 #
-# *_sshhost
+# [tun]_sshhost
 # rsync_source
 # rsync_dest
-# *_dblist
+# [dbms]_dblist
 
 # supported DBMSes, separated by spaces
 # must correspond to the relevant variable prefixes
@@ -523,16 +523,19 @@ sendalert_body () {
 # $1 is the prefix for the settings to use (e.g., "rsync" or a member of
 # $dbmslist)
 #
-# note: the *_ settings may still be used in addition to or instead of the
-# tun_ globals; keep them in sync while in use
+# (in the notes below, [tun] = the value of $1)
 #
-# *_sshoptions must be an indexed, non-sparse array
+# note: the [tun]_* settings may still be used in addition to or instead of
+# the tun_* globals; keep them in sync while in use
+#
+# [tun]_sshoptions must be an indexed, non-sparse array
 #
 # global vars: tun_prefix, tun_sshuser, tun_sshhost, tun_sshkeyfile,
 #              tun_sshport, tun_localport, tun_remoteport,
 #              tun_sshoptions, tun_sshtimeout
-# config settings: *_sshuser, *_sshhost, *_sshkeyfile, *_sshport,
-#                  *_localport, *_remoteport, *_sshoptions, *_sshtimeout
+# config settings: [tun]_sshuser, [tun]_sshhost, [tun]_sshkeyfile,
+#                  [tun]_sshport, [tun]_localport, [tun]_remoteport,
+#                  [tun]_sshoptions, [tun]_sshtimeout
 # library functions: copyarray()
 #
 switchtunnel () {
@@ -552,13 +555,16 @@ switchtunnel () {
 #
 # $1 is the prefix for the settings to use (which must be in $dbmslist)
 #
-# note: the *_ settings may still be used in addition to or instead of the
-# dbms_ globals; keep them in sync while in use
+# (in the notes below, [dbms] = the value of $1)
 #
-# *_dblist, *_options, *_dumpoptions, *_dumponeoptions, *_dumpmultoptions,
-# *_dumpalloptions, and *_zipoptions must be indexed, non-sparse arrays
+# note: the [dbms]_* settings may still be used in addition to or instead of
+# the dbms_* globals; keep them in sync while in use
 #
-# global vars: *_datestring, dbms_prefix,
+# [dbms]_dblist, [dbms]_options, [dbms]_dumpoptions, [dbms]_dumponeoptions,
+# [dbms]_dumpmultoptions, [dbms]_dumpalloptions, and [dbms]_zipoptions must
+# be indexed, non-sparse arrays
+#
+# global vars: [dbms]_datestring, dbms_prefix,
 #              dbms_dodump, dbms_usetunnel, dbms_user, dbms_pwfile,
 #              dbms_protocol, dbms_host, dbms_port, dbms_socketfile,
 #              dbms_dbmode, dbms_dblist, dbms_splitdbs, dbms_options,
@@ -568,13 +574,16 @@ switchtunnel () {
 #              dbms_subdirprefix, dbms_filedirsep, dbms_filedirdate,
 #              dbms_numfiles, dbms_daysfiles, dbms_zipmode, dbms_zipoptions,
 #              dbms_preserve, dbms_datestring
-# config settings: *_dodump, *_usetunnel, *_user, *_pwfile, *_protocol,
-#                  *_host, *_port, *_socketfile, *_dbmode, *_dblist,
-#                  *_splitdbs, *_options, *_dumpoptions, *_dumponeoptions,
-#                  *_dumpmultoptions, *_dumpalloptions, *_usealtopts,
-#                  *_dumpdir, *_layout, *_fileprefix, *_subdirprefix,
-#                  *_filedirsep, *_filedirdate, *_numfiles, *_daysfiles,
-#                  *_zipmode, *_zipoptions, *_preserve
+# config settings: [dbms]_dodump, [dbms]_usetunnel, [dbms]_user,
+#                  [dbms]_pwfile, [dbms]_protocol, [dbms]_host, [dbms]_port,
+#                  [dbms]_socketfile, [dbms]_dbmode, [dbms]_dblist,
+#                  [dbms]_splitdbs, [dbms]_options, [dbms]_dumpoptions,
+#                  [dbms]_dumponeoptions, [dbms]_dumpmultoptions,
+#                  [dbms]_dumpalloptions, [dbms]_usealtopts, [dbms]_dumpdir,
+#                  [dbms]_layout, [dbms]_fileprefix, [dbms]_subdirprefix,
+#                  [dbms]_filedirsep, [dbms]_filedirdate, [dbms]_numfiles,
+#                  [dbms]_daysfiles, [dbms]_zipmode, [dbms]_zipoptions,
+#                  [dbms]_preserve
 # library functions: copyarray()
 #
 switchdbms () {
@@ -889,14 +898,17 @@ applydefaults () {
 # e.g., host/port -> "localhost"/local port when using tunnels,
 # ignore socketfile when using TCP
 #
+# (in the notes below, [tun] = all tunnel prefixes (e.g., "rsync" and the
+# members of $dbmslist), and [dbms] = all of the members of $dbmslist)
+#
 # "local" vars: dbms
 # global vars: dbmslist
 # config settings: (all except usepath, useumask, outputlog_sep,
-#              outputlog_date, syslogtag, *_sshuser, *_sshoptions,
-#              rsync_options, rsync_add,
-#              [DBMS]: *_user, *_protocol, *_options, *_dumpoptions,
-#              *_dumponeoptions, *_dumpmultoptions, *_dumpalloptions,
-#              *_filedirsep, *_filedirdate, *_zipoptions)
+#              outputlog_date, syslogtag, [tun]_sshuser, [tun]_sshoptions,
+#              rsync_options, rsync_add, [dbms]_user, [dbms]_protocol,
+#              [dbms]_options, [dbms]_dumpoptions, [dbms]_dumponeoptions,
+#              [dbms]_dumpmultoptions, [dbms]_dumpalloptions,
+#              [dbms]_filedirsep, [dbms]_filedirdate, and [dbms]_zipoptions)
 # library functions: validnoblank(), validnoblankarr(), validnotbothblank(),
 #                    validnum(), validnochar(), validrwxdir(),
 #                    validcreate(), validreadfile(), validrwfile(),
@@ -1061,16 +1073,18 @@ validconf () {
 # when using an SSH tunnel, set host to "localhost" and port to the local
 # port of the tunnel
 #
-# altopts and *_dumpoptions/*_dumponeoptions/etc. must be indexed,
+# (in the notes below, [dbms] = the value of $dbms_prefix)
+#
+# altopts and [dbms]_dumpoptions/[dbms]_dumponeoptions/etc. must be indexed,
 # non-sparse arrays
 #
 # "local" vars: opts_l
 # global vars: dbms_prefix, altopts
-# config settings: *_user, *_pwfile, *_protocol, *_host, *_port,
-#                  *_socketfile, *_splitdbs,
-#                  *_dumpoptions/*_dumponeoptions/etc. (depending on DBMS),
-#                  *_usealtopts
-# config functions: *_altopts()
+# config settings: [dbms]_user, [dbms]_pwfile, [dbms]_protocol, [dbms]_host,
+#                  [dbms]_port, [dbms]_socketfile, [dbms]_splitdbs,
+#                  [dbms]_dumpoptions/[dbms]_dumponeoptions/etc. (depending
+#                  on the DBMS), [dbms]_usealtopts
+# config functions: [dbms]_altopts()
 # library functions: copyarray()
 # utilities: mysqldump, [
 # files: $[dbms]_pwfile, $[dbms]_socketfile
@@ -1113,13 +1127,16 @@ dbdumponecmd () {
 # when using an SSH tunnel, set host to "localhost" and port to the local
 # port of the tunnel
 #
-# dbnames and *_dumpoptions/*_dumpmultoptions/etc. must be indexed,
+# (in the notes below, [dbms] = the value of $dbms_prefix)
+#
+# dbnames and [dbms]_dumpoptions/[dbms]_dumpmultoptions/etc. must be indexed,
 # non-sparse arrays
 #
 # global vars: dbnames, dbms_prefix
-# config settings: *_user, *_pwfile, *_protocol, *_host, *_port,
-#                  *_socketfile, *_dumpoptions/*_dumpmultoptions/etc.
-#                  (depending on DBMS)
+# config settings: [dbms]_user, [dbms]_pwfile, [dbms]_protocol, [dbms]_host,
+#                  [dbms]_port, [dbms]_socketfile,
+#                  [dbms]_dumpoptions/[dbms]_dumpmultoptions/etc. (depending
+#                  on the DBMS)
 # utilities: mysqldump
 # files: $[dbms]_pwfile, $[dbms]_socketfile
 # bashisms: arrays
@@ -1152,12 +1169,16 @@ dbdumpmultcmd () {
 # when using an SSH tunnel, set host to "localhost" and port to the local
 # port of the tunnel
 #
-# *_dumpoptions/*_dumpalloptions/etc. must be indexed, non-sparse arrays
+# (in the notes below, [dbms] = the value of $dbms_prefix)
+#
+# [dbms]_dumpoptions/[dbms]_dumpalloptions/etc. must be indexed, non-sparse
+# arrays
 #
 # global vars: dbms_prefix
-# config settings: *_user, *_pwfile, *_protocol, *_host, *_port,
-#                  *_socketfile, *_dumpoptions/*_dumpalloptions/etc.
-#                  (depending on DBMS)
+# config settings: [dbms]_user, [dbms]_pwfile, [dbms]_protocol, [dbms]_host,
+#                  [dbms]_port, [dbms]_socketfile,
+#                  [dbms]_dumpoptions/[dbms]_dumpalloptions/etc. (depending
+#                  on the DBMS)
 # utilities: mysqldump
 # files: $[dbms]_pwfile, $[dbms]_socketfile
 # bashisms: arrays
