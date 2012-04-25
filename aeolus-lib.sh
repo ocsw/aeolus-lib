@@ -219,6 +219,28 @@ printarray () {
   printf "%s\n" ")"
 }
 
+#
+# un-sparse an array specified by name
+#
+# $1 = the name of the array to un-sparse
+#
+# "local" vars: akey, akeys, unsparsetmp
+# library functions: copyarray()
+# bashisms: unset, ${!array[@]} [v3.0], array+=() [v3.1]
+#
+unsparsearray () {
+  eval "akeys=(\"\${!${1}[@]}\")"
+
+  # copy to unsparsetmp array, un-sparsing
+  unset unsparsetmp
+  for akey in "${akeys[@]}"; do
+    eval "unsparsetmp+=(\"\${${1}[\"$akey\"]}\")"
+  done
+
+  # replace original array
+  copyarray unsparsetmp "$1"
+}
+
 
 ############
 # debugging

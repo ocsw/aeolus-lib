@@ -894,25 +894,22 @@ applydefaults () {
 #
 # validate the configuration settings
 #
-# also adjusts/blanks some settings based on others;
-# e.g., host/port -> "localhost"/local port when using tunnels,
-# ignore socketfile when using TCP
+# adjusts/blanks some settings based on others; e.g.:
+# - host/port -> "localhost"/localport when using tunnels
+# - ignore socketfile when using TCP
+#
+# also un-sparses arrays to be on the safe side
 #
 # (in the notes below, [tun] = all tunnel prefixes (e.g., "rsync" and the
 # members of $dbmslist), and [dbms] = all of the members of $dbmslist)
 #
 # "local" vars: dbms
 # global vars: dbmslist
-# config settings: (all except usepath, useumask, outputlog_sep,
-#              outputlog_date, syslogtag, [tun]_sshuser, [tun]_sshoptions,
-#              rsync_options, rsync_add, [dbms]_user, [dbms]_protocol,
-#              [dbms]_options, [dbms]_dumpoptions, [dbms]_dumponeoptions,
-#              [dbms]_dumpmultoptions, [dbms]_dumpalloptions,
-#              [dbms]_filedirsep, [dbms]_filedirdate, and [dbms]_zipoptions)
+# config settings: (most of them)
 # library functions: validnoblank(), validnoblankarr(), validnotbothblank(),
 #                    validnum(), validnochar(), validrwxdir(),
 #                    validcreate(), validreadfile(), validrwfile(),
-#                    validlist()
+#                    validlist(), unsparsearray()
 # utilities: [
 # files: $startedfile, $lockfile, $alertfile, $outputlog, $statuslog,
 #        $rsync_sshkeyfile, $rsync_pwfile, $rsync_filterfile,
@@ -974,8 +971,10 @@ validconf () {
     if [ "$rsync_mode" = "tunnel" ] || [ "$rsync_mode" = "nodaemon" ]; then
       [ "$rsync_sshkeyfile" != "" ] && validreadfile "rsync_sshkeyfile"
       [ "$rsync_sshport" != "" ] && validnum "rsync_sshport" 1 65535
+      unsparsearray "rsync_sshoptions"
     fi
     validnoblankarr "rsync_source"
+    unsparsearray "rsync_source"
     validnoblank "rsync_dest"
     if [ "$rsync_mode" = "direct" ]; then
       [ "$rsync_port" != "" ] && validnum "rsync_port" 1 65535
@@ -983,6 +982,8 @@ validconf () {
     { [ "$rsync_mode" = "tunnel" ] || [ "$rsync_mode" = "direct" ]; } && \
         [ "$rsync_pwfile" != "" ] && validreadfile "rsync_pwfile"
     [ "$rsync_filterfile" != "" ] && validreadfile "rsync_filterfile"
+    unsparsearray "rsync_options"
+    unsparsearray "rsync_add"
   fi
 
   # DBMS dumps, including SSH tunnels
@@ -1007,6 +1008,7 @@ validconf () {
         validnum "${dbms}_localport" 1 65535
         validnum "${dbms}_remoteport" 1 65535
         validnum "${dbms}_sshtimeout" 1
+        unsparsearray "${dbms}_sshoptions"
         # adjust/ignore these
         eval "$(printf "%s" "$dbms")_host=\"localhost\""
         eval "$(printf "%s" "$dbms")_port=\"${dbms}_localport\""
@@ -1031,7 +1033,13 @@ validconf () {
       fi  # if [ "$dbms_usetunnel" = "yes" ]
       [ "$dbms_pwfile" != "" ] && validreadfile "${dbms}_pwfile"
       validlist "${dbms}_dbmode" "all" "include" "exclude"
+      unsparsearray "${dbms}_dblist"
       validlist "${dbms}_splitdbs" "yes" "no"
+      unsparsearray "${dbms}_options"
+      unsparsearray "${dbms}_dumpoptions"
+      unsparsearray "${dbms}_dumponeoptions"
+      unsparsearray "${dbms}_dumpmultoptions"
+      unsparsearray "${dbms}_dumpalloptions"
       validlist "${dbms}_usealtopts" "yes" "no"
       validrwxdir "${dbms}_dumpdir"
       validlist "${dbms}_layout" "single" "number" "date" "singledir" \
@@ -1050,6 +1058,7 @@ validconf () {
         validnum "${dbms}_daysfiles"
       fi
       validlist "${dbms}_zipmode" "none" "gzip" "pigz" "bzip2" "lzip"
+      unsparsearray "${dbms}_zipoptions"
       validlist "${dbms}_preserve" "data" "space"
     fi  # if [ "$dbms_dodump" = "yes" ]
   done  # for dbms in $dbmslist
