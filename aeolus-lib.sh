@@ -83,10 +83,48 @@ tab='	'
 ####################
 
 #
+# check if a non-array variable specified by name is set
+#
+# for arrays, use arrayisset() instead
+#
+# only needed if the variable name isn't known until run-time;
+# otherwise, use:
+#   [ "${varname+X}" = "X" ]
+#
+# $1 = the name of the variable to check
+#
+# utilities: [
+#
+isset () {
+  eval "[ \"\${${1}+X}\" = \"X\" ]"
+}
+
+#
+# check if a non-array variable specified by name is unset
+#
+# for arrays, use arrayisunset() instead
+#
+# only needed if the variable name isn't known until run-time;
+# otherwise, use:
+#   [ "${varname+X}" = "" ]
+#
+# $1 = the name of the variable to check
+#
+# utilities: [
+#
+isunset () {
+  eval "[ \"\${${1}+X}\" = \"\" ]"
+}
+
+#
 # check if an array specified by name is set
 #
 # an array is considered set if it has any set elements, even if those
 # elements are blank
+#
+# only needed if the name of the array isn't known until run-time;
+# otherwise, use:
+#   [ "${#arrayname[@]}" != "0" ]
 #
 # $1 = the name of the array to check
 #
@@ -98,19 +136,54 @@ arrayisset () {
 }
 
 #
-# copy an array between variables specified by name
+# check if an array specified by name is unset
 #
-# $1 = name of source array
-# $2 = name of destination array
+# an array is considered unset if it has no set elements
 #
-# "local" vars: akey, akeys
-# bashisms: ${!array[@]} [v3.0]
+# only needed if the name of the array isn't known until run-time;
+# otherwise, use:
+#   [ "${#arrayname[@]}" = "0" ]
+#
+# $1 = the name of the array to check
+#
+# utilities: [
+# bashisms: arrays
+#
+arrayisunset () {
+  eval "[ \"\${#${1}[@]}\" = \"0\" ]"
+}
+
+#
+# copy between arrays specified by name
+#
+# $1 = the name of the source array
+# $2 = the name of the destination array
+#
+# only needed if one or both of the arrays' names are't known until
+# run-time; otherwise, use:
+#   skeys=("${!sourcename[@]}")
+#
+#   unset "destname"
+#   for skey in "${skeys[@]}"; do
+#     destname["$skey"]="${sourcename["$skey"]}"
+#   done
+#
+# in bash 4.1+, printf -v can take array[key] as an argument, which would
+# make this function unnecessary if the source name is known but the
+# destination name isn't; replace the line starting with destname, above,
+# with:
+#     printf -v "$dest[$skey]" "%s" "${sourcename["$skey"]}"
+# where dest contains the name of the destination array
+#
+# "local" vars: skey, skeys
+# bashisms: unset, ${!array[@]} [v3.0]
 #
 copyarray () {
-  eval "akeys=(\${!${1}[@]})"
+  eval "skeys=(\"\${!${1}[@]}\")"
 
-  for akey in "${akeys[@]}"; do
-    eval "${2}[\"$akey\"]=\"\${${1}[\"$akey\"]}\""
+  unset "$2"
+  for skey in "${skeys[@]}"; do
+    eval "${2}[\"$skey\"]=\"\${${1}[\"$skey\"]}\""
   done
 }
 
@@ -131,7 +204,7 @@ copyarray () {
 # bashisms: ${!array[@]} [v3.0]
 #
 printarray () {
-  eval "akeys=(\${!${1}[@]})"
+  eval "akeys=(\"\${!${1}[@]}\")"
 
   printf "%s" "( "
   if [ "$2" = "" ]; then  # just print values
