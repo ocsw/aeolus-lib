@@ -220,7 +220,7 @@ printarray () {
 }
 
 #
-# un-sparse an array specified by name
+# un-sparse an indexed array specified by name
 #
 # $1 = the name of the array to un-sparse
 #
