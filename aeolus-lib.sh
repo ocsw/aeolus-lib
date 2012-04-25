@@ -23,6 +23,29 @@
 
 
 ############################################################################
+#                              VERSION CHECK
+############################################################################
+
+#
+# if we're not running a high enough version of bash, we shouldn't even try
+# to parse the code below
+#
+
+# we can't use arithmetical tests because BASH_VERSINFO[1] wasn't always
+# purely numeric
+case "$BASH_VERSION" in
+  1.*|2.*)
+    cat <<-EOF 1>&2
+
+	This script requires bash version 3.0 or later.
+
+	EOF
+    exit 1
+    ;;
+esac
+
+
+############################################################################
 #                                VARIABLES
 ############################################################################
 
