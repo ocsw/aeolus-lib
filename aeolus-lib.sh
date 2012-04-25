@@ -2292,8 +2292,8 @@ rotatepruneoutputlogs () {
 # remove a file, including zipped versions of it
 #
 # $1 = file to remove
-# $2 = type of zip to remove (same options as *_zipmode, or "all" for all
-#      available modes)
+# $2 = type of zip to remove ("gzip", "pigz", "bzip2", "lzip", "all" for all
+# of the above, or "none")
 #
 # utilities: rm
 #
