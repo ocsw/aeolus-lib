@@ -34,10 +34,10 @@
 # we can't use arithmetical tests because BASH_VERSINFO[1] wasn't always
 # purely numeric
 case "$BASH_VERSION" in
-  1.*|2.*)
+  1.*|2.*|3.0.*)
     cat <<-EOF 1>&2
 
-	This script requires bash version 3.0 or later.
+	This script requires bash version 3.1 or later.
 
 	EOF
     exit 1
