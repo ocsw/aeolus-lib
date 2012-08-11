@@ -13,5 +13,4 @@ reorder rsync opts (ssh)
 gzip "do you want to overwrite"
 splitdbs - rotate dir AFTER all dumped
 pause when rotating logs
-
-default exitvals, incl. ssh
+messages for all phase cases
