@@ -67,11 +67,37 @@ tab='	'
 #####################
 
 #
-# centralized so it's clear what sourcing the library will always set, as
-# opposed to what's only set/required if you use particular functions
+# unconditional globals
 #
 
-# (nothing here yet)
+# test for this if you need to know if the library has been sourced yet
+aeolus_lib_sourced="yes"
+
+
+#
+# defaults; we only set them if they aren't already set
+#
+
+# exit values
+[ "${no_error_exitval+X}" = "" ] && no_error_exitval="0"
+[ "${startup_exitval+X}" = "" ] && startup_exitval="1"
+[ "${lockfile_exitval+X}" = "" ] && lockfile_exitval="2"
+[ "${badvarname_exitval+X}" = "" ] && badvarname_exitval="3"
+[ "${nodelim_exitval+X}" = "" ] && nodelim_exitval="4"
+[ "${sshtunnel_exitval+X}" = "" ] && sshtunnel_exitval="5"
+
+# on-error flags
+[ "${on_tunerr+X}" = "" ] && on_tunerr="exit"  # see opensshtunnel()
+
+# names of tempfiles stored in the lockfile directory
+#
+# (note: past tense partly because some shells have issues with functions
+# having the same names as variables)
+#
+[ "${lfalertssilenced+X}" = "" ] && lfalertssilenced="lfalertssilenced"
+[ "${scriptdisabled+X}" = "" ] && scriptdisabled="scriptdisabled"
+[ "${timetemp+X}" = "" ] && timetemp="timetemp"
+[ "${logfifo+X}" = "" ] && logfifo="logfifo"
 
 
 ############################################################################
@@ -83,7 +109,57 @@ tab='	'
 ####################
 
 #
+# check if a string is a legal variable name
+#
+# $1 is the string to check
+#
+# returns 0/1 (true/false)
+#
+# see http://mywiki.wooledge.org/BashFAQ/048
+#
+# utilities: [
+#
+islegalvarname () {
+  if [ "$1" = "" ]; then
+    return 1  # false
+  fi
+
+  case "$1" in
+    [!a-zA-Z_]*|*[!a-zA-Z_0-9]*)
+      return 1  # false
+      ;;
+  esac
+
+  return 0  # true
+}
+
+#
+# check if a string is a safe subscript name for an associative array
+# (where "safe" means safe to pass to eval)
+#
+# to be paranoid, we only allow alphanumerics, _, and spaces
+#
+# $1 is the string to check
+#
+# returns 0/1 (true/false)
+#
+issafesubscript () {
+  if [ "$1" = "" ]; then
+    return 1  # false
+  fi
+
+  case "$1" in
+    *[!a-zA-Z_0-9\ ]*)
+      return 1  # false
+      ;;
+  esac
+
+  return 0  # true
+}
+
+#
 # check if a non-array variable specified by name is set
+# (whether it's blank or not)
 #
 # for arrays, use arrayisset() instead
 #
@@ -93,14 +169,24 @@ tab='	'
 #
 # $1 = the name of the variable to check
 #
-# utilities: [
+# IMPORTANT: only pass variables whose names are under your control!
+#
+# library vars: badvarname_exitval
+# library functions: islegalvarname()
+# utilities: printf, [
 #
 isset () {
-  eval "[ \"\${${1}+X}\" = \"X\" ]"
+  if islegalvarname "$1"; then
+    eval "[ \"\${${1}+X}\" = \"X\" ]"
+  else
+    printf "%s\n" "Internal Error: illegal variable name ('$1') in isset(); exiting."
+    exit "$badvarname_exitval"
+  fi
 }
 
 #
 # check if a non-array variable specified by name is unset
+# (which is not the same thing as blank)
 #
 # for arrays, use arrayisunset() instead
 #
@@ -110,10 +196,19 @@ isset () {
 #
 # $1 = the name of the variable to check
 #
-# utilities: [
+# IMPORTANT: only pass variables whose names are under your control!
+#
+# library vars: badvarname_exitval
+# library functions: islegalvarname()
+# utilities: printf, [
 #
 isunset () {
-  eval "[ \"\${${1}+X}\" = \"\" ]"
+  if islegalvarname "$1"; then
+    eval "[ \"\${${1}+X}\" = \"\" ]"
+  else
+    printf "%s\n" "Internal Error: illegal variable name ('$1') in isunset(); exiting."
+    exit "$badvarname_exitval"
+  fi
 }
 
 #
@@ -128,17 +223,27 @@ isunset () {
 #
 # $1 = the name of the array to check
 #
-# utilities: [
+# IMPORTANT: only pass arrays whose names are under your control!
+#
+# library vars: badvarname_exitval
+# library functions: islegalvarname()
+# utilities: printf, [
 # bashisms: arrays
 #
 arrayisset () {
-  eval "[ \"\${#${1}[@]}\" != \"0\" ]"
+  if islegalvarname "$1"; then
+    eval "[ \"\${#${1}[@]}\" != \"0\" ]"
+  else
+    printf "%s\n" "Internal Error: illegal variable name ('$1') in arrayisset(); exiting."
+    exit "$badvarname_exitval"
+  fi
 }
 
 #
 # check if an array specified by name is unset
 #
 # an array is considered unset if it has no set elements
+# (blank still counts as set)
 #
 # only needed if the name of the array isn't known until run-time;
 # otherwise, use:
@@ -146,11 +251,69 @@ arrayisset () {
 #
 # $1 = the name of the array to check
 #
-# utilities: [
+# IMPORTANT: only pass arrays whose names are under your control!
+#
+# library vars: badvarname_exitval
+# library functions: islegalvarname()
+# utilities: printf, [
 # bashisms: arrays
 #
 arrayisunset () {
-  eval "[ \"\${#${1}[@]}\" = \"0\" ]"
+  if islegalvarname "$1"; then
+    eval "[ \"\${#${1}[@]}\" = \"0\" ]"
+  else
+    printf "%s\n" "Internal Error: illegal variable name ('$1') in arrayisunset(); exiting."
+    exit "$badvarname_exitval"
+  fi
+}
+
+#
+# copy between non-array variables specified by name
+#
+# $1 = the name of the source variable
+# $2 = the name of the destination variable
+#
+# this function is usually unnecessary; use one of these instead:
+#   foo="$bar"
+#   foo="${!bar}"                       [bash only]
+#   printf -v "foo" "%s" "$bar"         [bash v3.1]
+#   printf -v "foo" "%s" "${!bar}"      [bash v3.1]
+#   printf -v "$foo" "%s" "$bar"        [bash v3.1]
+#   printf -v "$foo" "%s" "${!bar}"     [bash v3.1]
+#   printf -v "${!foo}" "%s" "$bar"     [bash v3.1]
+#   printf -v "${!foo}" "%s" "${!bar}"  [bash v3.1]
+# depending on the degree of indirection required and (relatedly) which
+# variable names are known prior to run-time
+#
+# an example in which this function _is_ useful:
+#   copyvar "q_$foo" "bar"
+# the equivalent direct command doesn't work, because ${!var} won't
+# perform substitution on 'var':
+#   printf -v "bar" "%s" "${!q_$foo}"  [wrong!]
+# the extra evaluation during the function call makes the first example
+# work; alternatively, you can set a temp variable to "q_$foo" and then do
+#   printf -v "bar" "%s" "${!temp}"  [bash v3.1]
+# but using the function is neater, especially if you have many assignments
+# to do
+#
+# library vars: badvarname_exitval
+# library functions: islegalvarname()
+# utilities: printf
+# bashisms: if !, ${!var}, printf -v [v3.1]
+#
+copyvar () {
+  # not strictly necessary since bash will throw an error itself,
+  # but this standardizes the errors and the exit values
+  if ! islegalvarname "$1"; then
+    printf "%s\n" "Internal Error: illegal variable name ('$1') in copyvar(); exiting."
+    exit "$badvarname_exitval"
+  fi
+  if ! islegalvarname "$2"; then
+    printf "%s\n" "Internal Error: illegal variable name ('$2') in copyvar(); exiting."
+    exit "$badvarname_exitval"
+  fi
+
+  printf -v "$2" "%s" "${!1}"
 }
 
 #
@@ -159,8 +322,11 @@ arrayisunset () {
 # $1 = the name of the source array
 # $2 = the name of the destination array
 #
-# only needed if one or both of the arrays' names are't known until
-# run-time; otherwise, use:
+# if the source array is associative, the destination array must be
+# declared associative before calling (declare -A)
+#
+# this function is only needed if one or both of the arrays' names are't
+# known until run-time; otherwise, use:
 #   skeys=("${!sourcename[@]}")
 #
 #   unset "destname"
@@ -175,16 +341,80 @@ arrayisunset () {
 #     printf -v "$dest[$skey]" "%s" "${sourcename["$skey"]}"
 # where dest contains the name of the destination array
 #
+# IMPORTANT: only pass arrays whose names are under your control!
+#
 # "local" vars: skey, skeys
-# bashisms: unset, ${!array[@]} [v3.0]
+# library vars: badvarname_exitval
+# library functions: islegalvarname(), issafesubscript()
+# utilities: printf
+# bashisms: if !, unset, ${!array[@]} [v3.0]
 #
 copyarray () {
+  if ! islegalvarname "$1"; then
+    printf "%s\n" "Internal Error: illegal variable name ('$1') in copyarray(); exiting."
+    exit "$badvarname_exitval"
+  fi
+  if ! islegalvarname "$2"; then
+    printf "%s\n" "Internal Error: illegal variable name ('$2') in copyarray(); exiting."
+    exit "$badvarname_exitval"
+  fi
+
   eval "skeys=(\"\${!${1}[@]}\")"
 
-  unset "$2"
+  # unset will also remove associative array status,
+  # and we can't just redeclare it because that will make it local
+  # unless we use -g, which requires bash 4.2
+  #unset "$2"
+  eval "${2}=()"
+
   for skey in "${skeys[@]}"; do
+    if ! issafesubscript "$skey"; then
+      printf "%s\n" "Internal Error: illegal subscript name ('$skey') in copyarray(); exiting."
+      exit "$badvarname_exitval"
+    fi
     eval "${2}[\"$skey\"]=\"\${${1}[\"$skey\"]}\""
   done
+}
+
+#
+# print the contents of a non-array variable specified by name
+#
+# $1 = the name of the variable to print
+#
+# this function is usually unnecessary; use one of these instead:
+#   printf "%s" "$foo"
+#   printf "%s" "${!foo}"  [bash only]
+# depending on the degree of indirection required and (relatedly) which
+# variable names are known prior to run-time
+#
+# an example in which this function _is_ useful:
+#   printvar "q_$foo"
+# the equivalent direct command doesn't work, because ${!var} won't
+# perform substitution on 'var':
+#   printf "%s" "${!q_$foo}"  [wrong!]
+# the extra evaluation during the function call makes the first example
+# work; alternatively, you can set a temp variable to "q_$foo" and then do
+#   printf "%s" "${!temp}"  [bash only]
+# but using the function is neater, especially if you have many variables to
+# print
+#
+# note: when capturing output, you MUST use $(), NOT ``; `` does strange
+# things with \ escapes
+#
+# library vars: badvarname_exitval
+# library functions: islegalvarname()
+# utilities: printf
+# bashisms: if !, ${!var}
+#
+printvar () {
+  # not strictly necessary since bash will throw an error itself,
+  # but this standardizes the errors and the exit values
+  if ! islegalvarname "$1"; then
+    printf "%s\n" "Internal Error: illegal variable name ('$1') in printvar(); exiting."
+    exit "$badvarname_exitval"
+  fi
+
+  printf "%s" "${!1}"
 }
 
 #
@@ -199,20 +429,49 @@ copyarray () {
 # output format, $2 not null:
 #    ( ['key1']='value1' ['key2']='value2' ... )
 #
+# (there is no way in bash to tell the difference between a completely
+# undeclared variable and an array with no elements; both produce '( )'
+# here)
+#
+# note: when capturing output, you MUST use $(), NOT ``; `` does strange
+# things with \ escapes
+#
+# IMPORTANT: only pass arrays whose names are under your control!
+#
 # "local" vars: akey, akeys
+# library vars: badvarname_exitval
+# library functions: islegalvarname(), issafesubscript()
 # utilities: printf, [
-# bashisms: ${!array[@]} [v3.0]
+# bashisms: if !, ${!array[@]} [v3.0]
 #
 printarray () {
+  if ! islegalvarname "$1"; then
+    printf "%s\n" "Internal Error: illegal variable name ('$1') in printarray(); exiting."
+    exit "$badvarname_exitval"
+  fi
+
   eval "akeys=(\"\${!${1}[@]}\")"
 
   printf "%s" "( "
   if [ "$2" = "" ]; then  # just print values
     for akey in "${akeys[@]}"; do
+      # probably don't need to test $akey, because it's already been set,
+      # implying that it's legal; but just in case...
+      if ! issafesubscript "$akey"; then
+        printf "%s\n" "Internal Error: illegal subscript name ('$akey') in printarray(); exiting."
+        exit "$badvarname_exitval"
+      fi
       eval "printf \"%s\" \"'\${${1}[\"$akey\"]}' \""
     done
   else  # include keys
     for akey in "${akeys[@]}"; do
+      # in theory we don't need to test $akey, because it's already been set,
+      # implying that it's legal; but we're going to be more restrictive
+      # (paranoid) than that anyway
+      if ! issafesubscript "$akey"; then
+        printf "%s\n" "Internal Error: illegal subscript name ('$akey') in printarray(); exiting."
+        exit "$badvarname_exitval"
+      fi
       eval "printf \"%s\" \"['$akey']='\${${1}[\"$akey\"]}' \""
     done
   fi
@@ -224,16 +483,32 @@ printarray () {
 #
 # $1 = the name of the array to un-sparse
 #
+# IMPORTANT: only pass arrays whose names are under your control!
+#
 # "local" vars: akey, akeys, unsparsetmp
-# library functions: copyarray()
-# bashisms: unset, ${!array[@]} [v3.0], array+=() [v3.1]
+# library vars: badvarname_exitval
+# library functions: islegalvarname(), issafesubscript(), copyarray()
+# utilities: printf
+# bashisms: if !, unset, ${!array[@]} [v3.0], array+=() [v3.1]
 #
 unsparsearray () {
+  if ! islegalvarname "$1"; then
+    printf "%s\n" "Internal Error: illegal variable name ('$1') in unsparsearray(); exiting."
+    exit "$badvarname_exitval"
+  fi
+
   eval "akeys=(\"\${!${1}[@]}\")"
 
   # copy to unsparsetmp array, un-sparsing
   unset unsparsetmp
   for akey in "${akeys[@]}"; do
+    # in theory we don't need to test $akey, because it's already been set,
+    # implying that it's legal; but we're going to be more restrictive
+    # (paranoid) than that anyway
+    if ! issafesubscript "$akey"; then
+      printf "%s\n" "Internal Error: illegal subscript name ('$akey') in unsparsearray(); exiting."
+      exit "$badvarname_exitval"
+    fi
     eval "unsparsetmp+=(\"\${${1}[\"$akey\"]}\")"
   done
 
@@ -1072,12 +1347,12 @@ EOF
 # the calling script must define configsettingisarray(), which takes the
 # name of a config setting and returns 0 (true) or 1 (false)
 #
-# "local" vars: setting, cmdtemp
+# "local" vars: setting
 # global vars: configsettings, clsetsaved
 # config settings: (*, cl_*)
 # user-defined functions: configsettingisarray()
-# library functions: arrayisset(), copyarray()
-# utilities: [
+# library functions: arrayisset(), copyarray(), isset()
+# bashisms: ${!var}, printf -v [v3.1]
 #
 saveclset () {
   # so we know if anything was saved, when we want to use logclconfig()
@@ -1085,13 +1360,15 @@ saveclset () {
 
   for setting in $configsettings; do
     if configsettingisarray "$setting"; then
-      arrayisset "$setting" && \
-        copyarray "$setting" "cl_$setting" && \
+      if arrayisset "$setting"; then
+        copyarray "$setting" "cl_$setting"
         clsetsaved="yes"
+      fi
     else
-      cmdtemp="[ \"\${$setting+X}\" = \"X\" ] &&"
-      cmdtemp="$cmdtemp cl_$setting=\"\$$setting\" && clsetsaved=\"yes\""
-      eval "$cmdtemp"  # doesn't work if combined into one line
+      if isset "$setting"; then
+        printf -v "cl_$setting" "%s" "${!setting}"
+        clsetsaved="yes"
+      fi
     fi
   done
 }
@@ -1103,22 +1380,22 @@ saveclset () {
 # the calling script must define configsettingisarray(), which takes the
 # name of a config setting and returns 0 (true) or 1 (false)
 #
-# "local" vars: setting, cmdtemp
+# "local" vars: setting
 # global vars: configsettings
 # config settings: (*, cl_*)
 # user-defined functions: configsettingisarray()
-# library functions: arrayisset(), copyarray()
-# utilities: [
+# library functions: arrayisset(), copyarray(), isset(), copyvar()
 #
 restoreclset () {
   for setting in $configsettings; do
     if configsettingisarray "$setting"; then
-      arrayisset "cl_$setting" && \
+      if arrayisset "cl_$setting"; then
         copyarray "cl_$setting" "$setting"
+      fi
     else
-      cmdtemp="[ \"\${cl_$setting+X}\" = \"X\" ] &&"
-      cmdtemp="$cmdtemp $setting=\"\$cl_$setting\""
-      eval "$cmdtemp"  # doesn't work if combined into one line
+      if isset "cl_$setting"; then
+        copyvar "cl_$setting" "$setting"
+      fi
     fi
   done
 }
@@ -1132,11 +1409,12 @@ restoreclset () {
 # the calling script must define configsettingisarray(), which takes the
 # name of a config setting and returns 0 (true) or 1 (false)
 #
-# "local" vars: setting, cmdtemp
+# "local" vars: setting
 # global vars: configsettings, noconfigfile, configfile, clsetsaved
 # config settings: (*, cl_*)
 # user-defined functions: configsettingisarray()
-# library functions: arrayisset(), printarray(), logstatus()
+# library functions: logstatus(), arrayisset(), printarray(), isset(),
+#                    printvar()
 # utilities: pwd, [
 #
 logclconfig () {
@@ -1151,12 +1429,13 @@ logclconfig () {
     logstatus "settings passed on the command line:"
     for setting in $configsettings; do
       if configsettingisarray "$setting"; then
-        arrayisset "cl_$setting" && \
-          logstatus "$setting='$(printarray "cl_$setting")'"
+        if arrayisset "cl_$setting"; then
+          logstatus "$setting=$(printarray "cl_$setting")"
+        fi
       else
-        cmdtemp="[ \"\${cl_$setting+X}\" = \"X\" ] &&"
-        cmdtemp="$cmdtemp logstatus \"$setting='\$cl_$setting'\""
-        eval "$cmdtemp"  # doesn't work if combined into one line
+        if isset "cl_$setting"; then
+          logstatus "$setting='$(printvar "cl_$setting")'"
+        fi
       fi
     done
   else
@@ -1173,21 +1452,20 @@ logclconfig () {
 # the calling script must define configsettingisarray(), which takes the
 # name of a config setting and returns 0 (true) or 1 (false)
 #
-# "local" vars: setting, sval
+# "local" vars: setting
 # global vars: configsettings
 # config settings: (all)
 # user-defined functions: configsettingisarray()
 # library functions: printarray()
 # utilities: printf
+# bashisms: ${!var}
 #
 printsettings () {
   for setting in $configsettings; do
     if configsettingisarray "$setting"; then
       printf "%s\n" "$setting=$(printarray "$setting")"
     else
-      # split into two lines for readability
-      eval "sval=\"\$$(printf "%s" "$setting")\""
-      printf "%s\n" "$setting='$sval'"
+      printf "%s\n" "$setting='${!setting}'"
     fi
   done
 }
@@ -1283,7 +1561,7 @@ createblankconfig () {
 #
 # $1 = message
 #
-# global vars: startup_exitval
+# library vars: startup_exitval
 # library functions: throwerr()
 #
 throwstartuperr () {
@@ -1297,7 +1575,8 @@ throwstartuperr () {
 #
 # assumes "$scriptname --help" works as expected
 #
-# global vars: newline, scriptname
+# global vars: scriptname
+# library vars: newline
 # library functions: throwstartuperr()
 #
 throwusageerr () {
@@ -1312,11 +1591,11 @@ throwusageerr () {
 # "local" vars: vname, vval
 # config settings: (contents of $1)
 # library functions: throwstartuperr()
-# utilities: printf
+# bashisms: ${!var}
 #
 throwsettingerr () {
   vname="$1"
-  eval "vval=\"\$$(printf "%s" "$vname")\""
+  vval="${!vname}"
 
   throwstartuperr "Error: invalid setting for $vname ('$vval'); exiting."
 }
@@ -1329,11 +1608,12 @@ throwsettingerr () {
 # "local" vars: vname, vval
 # config settings: (contents of $1)
 # library functions: throwstartuperr()
-# utilities: printf, [
+# utilities: [
+# bashisms: ${!var}
 #
 validnoblank () {
   vname="$1"
-  eval "vval=\"\$$(printf "%s" "$vname")\""
+  vval="${!vname}"
 
   if [ "$vval" = "" ]; then
     throwstartuperr "Error: $vname is unset or blank; exiting."
@@ -1346,25 +1626,25 @@ validnoblank () {
 #
 # $1 = variable name
 #
-# "local" vars: vname, vval, val
+# "local" vars: aname, arrcopy, val
 # config settings: (contents of $1)
-# library functions: throwstartuperr()
+# library functions: copyarray(), throwstartuperr()
 # utilities: [
 # bashisms: arrays
 #
 validnoblankarr () {
-  vname="$1"
-  eval "vval=(\"\${${vname}[@]}\")"
+  aname="$1"
+  copyarray "$aname" "arrcopy"
 
   # go through the array; if we use [*] or [@] we won't we able to tell the
   # difference between ("" "") and (" ")
-  for val in "${vval[@]}"; do
+  for val in "${arrcopy[@]}"; do
     if [ "$val" != "" ]; then
       return
     fi
   done
 
-  throwstartuperr "Error: $vname is unset or blank; exiting."
+  throwstartuperr "Error: $aname is unset or blank; exiting."
 }
 
 #
@@ -1376,13 +1656,14 @@ validnoblankarr () {
 # "local" vars: vname1, vval1, vname2, vval2
 # config settings: (contents of $1, contents of $2)
 # library functions: throwstartuperr()
-# utilities: printf, [
+# utilities: [
+# bashisms: ${!var}
 #
 validnotbothblank () {
   vname1="$1"
-  eval "vval1=\"\$$(printf "%s" "$vname1")\""
   vname2="$2"
-  eval "vval2=\"\$$(printf "%s" "$vname2")\""
+  vval1="${!vname1}"
+  vval2="${!vname2}"
 
   if [ "$vval1" = "" ] && [ "$vval2" = "" ]; then
     throwstartuperr "Error: $vname1 and $vname2 cannot both be blank; exiting."
@@ -1400,10 +1681,11 @@ validnotbothblank () {
 # config settings: (contents of $1)
 # library functions: throwsettingerr()
 # utilities: printf, grep, [
+# bashisms: ${!var}
 #
 validnum () {
   vname="$1"
-  eval "vval=\"\$$(printf "%s" "$vname")\""
+  vval="${!vname}"
 
   # use extra [0-9] to avoid having to use egrep
   if printf "%s\n" "$vval" | grep '^[0-9][0-9]*$' > /dev/null 2>&1; then
@@ -1428,10 +1710,11 @@ validnum () {
 # config settings: (contents of $1)
 # library functions: throwstartuperr()
 # utilities: printf, tr, [
+# bashisms: ${!var}
 #
 validnochar () {
   vname="$1"
-  eval "vval=\"\$$(printf "%s" "$vname")\""
+  vval="${!vname}"
   nochar="$2"
 
   # use tr so we don't have to worry about metacharacters
@@ -1453,11 +1736,12 @@ validnochar () {
 # "local" vars: vname, vval
 # config settings: (contents of $1)
 # library functions: validnoblank(), throwstartuperr()
-# utilities: printf, [
+# utilities: [
+# bashisms: ${!var}
 #
 validrwxdir () {
   vname="$1"
-  eval "vval=\"\$$(printf "%s" "$vname")\""
+  vval="${!vname}"
 
   validnoblank "$vname"
 
@@ -1500,11 +1784,12 @@ validrwxdir () {
 # "local" vars: vname, vval, parentdir
 # config settings: (contents of $1)
 # library functions: validnoblank(), throwstartuperr(), getparentdir()
-# utilities: printf, ls, [
+# utilities: ls, [
+# bashisms: ${!var}
 #
 validcreate () {
   vname="$1"
-  eval "vval=\"\$$(printf "%s" "$vname")\""
+  vval="${!vname}"
 
   # condition 1
   validnoblank "$vname"
@@ -1571,11 +1856,12 @@ validcreate () {
 # global vars: (contents of $1, if "configfile")
 # config settings: (contents of $1, usually)
 # library functions: validnoblank(), throwstartuperr()
-# utilities: printf, [
+# utilities: [
+# bashisms: ${!var}
 #
 validreadfile () {
   vname="$1"
-  eval "vval=\"\$$(printf "%s" "$vname")\""
+  vval="${!vname}"
 
   # blank?
   validnoblank "$vname"
@@ -1609,11 +1895,12 @@ validreadfile () {
 # "local" vars: vname, vval
 # config settings: (contents of $1)
 # library functions: validreadfile(), throwstartuperr()
-# utilities: printf, [
+# utilities: [
+# bashisms: ${!var}
 #
 validrwfile () {
   vname="$1"
-  eval "vval=\"\$$(printf "%s" "$vname")\""
+  vval="${!vname}"
 
   validreadfile "$vname"
 
@@ -1633,11 +1920,12 @@ validrwfile () {
 # global vars: (contents of $1, if "mode")
 # config settings: (contents of $1, usually)
 # library functions: throwusageerr(), throwsettingerr()
-# utilities: printf, [
+# utilities: [
+# bashisms: ${!var}
 #
 validlist () {
   vname="$1"
-  eval "vval=\"\$$(printf "%s" "$vname")\""
+  vval="${!vname}"
   shift
 
   # implied $@ isn't supported by ksh
@@ -1715,14 +2003,14 @@ do_config () {
 # $2 is the plural of $1, used in messages like "backups have been manually
 # disabled"
 #
-# global vars: no_error_exitval, lockfile_exitval, cleanup_on_exit,
-#              silencealerts, disable, timetemp
+# global vars: cleanup_on_exit, lfalertssilenced, scriptdisabled, timetemp
 # config settings: runevery, startedfile, lockfile, ifrunning, alertfile
+# library vars: no_error_exitval, lockfile_exitval
 # library functions: newerthan(), logstatus(), logalert(), sendalert(),
 #                    do_exit()
 # utilities: mkdir, rm, touch, [
-# files: $startedfile, $lockfile, $alertfile, $lockfile/$silencealerts,
-#        $lockfile/$disable, $lockfile/timetemp
+# files: $startedfile, $lockfile, $alertfile, $lockfile/$lfalertssilenced,
+#        $lockfile/$scriptdisabled, $lockfile/timetemp
 #
 checkstatus () {
   if [ "$runevery" != "0" ]; then
@@ -1760,7 +2048,7 @@ checkstatus () {
   else
     # assume mkdir failed because it already existed;
     # but that could be because we manually disabled the script
-    if [ -f "$lockfile/$disable" ]; then
+    if [ -f "$lockfile/$scriptdisabled" ]; then
       logalert "$2 have been manually disabled; exiting"
     else
       logalert "could not create lockfile (previous $1 still running or failed?); exiting"
@@ -1772,7 +2060,7 @@ checkstatus () {
     # (-f instead of -e because it's more portable)
     if [ ! -f "$alertfile" ]; then
       touch "$alertfile"
-      if [ -f "$lockfile/$disable" ]; then
+      if [ -f "$lockfile/$scriptdisabled" ]; then
         sendalert "$2 have been manually disabled; exiting"
       else
         sendalert "could not create lockfile (previous $1 still running or failed?); exiting"
@@ -1790,7 +2078,7 @@ checkstatus () {
 
     # if alerts have been silenced, log it but don't send email
     # (and don't bother checking $ifrunning)
-    if [ -f "$lockfile/$silencealerts" ]; then
+    if [ -f "$lockfile/$lfalertssilenced" ]; then
       logalert "alerts have been silenced; no email sent"
       do_exit "$lockfile_exitval"
     fi
@@ -1803,7 +2091,7 @@ checkstatus () {
 
     # send an alert email (no "log", we already logged it)
     touch "$alertfile"
-    if [ -f "$lockfile/$disable" ]; then
+    if [ -f "$lockfile/$scriptdisabled" ]; then
       sendalert "$2 have been manually disabled; exiting"
     else
       sendalert "could not create lockfile (previous $1 still running or failed?); exiting"
@@ -1852,14 +2140,12 @@ do_finish () {
 #
 # silence lockfile-exists alerts
 #
-# note: not named silencealerts() partly because some shells have issues
-# with functions having the same names as variables
-#
-# global vars: no_error_exitval, startup_exitval, silencealerts
+# global vars: lfalertssilenced
 # config settings: lockfile, quiet (value not actually used)
+# library vars: no_error_exitval, startup_exitval
 # library functions: logclconfig(), logstatus(), do_exit()
 # utilities: touch, echo, [
-# files: $lockfile, $lockfile/$silencealerts
+# files: $lockfile, $lockfile/$lfalertssilenced
 #
 silencelfalerts () {
   echo
@@ -1868,14 +2154,14 @@ silencelfalerts () {
     echo
     do_exit "$startup_exitval"
   fi
-  if [ -f "$lockfile/$silencealerts" ]; then  # -e isn't portable
+  if [ -f "$lockfile/$lfalertssilenced" ]; then  # -e isn't portable
     echo "lockfile alerts were already silenced"
     echo
     do_exit "$startup_exitval"
   fi
   # using a file in the lockfile dir means that we automatically
   # get the silencing cleared when the lockfile is removed
-  touch "$lockfile/$silencealerts"
+  touch "$lockfile/$lfalertssilenced"
   echo "lockfile alerts have been silenced"
   echo
   quiet="yes"  # don't print to the terminal again
@@ -1887,20 +2173,21 @@ silencelfalerts () {
 #
 # unsilence lockfile-exists alerts
 #
-# global vars: no_error_exitval, startup_exitval, silencealerts
+# global vars: lfalertssilenced
 # config settings: lockfile, quiet (value not actually used)
+# library vars: no_error_exitval, startup_exitval
 # library functions: logclconfig(), logstatus(), do_exit()
 # utilities: rm, echo, [
-# files: $lockfile/$silencealerts
+# files: $lockfile/$lfalertssilenced
 #
 unsilencelfalerts () {
   echo
-  if [ ! -f "$lockfile/$silencealerts" ]; then  # -e isn't portable
+  if [ ! -f "$lockfile/$lfalertssilenced" ]; then  # -e isn't portable
     echo "lockfile alerts were already unsilenced"
     echo
     do_exit "$startup_exitval"
   fi
-  rm -f "$lockfile/$silencealerts"
+  rm -f "$lockfile/$lfalertssilenced"
   echo "lockfile alerts have been unsilenced"
   echo
   quiet="yes"  # don't print to the terminal again
@@ -1918,15 +2205,16 @@ unsilencelfalerts () {
 # used in messages like "after the current backup finishes"
 # $3 is the plural of $2, used in messages like "backups have been disabled"
 #
-# global vars: no_error_exitval, startup_exitval, disable
+# global vars: scriptdisabled
 # config settings: lockfile, quiet (value not actually used)
+# library vars: no_error_exitval, startup_exitval
 # library functions: logclconfig(), logstatus(), do_exit()
 # utilities: mkdir, touch, echo, printf, [
-# files: $lockfile, $lockfile/disable
+# files: $lockfile, $lockfile/scriptdisabled
 #
 disablescript () {
   echo
-  if [ -f "$lockfile/$disable" ]; then  # -e isn't portable
+  if [ -f "$lockfile/$scriptdisabled" ]; then  # -e isn't portable
     printf "%s\n" "$3 were already disabled"
     echo
     do_exit "$startup_exitval"
@@ -1937,7 +2225,7 @@ disablescript () {
     echo
   fi
   mkdir "$lockfile" > /dev/null 2>&1  # ignore already-exists errors
-  touch "$lockfile/$disable"
+  touch "$lockfile/$scriptdisabled"
   printf "%s\n" "$3 have been disabled; remember to re-enable them later!"
   echo
   quiet="yes"  # don't print to the terminal again
@@ -1955,20 +2243,21 @@ disablescript () {
 # used in messages like "after the current backup finishes"
 # $3 is the plural of $2, used in messages like "backups have been disabled"
 #
-# global vars: no_error_exitval, startup_exitval, disable
+# global vars: scriptdisabled
 # config settings: lockfile, quiet (value not actually used)
+# library vars: no_error_exitval, startup_exitval
 # library functions: logclconfig(), logstatus(), do_exit()
 # utilities: rm, echo, printf, [
-# files: $lockfile/$disable
+# files: $lockfile/$scriptdisabled
 #
 enablescript () {
   echo
-  if [ ! -f "$lockfile/$disable" ]; then  # -e isn't portable
+  if [ ! -f "$lockfile/$scriptdisabled" ]; then  # -e isn't portable
     printf "%s\n" "$3 were already enabled"
     echo
     do_exit "$startup_exitval"
   fi
-  rm -f "$lockfile/$disable"
+  rm -f "$lockfile/$scriptdisabled"
   printf "%s\n" "$3 have been re-enabled"
   echo
   printf "%s\n" "if $1 $2 is not currently running, you should now remove the lockfile"
@@ -1989,8 +2278,8 @@ enablescript () {
 # used in messages like "after the current backup finishes"
 #
 # "local" vars: type_y
-# global vars: no_error_exitval, startup_exitval
 # config settings: lockfile, quiet (value not actually used)
+# library vars: no_error_exitval, startup_exitval
 # library functions: logclconfig(), logstatus(), do_exit()
 # utilities: rm, echo, printf, [
 # files: $lockfile
@@ -2046,7 +2335,7 @@ clearlock () {
 # a string, it calls sendalert() and exits with exit value nodelim_exitval
 #
 # "local" vars: prefix, sep, suffix, filename, filenum, newnum, newname, D
-# global vars: nodelim_exitval
+# library vars: nodelim_exitval
 # library functions: escregex(), escsedrepl(), getseddelim(), sendalert(),
 #                    do_exit()
 # utilities: printf, grep, sed, expr, mv, [
@@ -2182,7 +2471,7 @@ rotatenumfiles () {
 # also works on directories
 #
 # "local" vars: prefix, sep, suffix, numf, daysf, filename, filenum, D
-# global vars: nodelim_exitval
+# library vars: nodelim_exitval
 # library functions: escregex(), getseddelim(), sendalert(), do_exit()
 # utilities: printf, grep, sed, rm, find, [
 #
@@ -2458,7 +2747,7 @@ sshremotecmd () {
 #                  ssh_rcommand
 # utilities: ssh, printf, [
 # files: $ssh_keyfile
-# bashisms: arrays
+# bashisms: arrays, printf -v [v3.1]
 #
 sshremotebgcmd () {
   # apply default
@@ -2479,7 +2768,8 @@ sshremotebgcmd () {
 
   # get the PID
   sshpid_l="$!"
-  eval "$(printf "%s" "$sshpid_var")=\"$sshpid_l\""  # set the global
+
+  printf -v "$sshpid_var" "%s" "$sshpid_l"  # set the global
 }
 
 #
@@ -2494,6 +2784,7 @@ sshremotebgcmd () {
 # "local" vars: sshpid_var, sshpid_l
 # global vars: (contents of $1, or sshpid)
 # utilities: printf, kill, [
+# bashisms: ${!var}, printf -v [v3.1]
 #
 killsshremotebg () {
   # apply default
@@ -2503,12 +2794,12 @@ killsshremotebg () {
   [ "$1" != "" ] && sshpid_var="$1"
 
   # get the PID
-  eval "sshpid_l=\"\$$(printf "%s" "$sshpid_var")\""
+  sshpid_l="${!sshpid_var}"
 
   if [ "$sshpid_l" != "" ]; then
     kill "$sshpid_l" > /dev/null 2>&1  # don't complain if it's already dead
     wait "$sshpid_l"
-    eval "$(printf "%s" "$sshpid_var")=''"  # so we know it's been killed
+    printf -v "$sshpid_var" "%s" ""  # so we know it's been killed
   fi
 }
 
@@ -2527,7 +2818,7 @@ killsshremotebg () {
 #                  tun_sshkeyfile, tun_sshoptions, tun_sshuser, tun_sshhost
 # utilities: ssh, printf, [
 # files: $tun_sshkeyfile
-# bashisms: arrays
+# bashisms: arrays, printf -v [v3.1]
 #
 sshtunnelcmd () {
   # apply default
@@ -2548,7 +2839,7 @@ sshtunnelcmd () {
 
   # get the PID
   tunpid_l="$!"
-  eval "$(printf "%s" "$tunpid_var")=\"$tunpid_l\""  # set the global
+  printf -v "$tunpid_var" "%s" "$tunpid_l"  # set the global
 }
 
 #
@@ -2566,6 +2857,7 @@ sshtunnelcmd () {
 # "local" vars: tunpid_var, tunpid_l
 # global vars: (contents of $1, or tunpid)
 # utilities: printf, kill, [
+# bashisms: ${!var}, printf -v [v3.1]
 #
 killsshtunnel () {
   # apply default
@@ -2575,12 +2867,12 @@ killsshtunnel () {
   [ "$1" != "" ] && tunpid_var="$1"
 
   # get the PID
-  eval "tunpid_l=\"\$$(printf "%s" "$tunpid_var")\""
+  tunpid_l="${!tunpid_var}"
 
   if [ "$tunpid_l" != "" ]; then
     kill "$tunpid_l" > /dev/null 2>&1  # don't complain if it's already dead
     wait "$tunpid_l"
-    eval "$(printf "%s" "$tunpid_var")=''"  # so we know it's been killed
+    printf -v "$tunpid_var" "%s" ""  # so we know it's been killed
   fi
 }
 
@@ -2591,42 +2883,40 @@ killsshtunnel () {
 # differentiate between multiple tunnels; if unset or null, it defaults to
 # "tunpid"
 #
-# a global variable with this name plus "_prefix" (i.e., the default is
-# "tunpid_prefix") will be used to save the current value of tun_prefix
+# $tun_prefix should be a label for this tunnel (e.g., "rsync");
+# a global variable with name "$1_prefix" (defaults to "tunpid_prefix"
+# if $1 is unset or null) will be used to save the current value of
+# $tun_prefix
 #
 # returns 0 on success
 # on error, calls sendalert(), then acts according to the value of
 # $on_tunerr:
-#   "exit": exits with exitval $sshtunnel_exitval (*)
+#   "exit": exits with exitval $sshtunnel_exitval
 #   "phase": returns 1 ("skip to the next phase of the script")
-#   unset or null: defaults to "exit"
-# *if $sshtunnel_exitval is unset or null, "1" is used as the default
 #
 # FD 3 gets a start message and the actual output (stdout and stderr) of
 # ssh
 #
-# "local" vars: tunpid_var, tunpid_l, on_err_l, exitval_l, waited, sshexit
+# "local" vars: tunpid_var, tunpid_l, waited, sshexit
 # global vars: (contents of $1, or tunpid, and the corresponding *_prefix),
-#              tun_prefix, sshtunnel_exitval (optional)
-# config settings: tun_localport, tun_sshtimeout, on_tunerr (optional)
+#              tun_prefix
+# config settings: tun_localport, tun_sshtimeout
+# library vars: on_tunerr, sshtunnel_exitval
 # library functions: sshtunnelcmd(), logstatus(), logstatusquiet(),
 #                    sendalert(), do_exit()
 # utilities: nc, printf, sleep, kill, expr, [
 # FDs: 3
+# bashisms: ${!var}, printf -v [v3.1]
 #
 opensshtunnel () {
-  # apply defaults
+  # apply default
   tunpid_var="tunpid"
-  on_err_l="exit"
-  exitval_l=1
 
-  # get values, if set
+  # get value, if set
   [ "$1" != "" ] && tunpid_var="$1"
-  [ "$on_tunerr" != "" ] && on_err_l="$on_tunerr"
-  [ "$sshtunnel_exitval" != "" ] && exitval_l="$sshtunnel_exitval"
 
   # save tun_prefix
-  eval "$(printf "%s" "${tunpid_var}_prefix")=\"$tun_prefix\""
+  printf -v "${tunpid_var}_prefix" "%s" "$tun_prefix"
 
   # log that we're running the command
   logstatusquiet "running SSH tunnel command for $tun_prefix"
@@ -2634,7 +2924,7 @@ opensshtunnel () {
 
   # run the command and get the PID
   sshtunnelcmd "$tunpid_var" >&3 2>&1
-  eval "tunpid_l=\"\$$(printf "%s" "$tunpid_var")\""
+  tunpid_l="${!tunpid_var}"
 
   # make sure it's actually working;
   # see http://mywiki.wooledge.org/ProcessManagement#Starting_a_.22daemon.22_and_checking_whether_it_started_successfully
@@ -2648,19 +2938,19 @@ opensshtunnel () {
       waited=$(expr "$waited" + 1)
 
       if [ "$waited" -ge "$tun_sshtimeout" ]; then
-        sendalert "could not establish SSH tunnel for $tun_prefix (timed out); exiting" log
-
         kill "$tunpid_l" > /dev/null 2>&1  # quiet if it's already dead
         wait "$tunpid_l"
         # so we know it's not running anymore
-        eval "$(printf "%s" "$tunpid_var")=''"
+        printf -v "$tunpid_var" "%s" ""
 
-        case "$on_err_l" in
-          exit)
-            do_exit "$exitval_l"
-            ;;
+        case "$on_tunerr" in
           phase)
+            sendalert "could not establish SSH tunnel for $tun_prefix (timed out); skipping" log
             return 1  # skip to the next phase
+            ;;
+          *)  # exit
+            sendalert "could not establish SSH tunnel for $tun_prefix (timed out); exiting" log
+            do_exit "$sshtunnel_exitval"
             ;;
         esac
       fi
@@ -2668,17 +2958,17 @@ opensshtunnel () {
       wait "$tunpid_l"
       sshexit="$?"
 
-      sendalert "could not establish SSH tunnel for $tun_prefix (error code $sshexit); exiting" log
-
       # so we know it's not running anymore
-      eval "$(printf "%s" "$tunpid_var")=''"
+      printf -v "$tunpid_var" "%s" ""
 
-      case "$on_err_l" in
-        exit)
-          do_exit "$exitval_l"
-          ;;
+      case "$on_tunerr" in
         phase)
+          sendalert "could not establish SSH tunnel for $tun_prefix (error code $sshexit); skipping" log
           return 1  # skip to the next phase
+          ;;
+        *)  # exit
+          sendalert "could not establish SSH tunnel for $tun_prefix (error code $sshexit); exiting" log
+          do_exit "$sshtunnel_exitval"
           ;;
       esac
     fi  # if kill -0
@@ -2703,8 +2993,9 @@ opensshtunnel () {
 #
 # "local" vars: tunpid_var, tunpid_l, prefix_l
 # global vars: (contents of $1, or tunpid, and the corresponding *_prefix)
-# library functions: logstatus()
+# library functions: copyvar(), logstatus()
 # utilities: printf, kill, [
+# bashisms: ${!var}, printf -v [v3.1]
 #
 closesshtunnel () {
   # apply default
@@ -2714,13 +3005,13 @@ closesshtunnel () {
   [ "$1" != "" ] && tunpid_var="$1"
 
   # get the PID and the prefix
-  eval "tunpid_l=\"\$$(printf "%s" "$tunpid_var")\""
-  eval "prefix_l=\"\$$(printf "%s" "${tunpid_var}_prefix")\""
+  tunpid_l="${!tunpid_var}"
+  copyvar "${tunpid_var}_prefix" "prefix_l"
 
   if [ "$tunpid_l" != "" ]; then
     kill "$tunpid_l" > /dev/null 2>&1  # don't complain if it's already dead
     wait "$tunpid_l"
-    eval "$(printf "%s" "$tunpid_var")=''"  # so we know it's been closed
+    printf -v "$tunpid_var" "%s" ""  # so we know it's been closed
 
     logstatus "SSH tunnel for $prefix_l closed"
   else

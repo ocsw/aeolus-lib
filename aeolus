@@ -16,14 +16,15 @@
 #        (also used in command modes like 'disable' as a generic error value)
 #   2  = previous lockfile still exists (possibly because backups were
 #        manually disabled)
-#   3  = error finding a delimiter for a string
-#   4  = error opening SSH tunnel
-#   5  = error getting DB list
-#   6  = problem with contents of DB list (e.g., unsafe characters)
-#   7  = DB dumpfile already exists
-#   8  = error dumping DB
-#   9  = error compressing DB dump
-#   10 = rsync error
+#   3  = bad variable name or subscript key
+#   4  = error finding a delimiter for a string
+#   5  = error opening SSH tunnel
+#   6  = error getting DB list
+#   7  = problem with contents of DB list (e.g., unsafe characters)
+#   8  = DB dumpfile already exists
+#   9  = error dumping DB
+#   10 = error compressing DB dump
+#   11 = rsync error
 # if there are multiple errors, the first one to occur is used
 
 # modification notes:
@@ -31,7 +32,8 @@
 # if the ext values above are changed, update the *_exitval variables, below
 #
 # lockfile dir is used for the following files:
-#   $silencealerts, $disable, $timetemp, $logfifo, $alldbs, $alldbstmp
+#   $lfalertssilenced, $scriptdisabled, $timetemp, $logfifo, $alldbs,
+#   $alldbstmp
 # all files should be in printstatus()
 #
 # any change to the setting variables (additions, deletions, name changes,
@@ -69,13 +71,6 @@
 # do more to protect against leading - in settings?
 
 
-######################
-# pull in the library
-######################
-
-. /root/backup/aeolus-lib.sh
-
-
 ################
 # version check
 ################
@@ -97,6 +92,23 @@ case "$BASH_VERSION" in
     exit 1
     ;;
 esac
+
+
+######################
+# pull in the library
+######################
+
+# preparatory massaging:
+# this won't get reset if it's set on the command line,
+# but if it's unset, the library will set it;
+# this will make the script think it was set on the command line
+[ "${on_tunerr+X}" = "" ] && on_tunerr_unset="yes"
+
+# source the library
+. /root/backup/aeolus-lib.sh
+
+# finish massaging
+[ "$on_tunerr_unset" = "yes" ] && unset on_tunerr
 
 
 ############
@@ -380,8 +392,8 @@ mysql_subdirprefix_default="mysqldump"  # only if unset
 dbmslist="mysql"
 
 # names of tempfiles stored in the lockfile directory
-silencealerts="silencealerts"
-disable="disable"
+lfalertssilenced="lfalertssilenced"
+scriptdisabled="scriptdisabled"
 timetemp="timetemp"
 logfifo="logfifo"
 alldbs="alldbs"
@@ -395,14 +407,15 @@ dumptmp=".tmp"
 no_error_exitval="0"
 startup_exitval="1"
 lockfile_exitval="2"
-nodelim_exitval="3"
-sshtunnel_exitval="4"
-getdblist_exitval="5"
-dblistchar_exitval="6"
-dumpexists_exitval="7"
-dbdump_exitval="8"
-dbzip_exitval="9"
-rsync_exitval="10"
+badvarname_exitval="3"
+nodelim_exitval="4"
+sshtunnel_exitval="5"
+getdblist_exitval="6"
+dblistchar_exitval="7"
+dumpexists_exitval="8"
+dbdump_exitval="9"
+dbzip_exitval="10"
+rsync_exitval="11"
 
 
 ###########################
@@ -460,18 +473,18 @@ fi
 # cleanup function, to be called by do_exit()
 #
 #   * closes any open SSH tunnel
-#   * removes the lockfile, unless the disable semaphore exists
+#   * removes the lockfile, unless the scriptdisabled semaphore exists
 #
 # note: we could use a trap to automatically remove the lockfile,
 # but we explicitly remove it instead so that its unexpected presence
 # serves as notice that something went wrong previously;
 # this is also the reason for not using -f
 #
-# global vars: tunpid, disable
+# global vars: tunpid, scriptdisabled
 # config settings: lockfile
 # library functions: closesshtunnel()
 # utilities: rm, [
-# files: $lockfile, $lockfile/$disable
+# files: $lockfile, $lockfile/$scriptdisabled
 #
 do_exit_cleanup () {
   # closesshtunnel() can be run after the tunnel was already closed,
@@ -480,7 +493,7 @@ do_exit_cleanup () {
     closesshtunnel
   fi
 
-  if [ ! -f "$lockfile/$disable" ]; then
+  if [ ! -f "$lockfile/$scriptdisabled" ]; then
     rm -r "$lockfile"
   fi
   # otherwise, a disable command must have been run while we were
@@ -536,18 +549,18 @@ sendalert_body () {
 # config settings: [tun]_sshuser, [tun]_sshhost, [tun]_sshkeyfile,
 #                  [tun]_sshport, [tun]_localport, [tun]_remoteport,
 #                  [tun]_sshoptions, [tun]_sshtimeout
-# library functions: copyarray()
+# library functions: copyvar(), copyarray()
 #
 switchtunnel () {
   tun_prefix="$1"
-  eval "tun_sshuser=\"\$$(printf "%s" "$1")_sshuser\""
-  eval "tun_sshhost=\"\$$(printf "%s" "$1")_sshhost\""
-  eval "tun_sshkeyfile=\"\$$(printf "%s" "$1")_sshkeyfile\""
-  eval "tun_sshport=\"\$$(printf "%s" "$1")_sshport\""
-  eval "tun_localport=\"\$$(printf "%s" "$1")_localport\""
-  eval "tun_remoteport=\"\$$(printf "%s" "$1")_remoteport\""
+  copyvar "${1}_sshuser" "tun_sshuser"
+  copyvar "${1}_sshhost" "tun_sshhost"
+  copyvar "${1}_sshkeyfile" "tun_sshkeyfile"
+  copyvar "${1}_sshport" "tun_sshport"
+  copyvar "${1}_localport" "tun_localport"
+  copyvar "${1}_remoteport" "tun_remoteport"
   copyarray "${1}_sshoptions" "tun_sshoptions"
-  eval "tun_sshtimeout=\"\$$(printf "%s" "$1")_sshtimeout\""
+  copyvar "${1}_sshtimeout" "tun_sshtimeout"
 }
 
 #
@@ -584,41 +597,41 @@ switchtunnel () {
 #                  [dbms]_filedirsep, [dbms]_filedirdate, [dbms]_numfiles,
 #                  [dbms]_daysfiles, [dbms]_zipmode, [dbms]_zipoptions,
 #                  [dbms]_preserve
-# library functions: copyarray()
+# library functions: copyvar(), copyarray()
 #
 switchdbms () {
   dbms_prefix="$1"
-  eval "dbms_dodump=\"\$$(printf "%s" "$1")_dodump\""
-  eval "dbms_usetunnel=\"\$$(printf "%s" "$1")_usetunnel\""
-  eval "dbms_user=\"\$$(printf "%s" "$1")_user\""
-  eval "dbms_pwfile=\"\$$(printf "%s" "$1")_pwfile\""
-  eval "dbms_protocol=\"\$$(printf "%s" "$1")_protocol\""
-  eval "dbms_host=\"\$$(printf "%s" "$1")_host\""
-  eval "dbms_port=\"\$$(printf "%s" "$1")_port\""
-  eval "dbms_socketfile=\"\$$(printf "%s" "$1")_socketfile\""
-  eval "dbms_dbmode=\"\$$(printf "%s" "$1")_dbmode\""
+  copyvar "${1}_dodump" "dbms_dodump"
+  copyvar "${1}_usetunnel" "dbms_usetunnel"
+  copyvar "${1}_user" "dbms_user"
+  copyvar "${1}_pwfile" "dbms_pwfile"
+  copyvar "${1}_protocol" "dbms_protocol"
+  copyvar "${1}_host" "dbms_host"
+  copyvar "${1}_port" "dbms_port"
+  copyvar "${1}_socketfile" "dbms_socketfile"
+  copyvar "${1}_dbmode" "dbms_dbmode"
   copyarray "${1}_dblist" "dbms_dblist"
-  eval "dbms_splitdbs=\"\$$(printf "%s" "$1")_splitdbs\""
+  copyvar "${1}_splitdbs" "dbms_splitdbs"
   copyarray "${1}_options" "dbms_options"
   copyarray "${1}_dumpoptions" "dbms_dumpoptions"
   copyarray "${1}_dumponeoptions" "dbms_dumponeoptions"
   copyarray "${1}_dumpmultoptions" "dbms_dumpmultoptions"
   copyarray "${1}_dumpalloptions" "dbms_dumpalloptions"
-  eval "dbms_usealtopts=\"\$$(printf "%s" "$1")_usealtopts\""
-  eval "dbms_dumpdir=\"\$$(printf "%s" "$1")_dumpdir\""
-  eval "dbms_layout=\"\$$(printf "%s" "$1")_layout\""
-  eval "dbms_fileprefix=\"\$$(printf "%s" "$1")_fileprefix\""
-  eval "dbms_filesuffix=\"\$$(printf "%s" "$1")_filesuffix\""
-  eval "dbms_subdirprefix=\"\$$(printf "%s" "$1")_subdirprefix\""
-  eval "dbms_filedirsep=\"\$$(printf "%s" "$1")_filedirsep\""
-  eval "dbms_filedirdate=\"\$$(printf "%s" "$1")_filedirdate\""
-  eval "dbms_numfiles=\"\$$(printf "%s" "$1")_numfiles\""
-  eval "dbms_daysfiles=\"\$$(printf "%s" "$1")_daysfiles\""
-  eval "dbms_zipmode=\"\$$(printf "%s" "$1")_zipmode\""
+  copyvar "${1}_usealtopts" "dbms_usealtopts"
+  copyvar "${1}_dumpdir" "dbms_dumpdir"
+  copyvar "${1}_layout" "dbms_layout"
+  copyvar "${1}_fileprefix" "dbms_fileprefix"
+  copyvar "${1}_filesuffix" "dbms_filesuffix"
+  copyvar "${1}_subdirprefix" "dbms_subdirprefix"
+  copyvar "${1}_filedirsep" "dbms_filedirsep"
+  copyvar "${1}_filedirdate" "dbms_filedirdate"
+  copyvar "${1}_numfiles" "dbms_numfiles"
+  copyvar "${1}_daysfiles" "dbms_daysfiles"
+  copyvar "${1}_zipmode" "dbms_zipmode"
   copyarray "${1}_zipoptions" "dbms_zipoptions"
-  eval "dbms_preserve=\"\$$(printf "%s" "$1")_preserve\""
+  copyvar "${1}_preserve" "dbms_preserve"
   # internal, not from config
-  eval "dbms_datestring=\"\$$(printf "%s" "$1")_datestring\""
+  copyvar "${1}_datestring" "dbms_datestring"
 }
 
 
@@ -644,7 +657,10 @@ Usage:
   [ setting="value" ] $scriptname [ -f /path/to/config/file | -n ] [ mode ]
 
   Multiple settings can be added to the command line, separated by spaces;
-  command-line settings override the config file.
+  command-line settings override the config file.  Array settings may have
+  to be supplied by creating a wrapper script that sets them, then sources
+  this script.  There is no way to override a config-file-supplied array
+  setting with an empty array, but ("") may suffice in some cases.
 
 Options:
 
@@ -737,12 +753,13 @@ EOF
 #
 # doesn't print surrounding blank lines; add them if necessary in context
 #
-# global vars: silencealerts, disable, timetemp, logfifo, alldbs, alldbstmp
+# global vars: lfalertssilenced, scriptdisabled, timetemp, logfifo, alldbs,
+#              alldbstmp
 # config settings: startedfile, lockfile, alertfile
 # library functions: getfilemetadata()
 # utilities: cat, echo, [
-# files: $startedfile, $alertfile, $lockfile, $lockfile/$silencealerts,
-#        $lockfile/$disable, $lockfile/$timetemp, $lockfile/$logfifo,
+# files: $startedfile, $alertfile, $lockfile, $lockfile/$lfalertssilenced,
+#        $lockfile/$scriptdisabled, $lockfile/$timetemp, $lockfile/$logfifo,
 #        $lockfile/$alldbs, $lockfile/$alldbstmp
 #
 printstatus () {
@@ -764,10 +781,10 @@ printstatus () {
   if [ -f "$alertfile" ]; then
     echo "alertfile exists; running backup prevented new one from starting"
   fi
-  if [ -f "$lockfile/$silencealerts" ]; then
+  if [ -f "$lockfile/$lfalertssilenced" ]; then
     echo "lockfile alerts have been silenced"
   fi
-  if [ -f "$lockfile/$disable" ]; then
+  if [ -f "$lockfile/$scriptdisabled" ]; then
     echo "backups have been disabled (but the last one may still be running)"
   fi
 
@@ -787,11 +804,11 @@ printstatus () {
 	alertfile:
 	$(getfilemetadata "$alertfile")
 
-	silencealerts:
-	$(getfilemetadata "$lockfile/$silencealerts")
+	lfalertssilenced:
+	$(getfilemetadata "$lockfile/$lfalertssilenced")
 
-	disable:
-	$(getfilemetadata "$lockfile/$disable")
+	scriptdisabled:
+	$(getfilemetadata "$lockfile/$scriptdisabled")
 	EOF
 
   if [ "$1" = "all" ]; then
@@ -909,12 +926,13 @@ applydefaults () {
 # library functions: validnoblank(), validnoblankarr(), validnotbothblank(),
 #                    validnum(), validnochar(), validrwxdir(),
 #                    validcreate(), validreadfile(), validrwfile(),
-#                    validlist(), unsparsearray()
+#                    validlist(), copyvar(), unsparsearray()
 # utilities: [
 # files: $startedfile, $lockfile, $alertfile, $outputlog, $statuslog,
 #        $rsync_sshkeyfile, $rsync_pwfile, $rsync_filterfile,
 #        $[dbms]_sshkeyfile, $[dbms]_socketfile, $[dbms]_pwfile,
 #        $[dbms]_dumpdir
+# bashisms: printf -v [v3.1]
 #
 validconf () {
   # housekeeping
@@ -1010,9 +1028,9 @@ validconf () {
         validnum "${dbms}_sshtimeout" 1
         unsparsearray "${dbms}_sshoptions"
         # adjust/ignore these
-        eval "$(printf "%s" "$dbms")_host=\"localhost\""
-        eval "$(printf "%s" "$dbms")_port=\"${dbms}_localport\""
-        eval "$(printf "%s" "$dbms")_socketfile=\"\""
+        printf -v "${dbms}_host" "%s" "localhost"
+        copyvar "${dbms}_localport" "${dbms}_port"
+        printf -v "${dbms}_socketfile" "%s" ""
         # also change the dbms_* variables
         dbms_host="localhost"
         dbms_port="${dbms}_localport"
@@ -1020,13 +1038,13 @@ validconf () {
       else
         if [ "$dbms_host" != "" ]; then  # nothing to validate, but...
           # ignore socketfile
-          eval "$(printf "%s" "$dbms")_socketfile=\"\""
+          printf -v "${dbms}_socketfile" "%s" ""
           dbms_socketfile=""  # for later tests
         fi
         if [ "$dbms_port" != "" ]; then
           validnum "${dbms}_port" 1 65535
           # ignore socketfile
-          eval "$(printf "%s" "$dbms")_socketfile=\"\""
+          printf -v "${dbms}_socketfile" "%s" ""
           dbms_socketfile=""  # for later tests
         fi
         [ "$dbms_socketfile" != "" ] && validrwfile "${dbms}_socketfile"
@@ -1951,7 +1969,7 @@ for dbms in $dbmslist; do
     else
       dbms_datestring=$(date)
     fi
-    eval "$(printf "%s" "$dbms")_datestring=\"$dbms_datestring\""
+    printf -v "${dbms}_datestring" "%s" "$dbms_datestring"
   fi
 done
 
