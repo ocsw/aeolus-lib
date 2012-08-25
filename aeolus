@@ -29,7 +29,8 @@
 
 # modification notes:
 #
-# if the ext values above are changed, update the *_exitval variables, below
+# if the exit values above are changed, update the *_exitval variables,
+# below
 #
 # lockfile dir is used for the following files:
 #   $lfalertssilenced, $scriptdisabled, $timetemp, $logfifo, $alldbs,
@@ -480,7 +481,7 @@ fi
 # serves as notice that something went wrong previously;
 # this is also the reason for not using -f
 #
-# global vars: tunpid, scriptdisabled
+# global vars: tunpid_prefix, scriptdisabled
 # config settings: lockfile
 # library functions: closesshtunnel()
 # utilities: rm, [
@@ -593,10 +594,10 @@ switchtunnel () {
 #                  [dbms]_splitdbs, [dbms]_options, [dbms]_dumpoptions,
 #                  [dbms]_dumponeoptions, [dbms]_dumpmultoptions,
 #                  [dbms]_dumpalloptions, [dbms]_usealtopts, [dbms]_dumpdir,
-#                  [dbms]_layout, [dbms]_fileprefix, [dbms]_subdirprefix,
-#                  [dbms]_filedirsep, [dbms]_filedirdate, [dbms]_numfiles,
-#                  [dbms]_daysfiles, [dbms]_zipmode, [dbms]_zipoptions,
-#                  [dbms]_preserve
+#                  [dbms]_layout, [dbms]_fileprefix, [dbms]_filesuffix,
+#                  [dbms]_subdirprefix, [dbms]_filedirsep,
+#                  [dbms]_filedirdate, [dbms]_numfiles, [dbms]_daysfiles,
+#                  [dbms]_zipmode, [dbms]_zipoptions, [dbms]_preserve
 # library functions: copyvar(), copyarray()
 #
 switchdbms () {
@@ -779,7 +780,7 @@ printstatus () {
     echo "no lockfile directory found; backups enabled but not in progress"
   fi
   if [ -f "$alertfile" ]; then
-    echo "alertfile exists; running backup prevented new one from starting"
+    echo "alertfile exists; a running backup prevented a new one from starting"
   fi
   if [ -f "$lockfile/$lfalertssilenced" ]; then
     echo "lockfile alerts have been silenced"
@@ -937,8 +938,7 @@ applydefaults () {
 validconf () {
   # housekeeping
   #
-  # note: umask could be symbolic in some shells, not going to try to
-  # parse it
+  # note: umask could be symbolic, not going to try to parse it
   validlist "timecomptype" "find" "date-r" "date-d" "awk" "gawk"
   validlist "filecomptype" "cmp" "diff"
   validlist "debugme" "yes" "no"
@@ -1015,6 +1015,9 @@ validconf () {
     # but lines like
     #   if [ "$dbms_dodump" = "yes" ]; then
     # are referencing the dbms_dodump variable...
+
+    # mirror all changes to the ${dbms}_ vars in the dbms_ vars, in case
+    # we need them further down (and on principle); same with tun_
 
     validlist "${dbms}_dodump" "yes" "no"
     if [ "$dbms_dodump" = "yes" ]; then

@@ -444,7 +444,7 @@
 # minimum setting allowed is 1 second
 #
 # * ignored if rsync_mode is not "tunnel"
-# * if blank or unset, defaults to 15 seconds
+# * if blank or unset, defaults to 15
 #
 ###rsync_sshtimeout=
 

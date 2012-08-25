@@ -293,7 +293,7 @@ arrayisunset () {
 # the extra evaluation during the function call makes the first example
 # work; alternatively, you can set a temp variable to "q_$foo" and then do
 #   printf -v "bar" "%s" "${!temp}"  [bash v3.1]
-# but using the function is neater, especially if you have many assignments
+# but using this function is neater, especially if you have many assignments
 # to do
 #
 # library vars: badvarname_exitval
@@ -395,8 +395,8 @@ copyarray () {
 # the extra evaluation during the function call makes the first example
 # work; alternatively, you can set a temp variable to "q_$foo" and then do
 #   printf "%s" "${!temp}"  [bash only]
-# but using the function is neater, especially if you have many variables to
-# print
+# but using this function is neater, especially if you have many variables
+# to print
 #
 # note: when capturing output, you MUST use $(), NOT ``; `` does strange
 # things with \ escapes
@@ -947,7 +947,7 @@ stopoutputlog () {
 # "local" vars: curtime, filetime, timediff, reftime, greprv
 # config settings: timecomptype
 # library functions: escregex()
-# utilities: find, grep, date, expr, echo, touch, [
+# utilities: find, grep, date, expr, echo, awk, gawk, touch, [
 #
 newerthan () {
   case "$timecomptype" in
