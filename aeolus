@@ -203,8 +203,8 @@ configsettings="
   on_dblisterr
   on_dbcharerr
   on_dbduplerr
-  on_dumperr
-  on_ziperr
+  on_dbdumperr
+  on_dbziperr
   runevery
   startedfile
   lockfile
@@ -316,8 +316,8 @@ on_tunerr_default="phase"
 on_dblisterr_default="phase"
 on_dbcharerr_default="phase"
 on_dbduplerr_default="db"
-on_dumperr_default="db"
-on_ziperr_default="db"
+on_dbdumperr_default="db"
+on_dbziperr_default="db"
 
 # default settings: checks and logging
 runevery_default="0"
@@ -849,8 +849,8 @@ applydefaults () {
   [ "$on_dblisterr" = "" ] && on_dblisterr="$on_dblisterr_default"
   [ "$on_dbcharerr" = "" ] && on_dbcharerr="$on_dbcharerr_default"
   [ "$on_dbduplerr" = "" ] && on_dbduplerr="$on_dbduplerr_default"
-  [ "$on_dumperr" = "" ] && on_dumperr="$on_dumperr_default"
-  [ "$on_ziperr" = "" ] && on_ziperr="$on_ziperr_default"
+  [ "$on_dbdumperr" = "" ] && on_dbdumperr="$on_dbdumperr_default"
+  [ "$on_dbziperr" = "" ] && on_dbziperr="$on_dbziperr_default"
 
   # checks and logging
   [ "$runevery" = "" ] && runevery="$runevery_default"
@@ -946,8 +946,8 @@ validconf () {
   validlist "on_dblisterr" "phase" "exit"
   validlist "on_dbcharerr" "phase" "exit"
   validlist "on_dbduplerr" "ignore" "warn" "db" "phase" "exit"
-  validlist "on_dumperr" "db" "phase" "exit"
-  validlist "on_ziperr" "db" "phase" "exit"
+  validlist "on_dbdumperr" "db" "phase" "exit"
+  validlist "on_dbziperr" "db" "phase" "exit"
 
   # checks and logging
   validnum "runevery"
@@ -1438,7 +1438,7 @@ getdumppaths () {
 #              dbms_numfiles, dbms_daysfiles, dbms_zipmode, dbms_zipoptions,
 #              dbms_preserve, dumpexists_exitval, dbdump_exitval,
 #              dbzip_exitval
-# config settings: on_duplerr, on_dumperr, on_ziperr
+# config settings: on_duplerr, on_dbdumperr, on_dbziperr
 # library vars: newline
 # library functions: rotatenumfiles(), prunefiles(), removefilezip(),
 #                    dbdumponecmd(), dbdumpmultcmd(), dbdumpallcmd(),
@@ -1596,7 +1596,7 @@ do_dbdump () {
 
   # check status
   if [ "$?" != 0 ]; then
-    case "$on_dumperr" in
+    case "$on_dbdumperr" in
       exit)
         if [ "$dbstring" != "" ]; then
           sendalert "error dumping $dbms_prefix database '$dbstring'; exiting" log
@@ -1670,7 +1670,7 @@ do_dbdump () {
 
     # check status
     if [ "$?" != 0 ]; then
-      case "$on_ziperr" in
+      case "$on_dbziperr" in
         exit)
           if [ "$dbstring" != "" ]; then
             sendalert "error compressing $dbms_prefix database '$dbstring'; exiting" log

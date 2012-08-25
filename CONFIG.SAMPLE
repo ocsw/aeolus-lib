@@ -88,8 +88,8 @@
 #   dblisterr | error getting DB list
 #   dbcharerr | problem with contents of DB list (e.g., unsafe characters)
 #   dbduplerr | DB dumpfile already exists
-#   dumperr   | error dumping DB
-#   ziperr    | error compressing DB dump
+#   dbdumperr | error dumping DB
+#   dbziperr  | error compressing DB dump
 #
 # error       | allowed vals   | default
 # --------------------------------------
@@ -97,8 +97,8 @@
 #   dblisterr |          ph ex | "phase"
 #   dbcharerr |          ph ex | "phase"
 #   dbduplerr | ig wa db ph ex | "db"
-#   dumperr   |       db ph ex | "db"
-#   ziperr    |       db ph ex | "db"
+#   dbdumperr |       db ph ex | "db"
+#   dbziperr  |       db ph ex | "db"
 #
 # note:
 #   -= dbduplerr does not apply in single/singledir modes (it is always
@@ -113,8 +113,8 @@
 ###on_dblisterr=
 ###on_dbcharerr=
 ###on_dbduplerr=
-###on_dumperr=
-###on_ziperr=
+###on_dbdumperr=
+###on_dbziperr=
 
 
 #####################
