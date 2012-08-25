@@ -122,6 +122,8 @@ esac
 # note: this function must be idempotent
 #
 do_debug () {
+  # see http://bashdb.sourceforge.net/bashdb.html#Interactive-Line-Tracing-Session
+  #PS4='(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]} - [${SHLVL},${BASH_SUBSHELL}, $?]$newline'
   set -vx
 }
 
