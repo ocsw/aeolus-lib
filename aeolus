@@ -835,11 +835,14 @@ printstatus () {
 #
 # apply default settings where applicable
 #
+# see hardcoded variables section for rules
+# (e.g. default only if unset, late checking)
+#
 # global vars: (setting _defaults)
 # config settings: (most of them)
 # library functions: copyarray()
 # utilities: [
-# bashisms: arrays
+# bashisms: declare -p
 #
 applydefaults () {
   # housekeeping
@@ -900,10 +903,12 @@ applydefaults () {
   [ "$mysql_preserve" = "" ] && mysql_preserve="$dbms_preserve_default"
 
   # DBMSes (individual defaults; see also above)
+  # MySQL
   [ "${mysql_pwfile+X}" = "" ] && mysql_pwfile="$mysql_pwfile_default"
   [ "$mysql_dbmode" = "" ] && mysql_dbmode="$mysql_dbmode_default"
   [ "$mysql_splitdbs" = "" ] && mysql_splitdbs="$mysql_splitdbs_default"
-  [ "${#mysql_dumpoptions[@]}" = "0" ] && copyarray "mysql_dumpoptions_default" "$mysql_dumpoptions"
+  declare -p "mysql_dumpoptions" > /dev/null 2>&1 || \
+      copyarray "mysql_dumpoptions_default" "mysql_dumpoptions"
   [ "$mysql_usealtopts" = "" ] && mysql_usealtopts="$mysql_usealtopts_default"
   [ "${mysql_fileprefix+X}" = "" ] && mysql_fileprefix="$mysql_fileprefix_default"
   [ "${mysql_subdirprefix+X}" = "" ] && mysql_subdirprefix="$mysql_subdirprefix_default"
