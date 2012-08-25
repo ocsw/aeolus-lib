@@ -1035,37 +1035,43 @@ validconf () {
         validnum "${dbms}_remoteport" 1 65535
         validnum "${dbms}_sshtimeout" 1
         unsparsearray "${dbms}_sshoptions"
+        unsparsearray "tun_sshoptions"
         # adjust/ignore these
         printf -v "${dbms}_host" "%s" "localhost"
-        copyvar "${dbms}_localport" "${dbms}_port"
-        printf -v "${dbms}_socketfile" "%s" ""
-        # also change the dbms_* variables
         dbms_host="localhost"
-        dbms_port="${dbms}_localport"
+        copyvar "${dbms}_localport" "${dbms}_port"
+        copyvar "${dbms}_localport" "dbms_port"
+        printf -v "${dbms}_socketfile" "%s" ""
         dbms_socketfile=""
       else
         if [ "$dbms_host" != "" ]; then  # nothing to validate, but...
           # ignore socketfile
           printf -v "${dbms}_socketfile" "%s" ""
-          dbms_socketfile=""  # for later tests
+          dbms_socketfile=""
         fi
         if [ "$dbms_port" != "" ]; then
           validnum "${dbms}_port" 1 65535
           # ignore socketfile
           printf -v "${dbms}_socketfile" "%s" ""
-          dbms_socketfile=""  # for later tests
+          dbms_socketfile=""
         fi
         [ "$dbms_socketfile" != "" ] && validrwfile "${dbms}_socketfile"
       fi  # if [ "$dbms_usetunnel" = "yes" ]
       [ "$dbms_pwfile" != "" ] && validreadfile "${dbms}_pwfile"
       validlist "${dbms}_dbmode" "all" "include" "exclude"
       unsparsearray "${dbms}_dblist"
+      unsparsearray "dbms_dblist"
       validlist "${dbms}_splitdbs" "yes" "no"
       unsparsearray "${dbms}_options"
+      unsparsearray "dbms_options"
       unsparsearray "${dbms}_dumpoptions"
+      unsparsearray "dbms_dumpoptions"
       unsparsearray "${dbms}_dumponeoptions"
+      unsparsearray "dbms_dumponeoptions"
       unsparsearray "${dbms}_dumpmultoptions"
+      unsparsearray "dbms_dumpmultoptions"
       unsparsearray "${dbms}_dumpalloptions"
+      unsparsearray "dbms_dumpalloptions"
       validlist "${dbms}_usealtopts" "yes" "no"
       validrwxdir "${dbms}_dumpdir"
       validlist "${dbms}_layout" "single" "number" "date" "singledir" \
@@ -1085,6 +1091,7 @@ validconf () {
       fi
       validlist "${dbms}_zipmode" "none" "gzip" "pigz" "bzip2" "lzip"
       unsparsearray "${dbms}_zipoptions"
+      unsparsearray "dbms_zipoptions"
       validlist "${dbms}_preserve" "data" "space"
     fi  # if [ "$dbms_dodump" = "yes" ]
   done  # for dbms in $dbmslist
