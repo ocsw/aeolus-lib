@@ -1322,7 +1322,7 @@ getdblist () {
   case "$dbms_prefix" in
     mysql)
       # check for characters that could break out of a quoted string,
-      # or drop in into one
+      # or drop into one
       #
       # could be done more simply with egrep/grep -E, but this way is
       # probably more portable
@@ -1354,7 +1354,8 @@ getdblist () {
 #
 # this populates two sets of path variables: one for the dump, with a place
 # for the DB name, and one for the rotation/pruning, with a place for the
-# number/date (and the DB name, if $dbms_layout is not a "dir" option)
+# number/date (and a place for the DB name, if $dbms_layout is not a "dir"
+# option)
 #
 # note that for "number"/"numberdir" layouts, dumpprefix and dumpsuffix omit
 # the number, because the most recent version is unnumbered

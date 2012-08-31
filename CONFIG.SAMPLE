@@ -873,6 +873,9 @@
 # named "mydbs-bigdb.3.sql", which would be the 4th oldest copy (including
 # the current one) of a database named 'bigdb'
 #
+# caveat: filedirsep will be omitted if there's nothing in front of it (see
+# mysql_filedirsep, below)
+#
 
 #
 # prefix to prepend to the names of the database dumpfiles
