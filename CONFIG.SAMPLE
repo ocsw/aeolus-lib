@@ -698,7 +698,8 @@
 #
 # options to pass to the MySQL client
 #
-# client will also be passed "-BNe" regardless of this setting
+# client will also be passed "-BNe" regardless of this setting, as well as
+# the necessary connection/password options
 #
 # if connecting with SSL, add your SSL options here
 #
@@ -716,7 +717,8 @@
 # utility will also be passed:
 #   "-A" if mysql_dbmode="all" and mysql_splitdbs="no", or
 #   "-B" if mysql_dbmode is not "all" and mysql_splitdbs="no"
-# regardless of this setting
+# regardless of this setting, as well as the necessary connection/password
+# options
 #
 # if connecting with SSL, add your SSL options here
 #
