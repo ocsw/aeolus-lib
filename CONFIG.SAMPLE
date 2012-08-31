@@ -916,7 +916,10 @@
 # deep)
 #
 # * ignored if mysql_layout is not a "dir" option
-# * can be blank if mysql_layout="datedir"
+# * can be blank if mysql_layout="datedir"; however, you must be especially
+#   careful to have the dumpdir contain only MySQL dump subdirectories,
+#   because everything in the dumpdir will be subject to pruning (see
+#   mysql_numfiles / mysql_daysfiles)
 # * if this is unset (as opposed to just blank), it defaults to "mysqldump"
 #
 ###mysql_subdirprefix=

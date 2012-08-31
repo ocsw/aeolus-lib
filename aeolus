@@ -1455,7 +1455,7 @@ getdumppaths () {
 # 2 to mean "we have skipped this dump",
 # else 0
 #
-# see getdumppaths() for info about dumpprefix/dumpsep/dumpsuffix
+# see getdumppaths() for info about dumpprefix/dumpsuffix
 #
 # dbnames and dbms_zipoptions must be indexed, non-sparse arrays
 #
@@ -1478,7 +1478,8 @@ do_dbdump () {
   dumptype="$1"
   dbname="$2"
 
-  # if we're dumping only one DB, the DB name will be part of the filename(s)
+  # if we're dumping only one DB, the DB name will be part of the
+  # filename(s)
   dbstring=""
   if [ "$dumptype" = "one" ]; then
     dbstring="$dbname"
