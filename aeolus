@@ -33,8 +33,8 @@
 # below
 #
 # lockfile dir is used for the following files:
-#   $lfalertssilenced, $scriptdisabled, $timetemp, $logfifo, $alldbs,
-#   $alldbstmp
+#   $lfalertssilenced, $scriptdisabled, $timetemp, $logfifo,
+#   $alldbs${DBMSes}, $alldbs${DBMSes}$alldbstmp
 # all files should be in printstatus()
 #
 # any change to the setting variables (additions, deletions, name changes,
@@ -399,8 +399,8 @@ lfalertssilenced="lfalertssilenced"
 scriptdisabled="scriptdisabled"
 timetemp="timetemp"
 logfifo="logfifo"
-alldbs="alldbs"
-alldbstmp="alldbs.tmp"
+alldbs="alldbs-"  # gets DBMS name appended
+alldbstmp=".tmp"  # added to $alldbs${DBMS}
 
 # extension to use for temporary dumpfiles
 dumptmp=".tmp"
@@ -756,14 +756,15 @@ EOF
 #
 # doesn't print surrounding blank lines; add them if necessary in context
 #
+# "local" vars: dbms
 # global vars: lfalertssilenced, scriptdisabled, timetemp, logfifo, alldbs,
-#              alldbstmp
+#              alldbstmp, dbmslist
 # config settings: startedfile, lockfile, alertfile
 # library functions: getfilemetadata()
 # utilities: cat, echo, [
 # files: $startedfile, $alertfile, $lockfile, $lockfile/$lfalertssilenced,
 #        $lockfile/$scriptdisabled, $lockfile/$timetemp, $lockfile/$logfifo,
-#        $lockfile/$alldbs, $lockfile/$alldbstmp
+#        $lockfile/$alldbs${DBMSes}, $lockfile/$alldbs${DBMSes}$alldbstmp
 #
 printstatus () {
   cat <<-EOF
@@ -824,13 +825,17 @@ printstatus () {
 
 	logfifo:
 	$(getfilemetadata "$lockfile/$logfifo")
-
-	alldbs:
-	$(getfilemetadata "$lockfile/$alldbs")
-
-	alldbstmp:
-	$(getfilemetadata "$lockfile/$alldbstmp")
 	EOF
+    for dbms in $dbmslist; do
+      cat <<-EOF
+
+	alldbs-$dbms:
+	$(getfilemetadata "$lockfile/$alldbs$dbms")
+
+	alldbs-$dbms.tmp:
+	$(getfilemetadata "$lockfile/$alldbs$dbms$alldbstmp")
+	EOF
+    done
   fi
 }
 
@@ -1252,17 +1257,24 @@ dbdumpallcmd () {
 #
 # dbms_prefix must be one of the accepted values (see dbmslist)
 #
+# local vars: dbms
 # global vars: dbms_prefix, dbms_dbmode, dbms_splitdbs, alldbs, alldbstmp,
-#              getdblist_exitval, dblistchar_exitval
+#              getdblist_exitval, dblistchar_exitval, dbmslist
 # config settings: lockfile, on_dblisterr, on_dbcharerr
 # library vars: newline, tab
 # library functions: dblistcmd(), filecomp(), logstatusquiet(), logstatus(),
 #                    sendalert(), do_exit()
 # utilities: rm, tr, printf, [
-# files: $lockfile/$alldbs, $lockfile/$alldbstmp
+# files: $lockfile/$alldbs$dbms_prefix,
+#        $lockfile/$alldbs$dbms_prefix$alldbstmp
 # FDs: 3
 #
 getdblist () {
+  # remove any existing files, to prevent both confusion and noclobber-type
+  # issues
+  rm -f "$lockfile/$alldbs$dbms_prefix"
+  rm -f "$lockfile/$alldbs$dbms_prefix$alldbstmp"
+
   # do we need the list?
   case "$dbms_prefix" in
     # use dbms_ vars in case we need to lump DBMSes together
@@ -1277,15 +1289,12 @@ getdblist () {
       ;;
   esac
 
-  # remove any existing file, to prevent noclobber-type issues
-  rm -f "$lockfile/$alldbs"
-
   # log that we're running the command
   logstatusquiet "running $dbms_prefix get-DB-list command"
   printf "%s\n" "running $dbms_prefix get-DB-list command" >&3
 
   # run the command
-  dblistcmd > "$lockfile/$alldbs" 2>&3
+  dblistcmd > "$lockfile/$alldbs$dbms_prefix" 2>&3
 
   # check status
   if [ "$?" != 0 ]; then
@@ -1313,14 +1322,14 @@ getdblist () {
   case "$dbms_prefix" in
     mysql)
       # check for characters that could break out of a quoted string,
-      # or drop things into one
+      # or drop in into one
       #
       # could be done more simply with egrep/grep -E, but this way is
       # probably more portable
-      rm -f "$lockfile/$alldbstmp"  # to prevent noclobber-type issues
-      tr -d "'\"\`$" < "$lockfile/$alldbs" \
-                     > "$lockfile/$alldbstmp"
-      if filecomp "$lockfile/$alldbs" "$lockfile/$alldbstmp" 2>/dev/null; then
+      tr -d "'\"\`$" < "$lockfile/$alldbs$dbms_prefix" \
+                     > "$lockfile/$alldbs$dbms_prefix$alldbstmp"
+      if filecomp "$lockfile/$alldbs$dbms_prefix" \
+                  "$lockfile/$alldbs$dbms_prefix$alldbstmp" 2>/dev/null; then
         :  # avoid non-portable 'if !'
       else  # cover both mismatch and error
         sendalert "the list of $dbms_prefix databases contains a dangerous character; exiting" log
@@ -1736,11 +1745,12 @@ do_dbdump () {
 # dbms_dblist must be an indexed, non-sparse array
 #
 # "local" vars: OLDIFS, dbname_esc, dbname, exclude
-# global vars: IFS, dbnames, dbms_dbmode, dbms_dblist, dbms_splitdbs, alldbs
+# global vars: IFS, dbnames, dbms_prefix, dbms_dbmode, dbms_dblist,
+#              dbms_splitdbs, alldbs
 # config settings: lockfile
 # library functions: copyarray(), dbunescape()
 # utilities: [
-# files: $lockfile/$alldbs
+# files: $lockfile/$alldbs$dbms_prefix
 # bashisms: array+=() [v3.1]
 #
 do_dbdumploop () {
@@ -1761,7 +1771,7 @@ do_dbdumploop () {
       exclude)
         dbnames=()
         IFS=""
-        while read -r dbname_esc; do  # < "$lockfile/$alldbs"
+        while read -r dbname_esc; do  # < "$lockfile/$alldbs$dbms_prefix"
           IFS="$OLDIFS"
           dbname=$(dbunescape "$dbname_esc")
 
@@ -1773,7 +1783,7 @@ do_dbdumploop () {
 
           dbnames+=("$dbname")
           IFS=""
-        done < "$lockfile/$alldbs"
+        done < "$lockfile/$alldbs$dbms_prefix"
         IFS="$OLDIFS"
 
         do_dbdump "mult"
@@ -1784,7 +1794,7 @@ do_dbdumploop () {
     case "$dbms_dbmode" in
       all)
         IFS=""
-        while read -r dbname_esc; do  # < "$lockfile/$alldbs"
+        while read -r dbname_esc; do  # < "$lockfile/$alldbs$dbms_prefix"
           IFS="$OLDIFS"
           dbname=$(dbunescape "$dbname_esc")
 
@@ -1792,7 +1802,7 @@ do_dbdumploop () {
           [ "$?" = "1" ] && return 1  # skip to the next phase
 
           IFS=""
-        done < "$lockfile/$alldbs"
+        done < "$lockfile/$alldbs$dbms_prefix"
         IFS="$OLDIFS"
         ;;
       include)
@@ -1803,7 +1813,7 @@ do_dbdumploop () {
         ;;
       exclude)
         IFS=""
-        while read -r dbname_esc; do  # < "$lockfile/$alldbs"
+        while read -r dbname_esc; do  # < "$lockfile/$alldbs$dbms_prefix"
           IFS="$OLDIFS"
           dbname=$(dbunescape "$dbname_esc")
 
@@ -1817,7 +1827,7 @@ do_dbdumploop () {
           [ "$?" = "1" ] && return 1  # skip to the next phase
 
           IFS=""
-        done < "$lockfile/$alldbs"
+        done < "$lockfile/$alldbs$dbms_prefix"
         IFS="$OLDIFS"
        ;;
     esac  # case "$dbms_dbmode"
