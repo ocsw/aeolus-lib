@@ -14,3 +14,7 @@ gzip "do you want to overwrite"
 splitdbs - rotate dir AFTER all dumped
 pause when rotating logs
 messages for all phase cases
+
+eval funcs - unset vs null, esp. arrays (w/ declare -p)
+
+really need dblistchar?
