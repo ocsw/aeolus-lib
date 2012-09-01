@@ -1459,7 +1459,7 @@ getdumppaths () {
 #
 # dbnames and dbms_zipoptions must be indexed, non-sparse arrays
 #
-# "local" vars: dumptype, dbname, dbstring, fileexists
+# "local" vars: dumptype, dbname, fileexists
 # global vars: dbnames, dumptmp, dumpprefix, dumpsuffix, rotateprefix,
 #              rotatesep, rotatesuffix, dbms_prefix, dbms_layout,
 #              dbms_numfiles, dbms_daysfiles, dbms_zipmode, dbms_zipoptions,
@@ -1467,28 +1467,22 @@ getdumppaths () {
 #              dbzip_exitval
 # config settings: on_duplerr, on_dbdumperr, on_dbziperr
 # library vars: newline
-# library functions: rotatenumfiles(), prunefiles(), removefilezip(),
-#                    dbdumponecmd(), dbdumpmultcmd(), dbdumpallcmd(),
-#                    sendalert(), logstatus(), logstatusquiet(), do_exit()
+# library functions: rotatenumfiles(), prunefiles(), existsfilezip(),
+#                    removefilezip(), dbdumponecmd(), dbdumpmultcmd(),
+#                    dbdumpallcmd(), sendalert(), logstatus(),
+#                    logstatusquiet(), do_exit()
 # utilities: (allowed values of $dbms_zipmode), rm, mv, date, printf, [
 # FDs: 3
 # bashisms: arrays
 #
 do_dbdump () {
   dumptype="$1"
-  dbname="$2"
-
-  # if we're dumping only one DB, the DB name will be part of the
-  # filename(s)
-  dbstring=""
-  if [ "$dumptype" = "one" ]; then
-    dbstring="$dbname"
-  fi
+  dbname="$2"  # will be null unless $1 is "one"
 
   # rotate if we need to, to make way for the new dump
   case "$dbms_layout" in
     number)
-      rotatenumfiles "$rotateprefix$dbstring" "$rotatesep" "$rotatesuffix"
+      rotatenumfiles "$rotateprefix$dbname" "$rotatesep" "$rotatesuffix"
       ;;
     numberdir)
       rotatenumfiles "$rotateprefix" "$rotatesep" "$rotatesuffix"
@@ -1499,50 +1493,41 @@ do_dbdump () {
   fileexists="no"
   if [ "$dbms_layout" != "single" ] \
      && \
-     [ "$dbms_layout" != "singledir" ]; then
-    #
-    [ -f "$dumpprefix$dbstring$dumpsuffix" ] && fileexists="yes"
-    #
-    { [ "$dbms_zipmode" = "gzip" ] || [ "$dbms_zipmode" = "pigz" ]; } && \
-      [ -f "$dumpprefix$dbstring$dumpsuffix.gz" ] && fileexists="yes"
-    #
-    [ "$dbms_zipmode" = "bzip2" ] && \
-      { [ -f "$dumpprefix$dbstring$dumpsuffix.bz" ] || [ -f "$dumpprefix$dbstring$dumpsuffix.bz2" ]; } && \
-      fileexists="yes"
-    #
-    [ "$dbms_zipmode" = "lzip" ] && \
-      [ -f "$dumpprefix$dbstring$dumpsuffix.lz" ] && fileexists="yes"
+     [ "$dbms_layout" != "singledir" ] \
+     && \
+     existsfilezip "$dumpprefix$dbname$dumpsuffix"; then
+    fileexists="yes"
   fi
 
   if [ "$fileexists" = "yes" ]; then
     case "$on_dbduplerr" in
       exit)
-        if [ "$dbstring" != "" ]; then
-          sendalert "dumpfile for $dbms_prefix database '$dbstring' already exists; exiting" log
+        if [ "$dbname" != "" ]; then
+          sendalert "dumpfile for $dbms_prefix database '$dbname' already exists; exiting" log
         else
           sendalert "dumpfile for $dbms_prefix database(s) already exists; exiting" log
         fi
         do_exit "$dumpexists_exitval"
         ;;
       phase)
-        if [ "$dbstring" != "" ]; then
-          sendalert "dumpfile for $dbms_prefix database '$dbstring' already exists;${newline}skipping to next phase of backup" log
+        if [ "$dbname" != "" ]; then
+          sendalert "dumpfile for $dbms_prefix database '$dbname' already exists;${newline}skipping to next phase of backup" log
         else
           sendalert "dumpfile for $dbms_prefix database(s) already exists;${newline}skipping to next phase of backup" log
         fi
         return 1  # skip to the next phase
         ;;
       db)
-        if [ "$dbstring" != "" ]; then
-          sendalert "dumpfile for $dbms_prefix database '$dbstring' already exists; skipping" log
+        if [ "$dbname" != "" ]; then
+          sendalert "dumpfile for $dbms_prefix database '$dbname' already exists; skipping" log
         else
           sendalert "dumpfile for $dbms_prefix database(s) already exists; skipping" log
         fi
         return 2  # skip to the next DB
         ;;
       warn)
-        if [ "$dbstring" != "" ]; then
-          sendalert "warning: dumpfile for $dbms_prefix database '$dbstring' already exists; overwriting" log
+        if [ "$dbname" != "" ]; then
+          sendalert "warning: dumpfile for $dbms_prefix database '$dbname' already exists; overwriting" log
         else
           sendalert "warning: dumpfile for $dbms_prefix database(s) already exists; overwriting" log
         fi
@@ -1557,11 +1542,11 @@ do_dbdump () {
   if [ "$dbms_preserve" = "space" ]; then
     # prune old dumpfiles
     case "$dbms_layout" in
-      single|number|date)
-        prunefiles "$dbms_layout" "$rotateprefix$dbstring" "$rotatesep" \
+      number|date)
+        prunefiles "$dbms_layout" "$rotateprefix$dbname" "$rotatesep" \
                    "$rotatesuffix" "$dbms_numfiles" "$dbms_daysfiles"
         ;;
-      singledir|numberdir|datedir)
+      numberdir|datedir)
         prunefiles "$dbms_layout" "$rotateprefix" "$rotatesep" \
                    "$rotatesuffix" "$dbms_numfiles" "$dbms_daysfiles"
         ;;
@@ -1569,18 +1554,18 @@ do_dbdump () {
 
     # remove any current dumpfile that's in the way ("single"/"singledir",
     # or from, e.g., rerunning the backup)
-    removefilezip "$dumpprefix$dbstring$dumpsuffix" "$dbms_zipmode"
+    removefilezip "$dumpprefix$dbname$dumpsuffix" "$dbms_zipmode"
   fi
 
   # if we're dumping a single database, log the name
-  if [ "$dbstring" != "" ]; then
-    logstatus "dumping $dbms_prefix database '$dbstring'"
+  if [ "$dbname" != "" ]; then
+    logstatus "dumping $dbms_prefix database '$dbname'"
   fi
 
   # log that we're running the command
-  if [ "$dbstring" != "" ]; then
-    logstatusquiet "running $dbms_prefix dump command for database '$dbstring'"
-    printf "%s\n" "running $dbms_prefix dump command for database '$dbstring'" >&3
+  if [ "$dbname" != "" ]; then
+    logstatusquiet "running $dbms_prefix dump command for database '$dbname'"
+    printf "%s\n" "running $dbms_prefix dump command for database '$dbname'" >&3
   else
     logstatusquiet "running $dbms_prefix dump command"
     printf "%s\n" "running $dbms_prefix dump command" >&3
@@ -1592,31 +1577,31 @@ do_dbdump () {
   # run the command
   case "$dbms_preserve" in
     data)
-      rm -f "$dumpprefix$dbstring$dumpsuffix$dumptmp"  # safer for >
+      rm -f "$dumpprefix$dbname$dumpsuffix$dumptmp"  # safer for >
       case "$dumptype" in
         one)
-          dbdumponecmd "$dbname" > "$dumpprefix$dbstring$dumpsuffix$dumptmp" 2>&3
+          dbdumponecmd "$dbname" > "$dumpprefix$dbname$dumpsuffix$dumptmp" 2>&3
           ;;
         mult)
           # uses dbnames array
-          dbdumpmultcmd > "$dumpprefix$dbstring$dumpsuffix$dumptmp" 2>&3
+          dbdumpmultcmd > "$dumpprefix$dumpsuffix$dumptmp" 2>&3
           ;;
         all)
-          dbdumpallcmd > "$dumpprefix$dbstring$dumpsuffix$dumptmp" 2>&3
+          dbdumpallcmd > "$dumpprefix$dumpsuffix$dumptmp" 2>&3
           ;;
       esac
       ;;
     space)
       case "$dumptype" in
         one)
-          dbdumponecmd "$dbname" > "$dumpprefix$dbstring$dumpsuffix" 2>&3
+          dbdumponecmd "$dbname" > "$dumpprefix$dbname$dumpsuffix" 2>&3
           ;;
         mult)
           # uses dbnames array
-          dbdumpmultcmd > "$dumpprefix$dbstring$dumpsuffix" 2>&3
+          dbdumpmultcmd > "$dumpprefix$dumpsuffix" 2>&3
           ;;
         all)
-          dbdumpallcmd > "$dumpprefix$dbstring$dumpsuffix" 2>&3
+          dbdumpallcmd > "$dumpprefix$dumpsuffix" 2>&3
           ;;
       esac
       ;;
@@ -1626,24 +1611,24 @@ do_dbdump () {
   if [ "$?" != 0 ]; then
     case "$on_dbdumperr" in
       exit)
-        if [ "$dbstring" != "" ]; then
-          sendalert "error dumping $dbms_prefix database '$dbstring'; exiting" log
+        if [ "$dbname" != "" ]; then
+          sendalert "error dumping $dbms_prefix database '$dbname'; exiting" log
         else
           sendalert "error dumping $dbms_prefix database(s); exiting" log
         fi
         do_exit "$dbdump_exitval"
         ;;
       phase)
-        if [ "$dbstring" != "" ]; then
-          sendalert "error dumping $dbms_prefix database '$dbstring';${newline}skipping to next phase of backup" log
+        if [ "$dbname" != "" ]; then
+          sendalert "error dumping $dbms_prefix database '$dbname';${newline}skipping to next phase of backup" log
         else
           sendalert "error dumping $dbms_prefix database(s);${newline}skipping to next phase of backup" log
         fi
         return 1  # skip to the next phase
         ;;
       db)
-        if [ "$dbstring" != "" ]; then
-          sendalert "error dumping $dbms_prefix database '$dbstring'; skipping" log
+        if [ "$dbname" != "" ]; then
+          sendalert "error dumping $dbms_prefix database '$dbname'; skipping" log
         else
           sendalert "error dumping $dbms_prefix database(s); skipping" log
         fi
@@ -1651,8 +1636,8 @@ do_dbdump () {
         ;;
     esac
   else
-    if [ "$dbstring" != "" ]; then
-      logstatus "successfully dumped $dbms_prefix database '$dbstring'"
+    if [ "$dbname" != "" ]; then
+      logstatus "successfully dumped $dbms_prefix database '$dbname'"
     else
       logstatus "successfully dumped $dbms_prefix database(s)"
     fi
@@ -1667,17 +1652,17 @@ do_dbdump () {
     # place
     #
     # only really need the zip part of this, since we use mv -f
-    removefilezip "$dumpprefix$dbstring$dumpsuffix" "$dbms_zipmode"
-    mv -f "$dumpprefix$dbstring$dumpsuffix$dumptmp" \
-          "$dumpprefix$dbstring$dumpsuffix"
+    removefilezip "$dumpprefix$dbname$dumpsuffix" "$dbms_zipmode"
+    mv -f "$dumpprefix$dbname$dumpsuffix$dumptmp" \
+          "$dumpprefix$dbname$dumpsuffix"
 
     # prune old dumpfiles
     case "$dbms_layout" in
-      single|number|date)
-        prunefiles "$dbms_layout" "$rotateprefix$dbstring" "$rotatesep" \
+      number|date)
+        prunefiles "$dbms_layout" "$rotateprefix$dbname" "$rotatesep" \
                    "$rotatesuffix" "$dbms_numfiles" "$dbms_daysfiles"
         ;;
-      singledir|numberdir|datedir)
+      numberdir|datedir)
         prunefiles "$dbms_layout" "$rotateprefix" "$rotatesep" \
                    "$rotatesuffix" "$dbms_numfiles" "$dbms_daysfiles"
         ;;
@@ -1694,30 +1679,30 @@ do_dbdump () {
 
     # do the zip
     "$dbms_zipmode" "${dbms_zipoptions[@]}" \
-                    "$dumpprefix$dbstring$dumpsuffix" >&3 2>&1
+                    "$dumpprefix$dbname$dumpsuffix" >&3 2>&1
 
     # check status
     if [ "$?" != 0 ]; then
       case "$on_dbziperr" in
         exit)
-          if [ "$dbstring" != "" ]; then
-            sendalert "error compressing $dbms_prefix database '$dbstring'; exiting" log
+          if [ "$dbname" != "" ]; then
+            sendalert "error compressing $dbms_prefix database '$dbname'; exiting" log
           else
             sendalert "error compressing $dbms_prefix database(s); exiting" log
           fi
           do_exit "$dbzip_exitval"
           ;;
         phase)
-          if [ "$dbstring" != "" ]; then
-            sendalert "error compressing $dbms_prefix database '$dbstring';${newline}skipping to next phase of backup" log
+          if [ "$dbname" != "" ]; then
+            sendalert "error compressing $dbms_prefix database '$dbname';${newline}skipping to next phase of backup" log
           else
             sendalert "error compressing $dbms_prefix database(s);${newline}skipping to next phase of backup" log
           fi
           return 1  # skip to the next phase
           ;;
         db)
-          if [ "$dbstring" != "" ]; then
-            sendalert "error compressing $dbms_prefix database '$dbstring'; skipping" log
+          if [ "$dbname" != "" ]; then
+            sendalert "error compressing $dbms_prefix database '$dbname'; skipping" log
           else
             sendalert "error compressing $dbms_prefix database(s); skipping" log
           fi
@@ -1725,8 +1710,8 @@ do_dbdump () {
           ;;
       esac
     else
-      if [ "$dbstring" != "" ]; then
-        logstatus "successfully compressed $dbms_prefix database '$dbstring'"
+      if [ "$dbname" != "" ]; then
+        logstatus "successfully compressed $dbms_prefix database '$dbname'"
       else
         logstatus "successfully compressed $dbms_prefix database(s)"
       fi

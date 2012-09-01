@@ -2624,9 +2624,8 @@ prunedatefiles () {
 #
 prunefiles () {
   case "$1" in
-    # currently, the function is not actually called for "append",
-    # but put it here for future use / FTR
     single|singledir|append)
+      # not generally called for these, but here for future use / FTR
       :  # nothing to do
       ;;
     number|numberdir)
@@ -2670,6 +2669,44 @@ rotatepruneoutputlogs () {
   # prune
   prunefiles "$outputlog_layout" "$outputlog" "$outputlog_sep" "" \
              "$numlogs" "$dayslogs"
+}
+
+#
+# check if a file exists, including zipped versions of it
+#
+# $1 = filename
+# $2 = type of zip to check for ("gzip", "pigz", "bzip2", "lzip", "all" for
+# all of the above, or "none")
+#
+# if they exist, files must be regular files or symlinks to regular files
+#
+# returns 0/1 (true/false)
+#
+# utilities: [
+#
+existsfilezip () {
+  [ "$1" = "" ] && return 1;  # false
+
+  case "$2" in
+    none)
+      [ -f "$1" ]
+      ;;
+    gzip|pigz)
+      [ -f "$1" ] || [ -f "$1.gz" ]
+      ;;
+    bzip2)
+      [ -f "$1" ] || [ -f "$1.bz" ] || [ -f "$1.bz2" ]
+      ;;
+    lzip)
+      [ -f "$1" ] || [ -f "$1.lz" ]
+      ;;
+    all)
+      [ -f "$1" ] || [ -f "$1.gz" ] || [ -f "$1.bz" ] || [ -f "$1.bz2" ] || \
+          [ -f "$1.lz" ]
+      ;;
+    *)  # just in case
+      return 1  # false
+  esac
 }
 
 #
