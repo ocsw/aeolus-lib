@@ -1495,7 +1495,7 @@ do_dbdump () {
      && \
      [ "$dbms_layout" != "singledir" ] \
      && \
-     existsfilezip "$dumpprefix$dbname$dumpsuffix"; then
+     existsfilezip "$dumpprefix$dbname$dumpsuffix" "$dbms_zipmode"; then
     fileexists="yes"
   fi
 

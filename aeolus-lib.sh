@@ -2676,7 +2676,7 @@ rotatepruneoutputlogs () {
 #
 # $1 = filename
 # $2 = type of zip to check for ("gzip", "pigz", "bzip2", "lzip", "all" for
-# all of the above, or "none")
+# all of the above, or "none"; default is "all")
 #
 # if they exist, files must be regular files or symlinks to regular files
 #
@@ -2700,12 +2700,10 @@ existsfilezip () {
     lzip)
       [ -f "$1" ] || [ -f "$1.lz" ]
       ;;
-    all)
+    all|*)  # default
       [ -f "$1" ] || [ -f "$1.gz" ] || [ -f "$1.bz" ] || [ -f "$1.bz2" ] || \
           [ -f "$1.lz" ]
       ;;
-    *)  # just in case
-      return 1  # false
   esac
 }
 
