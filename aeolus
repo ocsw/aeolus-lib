@@ -451,7 +451,7 @@ rsync_exitval="11"
 if ! declare -F mysql_altopts > /dev/null 2>&1; then
   mysql_altopts () {
     case "$1" in
-      information_schema)
+      information_schema|performance_schema)
         copyarray "mysql_dumpoptions" "altopts"  # include regular options
         altopts+=(--skip-lock-tables)
         return 0
