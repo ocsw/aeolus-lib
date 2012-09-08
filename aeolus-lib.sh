@@ -1245,6 +1245,7 @@ escsedrepl () {
 # expressions
 #
 # "local" vars: seddelim, char
+# library vars: tab
 # utilities: printf, tr, [
 #
 getseddelim () {
@@ -2550,8 +2551,9 @@ prunenumfiles () {
 #
 # also works on directories
 #
-# note: "current" file must exist before calling this function, so that
-# it can be counted
+# re numbered pruning:
+#   note: "current" file must exist before calling this function, so that
+#   it can be counted
 #
 # also, because we can't make any assumptions about the format of the date
 # string, this function can be over-broad in the files it looks at;
@@ -3158,7 +3160,8 @@ dblistcmd () {
 # dbms_prefix must be one of the accepted values (currently only
 # "mysql"
 #
-# global vars: dbms_prefix, tab
+# global vars: dbms_prefix
+# library vars: tab
 # utilities: printf, sed
 #
 dbunescape () {

@@ -121,6 +121,8 @@ esac
 #
 # note: this function must be idempotent
 #
+# library vars: (newline)
+#
 do_debug () {
   # see http://bashdb.sourceforge.net/bashdb.html#Interactive-Line-Tracing-Session
   #PS4='(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]} - [${SHLVL},${BASH_SUBSHELL}, $?]$newline'
@@ -1261,7 +1263,6 @@ dbdumpallcmd () {
 # global vars: dbms_prefix, dbms_dbmode, dbms_splitdbs, alldbs, alldbstmp,
 #              getdblist_exitval, dblistchar_exitval, dbmslist
 # config settings: lockfile, on_dblisterr, on_dbcharerr
-# library vars: newline, tab
 # library functions: dblistcmd(), filecomp(), logstatusquiet(), logstatus(),
 #                    sendalert(), do_exit()
 # utilities: rm, tr, printf, [
@@ -1350,7 +1351,7 @@ getdblist () {
 
 #
 # get the path information for a set of DB dumps (without the DB name),
-# and create the subdirectory if necessary
+# and create the subdirectory if necessary (including rotation)
 #
 # this populates two sets of path variables: one for the dump, with a place
 # for the DB name, and one for the rotation/pruning, with a place for the
@@ -1725,7 +1726,7 @@ do_dbdump () {
 
 #
 # wrapper around the different modes of DB dumps
-# (split/unsplit, all/include/exclude/etc.)
+# (split/unsplit, all/include/exclude)
 #
 # returns 1 to mean "skip to the next phase of the backup", else 0
 #
@@ -1948,6 +1949,7 @@ case "$mode" in
     clearlock "a" "backup"
     ;;
   systemtest)
+    # check for external utilities in the PATH
     checkextcmds
     do_exit "$no_error_exitval"
     ;;
@@ -1971,7 +1973,7 @@ checkstatus "backup" "backups"
 
 # get them all now, so they're as close together as possible
 
-# for the current DB dump filenames
+# for the current DB-dump filenames
 for dbms in $dbmslist; do
   switchdbms "$dbms"
 
