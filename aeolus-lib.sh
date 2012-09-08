@@ -2106,6 +2106,9 @@ checkstatus () {
 #
 # log starting messages and timestamp, and touch $startedfile
 #
+# $1 is a description of the script's purpose, such as "backup"; this is
+# used in messages like "starting backup"
+#
 # config settings: startedfile
 # library functions: logstatus()
 # utilities: touch, printf, date
@@ -2113,9 +2116,9 @@ checkstatus () {
 # FDs: 3
 #
 do_start () {
-  logstatus "starting backup"
+  logstatus "starting $1"
   touch "$startedfile"
-  printf "%s\n" "backup started $(date)" >&3
+  printf "%s\n" "$1 started $(date)" >&3
 }
 
 #
@@ -2123,13 +2126,16 @@ do_start () {
 #
 # log finished messages and timestamp
 #
+# $1 is a description of the script's purpose, such as "backup"; this is
+# used in messages like "backup finished"
+#
 # library functions: logstatus()
 # utilities: printf, date
 # FDs: 3
 #
 do_finish () {
-  logstatus "backup finished"
-  printf "%s\n" "backup finished $(date)" >&3
+  logstatus "$1 finished"
+  printf "%s\n" "$1 finished $(date)" >&3
 }
 
 #

@@ -1997,7 +1997,7 @@ startoutputlog  # includes getting output log datestring
 ################
 
 # log starting messages and timestamp, and touch $startedfile
-do_start
+do_start "backup"
 
 # are we supposed to actually do anything?
 do_something="no"  # set this to yes later if we do something
@@ -2141,7 +2141,7 @@ if [ "$do_something" = "no" ]; then  # everything was turned off
 fi
 
 # log finished messages and timestamp
-do_finish
+do_finish "backup"
 
 
 ##################
