@@ -1414,13 +1414,17 @@ getdumppaths () {
       rotatesuffix=""
       ;;
     numberdir)
-      [ ! -d "$dbms_dumpdir/$dbms_subdirprefix" ] && \
-          mkdir "$dbms_dumpdir/$dbms_subdirprefix"
       dumpprefix="$dbms_dumpdir/$dbms_subdirprefix/$dbms_fileprefix"
       dumpsuffix="$dbms_filesuffix"
       rotateprefix="$dbms_dumpdir/$dbms_subdirprefix"
       rotatesep="$dbms_filedirsep"
       rotatesuffix=""
+
+      # rotate the subdirectories because the last one would be in the way
+      rotatenumfiles "$rotateprefix" "$rotatesep" "$rotatesuffix"
+
+      [ ! -d "$dbms_dumpdir/$dbms_subdirprefix" ] && \
+          mkdir "$dbms_dumpdir/$dbms_subdirprefix"
       ;;
     datedir)
       if [ "$dbms_subdirprefix" = "" ]; then
@@ -1483,14 +1487,8 @@ do_dbdump () {
   dbname="$2"  # will be null unless $1 is "one"
 
   # rotate if we need to, to make way for the new dump
-  case "$dbms_layout" in
-    number)
-      rotatenumfiles "$rotateprefix$dbname" "$rotatesep" "$rotatesuffix"
-      ;;
-    numberdir)
-      rotatenumfiles "$rotateprefix" "$rotatesep" "$rotatesuffix"
-      ;;
-  esac
+  [ "$dbms_layout" = number ] && \
+    rotatenumfiles "$rotateprefix$dbname" "$rotatesep" "$rotatesuffix"
 
   # are we (still) about to overwrite an existing dump?
   fileexists="no"
@@ -1543,20 +1541,16 @@ do_dbdump () {
 
   # clean up ("space" preservation mode; see below)
   if [ "$dbms_preserve" = "space" ]; then
-    # prune old dumpfiles
+    # prune old dumpfiles (non-"dir" layouts)
     case "$dbms_layout" in
       number|date)
         prunefiles "$dbms_layout" "$rotateprefix$dbname" "$rotatesep" \
                    "$rotatesuffix" "$dbms_numfiles" "$dbms_daysfiles"
         ;;
-      numberdir|datedir)
-        prunefiles "$dbms_layout" "$rotateprefix" "$rotatesep" \
-                   "$rotatesuffix" "$dbms_numfiles" "$dbms_daysfiles"
-        ;;
     esac
 
-    # remove any current dumpfile that's in the way ("single"/"singledir",
-    # or from, e.g., rerunning the backup)
+    # remove any current dumpfile that's in the way, including zips
+    # ("single"/"singledir", or from, e.g., rerunning the backup)
     removefilezip "$dumpprefix$dbname$dumpsuffix" "$dbms_zipmode"
   fi
 
@@ -1651,22 +1645,18 @@ do_dbdump () {
 
   # clean up ("data" preservation mode; see above)
   if [ "$dbms_preserve" = "data" ]; then
-    # remove current dumpfile (including zips), and move the temp file into
-    # place
+    # remove current dumpfile (including zips),
+    # and move the temp file into place
     #
     # only really need the zip part of this, since we use mv -f
     removefilezip "$dumpprefix$dbname$dumpsuffix" "$dbms_zipmode"
     mv -f "$dumpprefix$dbname$dumpsuffix$dumptmp" \
           "$dumpprefix$dbname$dumpsuffix"
 
-    # prune old dumpfiles
+    # prune old dumpfiles (non-"dir" layouts")
     case "$dbms_layout" in
       number|date)
         prunefiles "$dbms_layout" "$rotateprefix$dbname" "$rotatesep" \
-                   "$rotatesuffix" "$dbms_numfiles" "$dbms_daysfiles"
-        ;;
-      numberdir|datedir)
-        prunefiles "$dbms_layout" "$rotateprefix" "$rotatesep" \
                    "$rotatesuffix" "$dbms_numfiles" "$dbms_daysfiles"
         ;;
     esac
@@ -2045,12 +2035,32 @@ for dbms in $dbmslist; do
     [ "$?" = "1" ] && skip_dbms && continue  # skip to the next phase
 
     # get the path information for the DB dump(s), and create the
-    # subdirectory if necessary
+    # subdirectory if necessary (including rotation)
     getdumppaths
+
+    # prune old files ("dir" layouts, "space" preservation mode; see below)
+    if [ "$dbms_preserve" = "space" ]; then
+      case "$dbms_layout" in
+        numberdir|datedir)
+          prunefiles "$dbms_layout" "$rotateprefix" "$rotatesep" \
+                     "$rotatesuffix" "$dbms_numfiles" "$dbms_daysfiles"
+          ;;
+      esac
+    fi
 
     # do the actual dump(s)
     do_dbdumploop
     [ "$?" = "1" ] && skip_dbms && continue  # skip to the next phase
+
+    # prune old files ("dir" layouts, "data" preservation mode; see above)
+    if [ "$dbms_preserve" = "data" ]; then
+      case "$dbms_layout" in
+        numberdir|datedir)
+          prunefiles "$dbms_layout" "$rotateprefix" "$rotatesep" \
+                     "$rotatesuffix" "$dbms_numfiles" "$dbms_daysfiles"
+          ;;
+      esac
+    fi
 
     # close the SSH tunnel if we had one
     if [ "$dbms_usetunnel" = "yes" ]; then
