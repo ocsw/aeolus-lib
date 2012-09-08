@@ -2535,8 +2535,8 @@ prunenumfiles () {
 
     # delete by date
     if [ "$daysf" != "0" ]; then
-      # -r for dirs
-      find "$filename" -mtime +"$daysf" -exec rm -rf {} \;
+      # -r for dirs; redirect because of issues with out-of-order deletions
+      find "$filename" -mtime +"$daysf" -exec rm -rf {} \; >/dev/null 2>&1
     fi
   done
 }
@@ -2601,8 +2601,8 @@ prunedatefiles () {
 
       # delete by date
       #
-      # -r for dirs
-      find "$filename" -mtime +"$daysf" -exec rm -rf {} \;
+      # -r for dirs; redirect because of issues with out-of-order deletions
+      find "$filename" -mtime +"$daysf" -exec rm -rf {} \; >/dev/null 2>&1
     done
   fi
 }
