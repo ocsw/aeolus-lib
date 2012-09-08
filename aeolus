@@ -194,8 +194,10 @@ externalcmds="
 "
 
 # default path to the config file, if one isn't specified
-# change usage notes if you change this
 defaultconfigfile="/etc/aeolus/aeolus.conf"
+
+# path to sample config file with full descriptions of settings
+sampleconfigfile="/etc/aeolus/CONFIG.SAMPLE"
 
 # names of all config file settings, in logical order
 configsettings="
@@ -1875,7 +1877,8 @@ case "$mode" in
     do_exit "$no_error_exitval"
     ;;
   create)
-    createblankconfig "# see CONFIG for details"
+    # print or create a blank config file
+    createblankconfig "# see $sampleconfigfile for details"
     if [ "$?" = "1" ]; then
       throwusageerr "Error: specified config file already exists; exiting."
     else
