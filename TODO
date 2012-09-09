@@ -7,20 +7,16 @@ rsync log (incl. rotation)
 rdiff
 
 script, docs re library install and source
+note re bash vs. portability
 warn re num/date?
 reorder rsync opts (ssh)
 1504645 bytes, name /backups/mysql/04-02-2012-14/db0.2012040201.sql.gz
-splitdbs - rotate dir AFTER all dumped
 pause when rotating logs
 messages for all phase cases
-
 eval funcs - unset vs null, esp. arrays (w/ declare -p)
-
 really need dblistchar?
-
 set -x for commands?
 
 zx
 bashfaq 007
-
 test all modes
