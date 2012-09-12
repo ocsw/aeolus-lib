@@ -19,4 +19,5 @@ set -x for commands?
 
 zx
 bashfaq 007
-test all modes
+
+retvals for phase, etc.
