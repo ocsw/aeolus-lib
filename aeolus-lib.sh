@@ -3218,11 +3218,9 @@ rsynccmd () {
         "$rsync_dest"
       ;;
     nodaemon)
+      # argument to -e has to be on one line
       rsync \
-        -e "ssh
-            ${rsync_sshport:+-p "$rsync_sshport"} \
-            ${rsync_sshkeyfile:+-i "$rsync_sshkeyfile"} \
-            ${rsync_sshoptions+"${rsync_sshoptions[@]}"}" \
+        -e "ssh ${rsync_sshport:+-p "$rsync_sshport"} ${rsync_sshkeyfile:+-i "$rsync_sshkeyfile"} ${rsync_sshoptions+"${rsync_sshoptions[@]}"}" \
         ${rsync_filterfile:+-f "merge $rsync_filterfile"} \
         ${rsync_options+"${rsync_options[@]}"} \
         ${rsync_add+"${rsync_add[@]}"} \
