@@ -978,7 +978,7 @@ newerthan () {
   if [ "$3" != "" ] && touch -t "$reftime" "$3"; then
     # find returns 0 even if no files are matched
     find "$1" -newer "$3" | grep "^$(escregex "$1")$" > /dev/null 2>&1
-    greprv=$?
+    greprv="$?"
     rm -f "$3"
     return "$greprv"
   else

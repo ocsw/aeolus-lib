@@ -106,7 +106,7 @@ esac
 [ "${on_tunerr+X}" = "" ] && on_tunerr_unset="yes"
 
 # source the library
-. /root/backup/aeolus-lib.sh
+. /root/aeolus/aeolus-lib.sh
 
 # finish massaging
 [ "$on_tunerr_unset" = "yes" ] && unset on_tunerr
@@ -825,6 +825,7 @@ printstatus () {
 	logfifo:
 	$(getfilemetadata "$lockfile/$logfifo")
 	EOF
+
     for dbms in $dbmslist; do
       cat <<-EOF
 
@@ -1288,7 +1289,7 @@ getdblist () {
   dblistcmd > "$lockfile/$alldbs$dbms_prefix" 2>&3
 
   # check status
-  if [ "$?" != 0 ]; then
+  if [ "$?" != "0" ]; then
     sendalert "could not get the list of $dbms_prefix databases; exiting" log
     case "$on_dblisterr" in
       exit)
@@ -1584,7 +1585,7 @@ do_dbdump () {
   esac
 
   # check status
-  if [ "$?" != 0 ]; then
+  if [ "$?" != "0" ]; then
     case "$on_dbdumperr" in
       exit)
         if [ "$dbname" != "" ]; then
@@ -1654,7 +1655,7 @@ do_dbdump () {
                     "$dumpprefix$dbname$dumpsuffix" >&3 2>&1
 
     # check status
-    if [ "$?" != 0 ]; then
+    if [ "$?" != "0" ]; then
       case "$on_dbziperr" in
         exit)
           if [ "$dbname" != "" ]; then
@@ -2088,7 +2089,7 @@ while true; do  # only here to allow us to easily skip to the next phase
     rsynccmd >&3 2>&1
 
     # check status
-    if [ "$?" != 0 ]; then
+    if [ "$?" != "0" ]; then
       sendalert "warning: rsync finished with errors; please check the log" log
       setexitval "$rsync_exitval"
     else

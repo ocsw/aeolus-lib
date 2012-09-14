@@ -14,10 +14,7 @@ reorder rsync opts (ssh)
 pause when rotating logs
 messages for all phase cases
 eval funcs - unset vs null, esp. arrays (w/ declare -p)
-really need dblistchar?
 set -x for commands?
-
-zx
 bashfaq 007
-
 retvals for phase, etc.
+all parts of db path - no /, enter
