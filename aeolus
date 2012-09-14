@@ -34,7 +34,7 @@
 #
 # lockfile dir is used for the following files:
 #   $lfalertssilenced, $scriptdisabled, $timetemp, $logfifo,
-#   $alldbs${DBMSes}, $alldbs${DBMSes}$alldbstmp
+#   $alldbs${DBMSes}
 # all files should be in printstatus()
 #
 # any change to the setting variables (additions, deletions, name changes,
@@ -183,8 +183,6 @@ externalcmds="
   tee
   ls
   find
-  diff
-  cmp
   touch
   mv
   rm
@@ -204,11 +202,9 @@ configsettings="
   usepath
   useumask
   timecomptype
-  filecomptype
   debugme
   on_tunerr
   on_dblisterr
-  on_dbcharerr
   on_dbduplerr
   on_dbdumperr
   on_dbziperr
@@ -317,11 +313,9 @@ configsettingisarray () {
 
 # default settings: housekeeping
 timecomptype_default="find"
-filecomptype_default="cmp"
 debugme_default="no"
 on_tunerr_default="phase"
 on_dblisterr_default="phase"
-on_dbcharerr_default="phase"
 on_dbduplerr_default="db"
 on_dbdumperr_default="db"
 on_dbziperr_default="db"
@@ -404,7 +398,6 @@ scriptdisabled="scriptdisabled"
 timetemp="timetemp"
 logfifo="logfifo"
 alldbs="alldbs-"  # gets DBMS name appended
-alldbstmp=".tmp"  # added to $alldbs${DBMS}
 
 # extension to use for temporary dumpfiles
 dumptmp=".tmp"
@@ -418,7 +411,6 @@ badvarname_exitval="3"
 nodelim_exitval="4"
 sshtunnel_exitval="5"
 getdblist_exitval="6"
-dblistchar_exitval="7"
 dumpexists_exitval="8"
 dbdump_exitval="9"
 dbzip_exitval="10"
@@ -762,13 +754,13 @@ EOF
 #
 # "local" vars: dbms
 # global vars: lfalertssilenced, scriptdisabled, timetemp, logfifo, alldbs,
-#              alldbstmp, dbmslist
+#              dbmslist
 # config settings: startedfile, lockfile, alertfile
 # library functions: getfilemetadata()
 # utilities: cat, echo, [
 # files: $startedfile, $alertfile, $lockfile, $lockfile/$lfalertssilenced,
 #        $lockfile/$scriptdisabled, $lockfile/$timetemp, $lockfile/$logfifo,
-#        $lockfile/$alldbs${DBMSes}, $lockfile/$alldbs${DBMSes}$alldbstmp
+#        $lockfile/$alldbs${DBMSes}
 #
 printstatus () {
   cat <<-EOF
@@ -835,9 +827,6 @@ printstatus () {
 
 	alldbs-$dbms:
 	$(getfilemetadata "$lockfile/$alldbs$dbms")
-
-	alldbs-$dbms.tmp:
-	$(getfilemetadata "$lockfile/$alldbs$dbms$alldbstmp")
 	EOF
     done
   fi
@@ -858,11 +847,9 @@ printstatus () {
 applydefaults () {
   # housekeeping
   [ "$timecomptype" = "" ] && timecomptype="$timecomptype_default"
-  [ "$filecomptype" = "" ] && filecomptype="$filecomptype_default"
   [ "$debugme" = "" ] && debugme="$debugme_default"
   [ "$on_tunerr" = "" ] && on_tunerr="$on_tunerr_default"
   [ "$on_dblisterr" = "" ] && on_dblisterr="$on_dblisterr_default"
-  [ "$on_dbcharerr" = "" ] && on_dbcharerr="$on_dbcharerr_default"
   [ "$on_dbduplerr" = "" ] && on_dbduplerr="$on_dbduplerr_default"
   [ "$on_dbdumperr" = "" ] && on_dbdumperr="$on_dbdumperr_default"
   [ "$on_dbziperr" = "" ] && on_dbziperr="$on_dbziperr_default"
@@ -956,11 +943,9 @@ validconf () {
   #
   # note: umask could be symbolic, not going to try to parse it
   validlist "timecomptype" "find" "date-r" "date-d" "awk" "gawk"
-  validlist "filecomptype" "cmp" "diff"
   validlist "debugme" "yes" "no"
   validlist "on_tunerr" "phase" "exit"
   validlist "on_dblisterr" "phase" "exit"
-  validlist "on_dbcharerr" "phase" "exit"
   validlist "on_dbduplerr" "ignore" "warn" "db" "phase" "exit"
   validlist "on_dbdumperr" "db" "phase" "exit"
   validlist "on_dbziperr" "db" "phase" "exit"
@@ -1262,21 +1247,19 @@ dbdumpallcmd () {
 # dbms_prefix must be one of the accepted values (see dbmslist)
 #
 # local vars: dbms
-# global vars: dbms_prefix, dbms_dbmode, dbms_splitdbs, alldbs, alldbstmp,
-#              getdblist_exitval, dblistchar_exitval, dbmslist
-# config settings: lockfile, on_dblisterr, on_dbcharerr
-# library functions: dblistcmd(), filecomp(), logstatusquiet(), logstatus(),
-#                    sendalert(), do_exit()
-# utilities: rm, tr, printf, [
-# files: $lockfile/$alldbs$dbms_prefix,
-#        $lockfile/$alldbs$dbms_prefix$alldbstmp
+# global vars: dbms_prefix, dbms_dbmode, dbms_splitdbs, alldbs,
+#              getdblist_exitval, dbmslist
+# config settings: lockfile, on_dblisterr
+# library functions: dblistcmd(), logstatusquiet(), logstatus(), sendalert(),
+#                    do_exit()
+# utilities: rm, printf, [
+# files: $lockfile/$alldbs$dbms_prefix
 # FDs: 3
 #
 getdblist () {
   # remove any existing files, to prevent both confusion and noclobber-type
   # issues
   rm -f "$lockfile/$alldbs$dbms_prefix"
-  rm -f "$lockfile/$alldbs$dbms_prefix$alldbstmp"
 
   # do we need the list?
   case "$dbms_prefix" in
@@ -1314,39 +1297,44 @@ getdblist () {
     logstatus "obtained the list of $dbms_prefix databases"
   fi
 
-  # separate this by DBMS in case some have different output formats,
-  # but most can probably be lumped together;
-  # however, they all need to be massaged into the same format:
-  # DB names separated by newlines, with these encodings:
-  # newline -> \n
-  # tab -> \t
-  # \ -> \\
-
-  case "$dbms_prefix" in
-    mysql)
-      # check for characters that could break out of a quoted string,
-      # or drop into one
-      #
-      # could be done more simply with egrep/grep -E, but this way is
-      # probably more portable
-      tr -d "'\"\`$" < "$lockfile/$alldbs$dbms_prefix" \
-                     > "$lockfile/$alldbs$dbms_prefix$alldbstmp"
-      if filecomp "$lockfile/$alldbs$dbms_prefix" \
-                  "$lockfile/$alldbs$dbms_prefix$alldbstmp" 2>/dev/null; then
-        :  # avoid non-portable 'if !'
-      else  # cover both mismatch and error
-        sendalert "the list of $dbms_prefix databases contains a dangerous character; exiting" log
-        case "$on_dbcharerr" in
-          exit)
-            do_exit "$dblistchar_exitval"
-            ;;
-          phase)
-            return 1  # skip to the next phase
-            ;;
-        esac
-      fi
-      ;;
-  esac
+# ***
+# this code is from a previous version; now that all the evals are pulled
+# out and carefully checked, I'm pretty sure it's unnecessary
+# ***
+#
+#  # separate this by DBMS in case some have different output formats,
+#  # but most can probably be lumped together;
+#  # however, they all need to be massaged into the same format:
+#  # DB names separated by newlines, with these encodings:
+#  # newline -> \n
+#  # tab -> \t
+#  # \ -> \\
+#
+#  case "$dbms_prefix" in
+#    mysql)
+#      # check for characters that could break out of a quoted string,
+#      # or drop into one
+#      #
+#      # could be done more simply with egrep/grep -E, but this way is
+#      # probably more portable
+#      tr -d "'\"\`$" < "$lockfile/$alldbs$dbms_prefix" \
+#                     > "$lockfile/$alldbs$dbms_prefix$alldbstmp"
+#      if filecomp "$lockfile/$alldbs$dbms_prefix" \
+#                  "$lockfile/$alldbs$dbms_prefix$alldbstmp" 2>/dev/null; then
+#        :  # avoid non-portable 'if !'
+#      else  # cover both mismatch and error
+#        sendalert "the list of $dbms_prefix databases contains a dangerous character; exiting" log
+#        case "$on_dbcharerr" in
+#          exit)
+#            do_exit "$dblistchar_exitval"
+#            ;;
+#          phase)
+#            return 1  # skip to the next phase
+#            ;;
+#        esac
+#      fi
+#      ;;
+#  esac
 
   return 0
 }

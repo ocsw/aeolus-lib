@@ -51,17 +51,6 @@
 ###timecomptype=
 
 #
-# which of "cmp" and "diff" to use for file comparisons
-# (used in contexts in which either should be ok)
-#
-# * must have a value, but is currently only actually used if
-#   [dbms]_dodump="yes" and either [dbms]_dbmode="all" and
-#   [dbms]_splitdbs="yes", or [dbms]_dbmode="exclude", for some DBMS
-# * if blank or unset, defaults to "cmp"
-#
-###filecomptype=
-
-#
 # debug the script ("yes" or "no")?
 #
 # currently, turns on shell tracing (set -vx)
@@ -86,7 +75,6 @@
 # -------------------------
 #   tunerr    | error opening SSH tunnel
 #   dblisterr | error getting DB list
-#   dbcharerr | problem with contents of DB list (e.g., unsafe characters)
 #   dbduplerr | DB dumpfile already exists
 #   dbdumperr | error dumping DB
 #   dbziperr  | error compressing DB dump
@@ -95,7 +83,6 @@
 # --------------------------------------
 #   tunerr    |          ph ex | "phase"
 #   dblisterr |          ph ex | "phase"
-#   dbcharerr |          ph ex | "phase"
 #   dbduplerr | ig wa db ph ex | "db"
 #   dbdumperr |       db ph ex | "db"
 #   dbziperr  |       db ph ex | "db"
@@ -111,7 +98,6 @@
 #
 ###on_tunerr=
 ###on_dblisterr=
-###on_dbcharerr=
 ###on_dbduplerr=
 ###on_dbdumperr=
 ###on_dbziperr=

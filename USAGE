@@ -460,9 +460,9 @@ CONTENTS
       or modify the first line of the script to point to your bash binary.
 
    b) The script uses these utilities:
-        awk, bzip2, cat, cmp, date, diff, expr, find, gawk, grep, gzip,
-        hostname, logger, ls, lzip, mailx, mkdir, mkfifo, mv, mysql,
-        mysqldump, nc, pigz, rm, rsync, sed, sleep, ssh, tee, touch, tr
+        awk, bzip2, cat, date, expr, find, gawk, grep, gzip, hostname,
+        logger, ls, lzip, mailx, mkdir, mkfifo, mv, mysql, mysqldump, nc,
+        pigz, rm, rsync, sed, sleep, ssh, tee, touch, tr
 
    c) Some of the above are optional, depending on the settings used.  In
       the list below, [dbms] means any DBMS, but the same one throughout any
@@ -472,16 +472,6 @@ CONTENTS
         and timecomptype="awk" or "gawk", respectively
 
         bzip2: see gzip
-
-        cmp and diff are only needed if [dbms]_dodump="yes" and either
-        [dbms]_dbmode="all" and [dbms]_splitdbs="yes", or
-        [dbms]_dbmode="exclude";
-        which of cmp or diff is needed depends on the setting of
-        filecomptype
-        (note that this could expand slightly with the addition of new
-        DBMSes)
-
-        diff: see cmp
 
         expr is only needed if one of the following is true:
           * runevery and/or ifrunning is not 0, and timecomptype="date-r"
