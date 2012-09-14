@@ -72,9 +72,10 @@
 # (abbreviated below, but the full names must be used in the settings)
 #
 # error       | explanation
-# -------------------------
+# ------------------------------------------------------
 #   tunerr    | error opening SSH tunnel
 #   dblisterr | error getting DB list
+#   dbnameerr | DB name contains a problematic character
 #   dbduplerr | DB dumpfile already exists
 #   dbdumperr | error dumping DB
 #   dbziperr  | error compressing DB dump
@@ -83,21 +84,25 @@
 # --------------------------------------
 #   tunerr    |          ph ex | "phase"
 #   dblisterr |          ph ex | "phase"
+#   dbnameerr |       db ph ex | "db"
 #   dbduplerr | ig wa db ph ex | "db"
 #   dbdumperr |       db ph ex | "db"
 #   dbziperr  |       db ph ex | "db"
 #
 # note:
-#   -= dbduplerr does not apply in single/singledir modes (it is always
-#      ignored)
 #   -= tunerr applies to all tunnels, including for rsync
-#   -= however, there is no rsyncerr, because a) there isn't really anything
-#      to skip to, and b) rsync errors are always treated as warnings since
-#      they're usually caused by non-fatal problems like files being deleted
-#      during the backup
+#   -= dbnameerr does not apply if [dbms]_splitdbs=no; see the usage notes
+#      for more information
+#   -= dbduplerr does not apply in single/singledir modes (errors are always
+#      ignored)
+#   -= there is no rsyncerr, because a) there isn't really anything to skip
+#      to, and b) rsync errors are always treated as warnings since they're
+#      usually caused by non-fatal problems like files being deleted during
+#      the backup
 #
 ###on_tunerr=
 ###on_dblisterr=
+###on_dbnameerr=
 ###on_dbduplerr=
 ###on_dbdumperr=
 ###on_dbziperr=

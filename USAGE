@@ -9,8 +9,9 @@ CONTENTS
 3) Running The Script
 4) How To Use The Config File
 5) Script Output
-6) Rsync Modes
-7) Portability
+6) Database Dumps
+7) Rsync Modes
+8) Portability
 
 
 1) Installation
@@ -353,7 +354,15 @@ CONTENTS
       script for more information.
 
 
-6) Rsync Modes
+6) Database Dumps
+-----------------
+
+   a) For technical reasons, databases with names containing / or newline
+      characters will not be dumped when [dbms]_splitdbs=yes.  See
+      on_dbnameerr in the sample config file for more information.
+
+
+7) Rsync Modes
 --------------
 
    There are four main ways to use rsync (see the man page for more info):
@@ -450,7 +459,7 @@ CONTENTS
         * rsync_dest="local path"
 
 
-7) Portability
+8) Portability
 --------------
 
    a) The script must be run with bash version 3.1 or later, and assumes

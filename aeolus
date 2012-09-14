@@ -20,7 +20,7 @@
 #   4  = error finding a delimiter for a string
 #   5  = error opening SSH tunnel
 #   6  = error getting DB list
-#   7  = problem with contents of DB list (e.g., unsafe characters)
+#   7  = DB name contains a problematic character
 #   8  = DB dumpfile already exists
 #   9  = error dumping DB
 #   10 = error compressing DB dump
@@ -205,6 +205,7 @@ configsettings="
   debugme
   on_tunerr
   on_dblisterr
+  on_dbnameerr
   on_dbduplerr
   on_dbdumperr
   on_dbziperr
@@ -316,6 +317,7 @@ timecomptype_default="find"
 debugme_default="no"
 on_tunerr_default="phase"
 on_dblisterr_default="phase"
+on_dbnameerr_default="db"
 on_dbduplerr_default="db"
 on_dbdumperr_default="db"
 on_dbziperr_default="db"
@@ -411,6 +413,7 @@ badvarname_exitval="3"
 nodelim_exitval="4"
 sshtunnel_exitval="5"
 getdblist_exitval="6"
+dbname_exitval="7"
 dumpexists_exitval="8"
 dbdump_exitval="9"
 dbzip_exitval="10"
@@ -850,6 +853,7 @@ applydefaults () {
   [ "$debugme" = "" ] && debugme="$debugme_default"
   [ "$on_tunerr" = "" ] && on_tunerr="$on_tunerr_default"
   [ "$on_dblisterr" = "" ] && on_dblisterr="$on_dblisterr_default"
+  [ "$on_dbnameerr" = "" ] && on_dbnameerr="$on_dbnameerr_default"
   [ "$on_dbduplerr" = "" ] && on_dbduplerr="$on_dbduplerr_default"
   [ "$on_dbdumperr" = "" ] && on_dbdumperr="$on_dbdumperr_default"
   [ "$on_dbziperr" = "" ] && on_dbziperr="$on_dbziperr_default"
@@ -946,6 +950,7 @@ validconf () {
   validlist "debugme" "yes" "no"
   validlist "on_tunerr" "phase" "exit"
   validlist "on_dblisterr" "phase" "exit"
+  validlist "on_dbnameerr" "db" "phase" "exit"
   validlist "on_dbduplerr" "ignore" "warn" "db" "phase" "exit"
   validlist "on_dbdumperr" "db" "phase" "exit"
   validlist "on_dbziperr" "db" "phase" "exit"
@@ -1434,6 +1439,31 @@ getdumppaths () {
 do_dbdump () {
   dumptype="$1"
   dbname="$2"  # will be null unless $1 is "one"
+
+  # check for problematic characters in the DB name,
+  # if it's going to be part of a filename
+  #
+  # /  causes problems with the dump (interpreted as directory delim)
+  # \n causes problems with rotation (pruning?) in number mode; we'll
+  #    disallow it in general to be on the safe side
+  #
+  if [ "$dumptype" = "one" ] && \
+     [ "$(printf "%s\n" "$dbname" | tr -d '/\n')" != "$dbname" ]; then
+    case "$on_dbnameerr" in
+      exit)
+        sendalert "$dbms_prefix database name '$dbname' contains a problematic character; exiting" log
+        do_exit "$dbname_exitval"
+        ;;
+      phase)
+        sendalert "$dbms_prefix database name '$dbname' contains a problematic character;${newline}skipping to next phase of backup" log
+        return 1  # skip to the next phase
+        ;;
+      db)
+        sendalert "$dbms_prefix database name '$dbname' contains a problematic character; skipping" log
+        return 2  # skip to the next DB
+        ;;
+    esac
+  fi
 
   # rotate if we need to, to make way for the new dump
   [ "$dbms_layout" = number ] && \
