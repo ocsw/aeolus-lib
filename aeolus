@@ -1297,45 +1297,6 @@ getdblist () {
     logstatus "obtained the list of $dbms_prefix databases"
   fi
 
-# ***
-# this code is from a previous version; now that all the evals are pulled
-# out and carefully checked, I'm pretty sure it's unnecessary
-# ***
-#
-#  # separate this by DBMS in case some have different output formats,
-#  # but most can probably be lumped together;
-#  # however, they all need to be massaged into the same format:
-#  # DB names separated by newlines, with these encodings:
-#  # newline -> \n
-#  # tab -> \t
-#  # \ -> \\
-#
-#  case "$dbms_prefix" in
-#    mysql)
-#      # check for characters that could break out of a quoted string,
-#      # or drop into one
-#      #
-#      # could be done more simply with egrep/grep -E, but this way is
-#      # probably more portable
-#      tr -d "'\"\`$" < "$lockfile/$alldbs$dbms_prefix" \
-#                     > "$lockfile/$alldbs$dbms_prefix$alldbstmp"
-#      if filecomp "$lockfile/$alldbs$dbms_prefix" \
-#                  "$lockfile/$alldbs$dbms_prefix$alldbstmp" 2>/dev/null; then
-#        :  # avoid non-portable 'if !'
-#      else  # cover both mismatch and error
-#        sendalert "the list of $dbms_prefix databases contains a dangerous character; exiting" log
-#        case "$on_dbcharerr" in
-#          exit)
-#            do_exit "$dblistchar_exitval"
-#            ;;
-#          phase)
-#            return 1  # skip to the next phase
-#            ;;
-#        esac
-#      fi
-#      ;;
-#  esac
-
   return 0
 }
 
