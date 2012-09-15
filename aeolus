@@ -1445,8 +1445,8 @@ do_dbdump () {
   # if it's going to be part of a filename
   #
   # /  causes problems with the dump (interpreted as directory delim)
-  # \n causes problems with rotation (pruning?) in number mode; we'll
-  #    disallow it in general to be on the safe side
+  # \n causes problems with rotation in number mode; we'll disallow it
+  #    in general to be on the safe side
   #
   if [ "$dumptype" = "one" ] && \
      [ "$(printf "%s\n" "$dbname" | tr -d '/\n')" != "$dbname" ]; then

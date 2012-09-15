@@ -12,9 +12,9 @@ warn re num/date?
 reorder rsync opts (ssh)
 1504645 bytes, name /backups/mysql/04-02-2012-14/db0.2012040201.sql.gz
 pause when rotating logs
-messages for all phase cases
 eval funcs - unset vs null, esp. arrays (w/ declare -p)
 set -x for commands?
 bashfaq 007
+messages for all phase cases
 retvals for phase, etc.
 all parts of db path - no /, enter

@@ -762,6 +762,7 @@
 #     --skip-lock-tables option. Before 5.1.38, mysqldump silently ignores
 #     INFORMATION_SCHEMA even if you name it explicitly on the command
 #     line.
+# (similar conditions apply to the v5.5 'performance_schema' DB as well)
 #
 # it can also be useful for dumping the grants DB with
 # "--skip-extended-insert" while not wasting space in the other dumps
