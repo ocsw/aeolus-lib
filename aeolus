@@ -1081,12 +1081,17 @@ validconf () {
       [ "$dbms_splitdbs" = "no" ] && [ "$dbms_layout" != "date" ] && \
           validnotbothblank "${dbms}_fileprefix" "${dbms}_filesuffix"
       validnochar "${dbms}_fileprefix" "/"
+      validnochar "${dbms}_fileprefix" "$newline"
       validnochar "${dbms}_filesuffix" "/"
+      validnochar "${dbms}_filesuffix" "$newline"
       { [ "$dbms_layout" = "singledir" ] || [ "$dbms_layout" = "numberdir" ]; } && \
           validnoblank "${dbms}_subdirprefix"
       validnochar "${dbms}_subdirprefix" "/"
+      validnochar "${dbms}_subdirprefix" "$newline"
       validnochar "${dbms}_filedirsep" "/"
+      validnochar "${dbms}_filedirsep" "$newline"
       validnochar "${dbms}_filedirdate" "/"
+      validnochar "${dbms}_filedirdate" "$newline"
       if [ "$dbms_layout" != "single" ] && [ "$dbms_layout" != "singledir" ]; then
         validnum "${dbms}_numfiles"
         validnum "${dbms}_daysfiles"
@@ -1449,7 +1454,7 @@ do_dbdump () {
   #    in general to be on the safe side
   #
   if [ "$dumptype" = "one" ] && \
-     [ "$(printf "%s\n" "$dbname" | tr -d '/\n')" != "$dbname" ]; then
+     [ "$(printf "%sX\n" "$dbname" | tr -d '/\n')" != "${dbname}X" ]; then
     case "$on_dbnameerr" in
       exit)
         sendalert "$dbms_prefix database name '$dbname' contains a problematic character; exiting" log

@@ -873,8 +873,8 @@
 # prefix to prepend to the names of the database dumpfiles
 # (see notes, above)
 #
-# may not include '/' characters (directories in the path must be in the
-# mysql_dumpdir setting, except for "dir"-layout subdirectories)
+# may not include newline or '/' characters (directories in the path must be
+# in the mysql_dumpdir setting, except for "dir"-layout subdirectories)
 #
 # * can be blank if mysql_splitdbs="yes", or mysql_layout="date", or
 #   mysql_layout is not "date" and mysql_filesuffix is not blank
@@ -888,8 +888,8 @@
 #
 # usually ".sql" or ".txt"
 #
-# may not include '/' characters (directories in the path must be in the
-# mysql_dumpdir setting, except for "dir"-layout subdirectories)
+# may not include newline or '/' characters (directories in the path must be
+# in the mysql_dumpdir setting, except for "dir"-layout subdirectories)
 #
 # * can be blank if mysql_splitdbs="yes", or mysql_layout="date", or
 #   mysql_layout is not "date" and mysql_fileprefix is not blank
@@ -903,9 +903,9 @@
 #
 # will have number or date suffixes added if mysql_layout is not "singledir"
 #
-# may not include '/' characters (directories in the path must be in the
-# mysql_dumpdir setting; "dir"-layout subdirectories must be only one layer
-# deep)
+# may not include newline or '/' characters (directories in the path must be
+# in the mysql_dumpdir setting; "dir"-layout subdirectories must be only one
+# layer deep)
 #
 # * ignored if mysql_layout is not a "dir" option
 # * can be blank if mysql_layout="datedir"; however, you must be especially
@@ -921,8 +921,8 @@
 # names
 # (see notes, above)
 #
-# may not include '/' characters (directories in the path must be in the
-# mysql_dumpdir setting, except for "dir"-layout subdirectories)
+# may not include newline or '/' characters (directories in the path must be
+# in the mysql_dumpdir setting, except for "dir"-layout subdirectories)
 #
 # * ignored if any of these are true:
 #   -= mysql_layout="single" or "singledir"
@@ -950,8 +950,8 @@
 # run of the script will have the same date suffix (or as close as possible;
 # 'date' has to be run separately for, e.g., output logs and MySQL dumps)
 #
-# may not include '/' characters (directories in the path must be in the
-# mysql_dumpdir setting, except for "dir"-layout subdirectories)
+# may not include newline or '/' characters (directories in the path must be
+# in the mysql_dumpdir setting, except for "dir"-layout subdirectories)
 #
 # * ignored if mysql_layout is not "date" or "datedir"
 # * can be blank

@@ -1261,7 +1261,8 @@ getseddelim () {
               ' ' "$tab" ; do
     # use tr instead of grep so we don't have to worry about metacharacters
     # (we could use escregex(), but that's rather heavyweight for this)
-    if [ "$1" = "$(printf "%s\n" "$1" | tr -d "$char")" ]; then
+    # without Xs, this breaks if $1 ends in a newline
+    if [ "${1}X" = "$(printf "%sX\n" "$1" | tr -d "$char")" ]; then
       seddelim="$char"
       break
     fi
@@ -1707,8 +1708,9 @@ validnum () {
 # $1 = variable name
 # $2 = character
 #
-# "local" vars: vname, vval, nochar
+# "local" vars: vname, vval, nochar, charname
 # config settings: (contents of $1)
+# library vars: tab, newline
 # library functions: throwstartuperr()
 # utilities: printf, tr, [
 # bashisms: ${!var}
@@ -1718,10 +1720,26 @@ validnochar () {
   vval="${!vname}"
   nochar="$2"
 
+  case "$nochar" in
+    ' ')
+      charname="space"
+      ;;
+    $tab)
+      charname="tab"
+      ;;
+    $newline)
+      charname="newline"
+      ;;
+    *)
+      charname="'$nochar'"
+      ;;
+  esac
+
   # use tr so we don't have to worry about metacharacters
   # (we could use escregex(), but that's rather heavyweight for this)
-  if [ "$vval" != "$(printf "%s\n" "$vval" | tr -d "$nochar")" ]; then
-    throwstartuperr "Error: $vname cannot contain '$nochar' characters; exiting."
+  # without Xs, this breaks if $1 ends in a newline
+  if [ "${vval}X" != "$(printf "%sX\n" "$vval" | tr -d "$nochar")" ]; then
+    throwstartuperr "Error: $vname cannot contain $charname characters; exiting."
   fi
 }
 
