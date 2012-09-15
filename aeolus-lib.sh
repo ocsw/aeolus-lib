@@ -547,10 +547,10 @@ checkextcmds () {
   # get column width
   cmdlen=0
   for extcmd in $externalcmds; do
-     # if [ "${#extcmd}" -gt "$cmdlen" ]; then
-     # slower but more portable; see http://mywiki.wooledge.org/BashFAQ/007
-     if [ "$(expr \( "X$extcmd" : ".*" \) - 1)" -gt "$cmdlen" ]; then
-      cmdlen="${#extcmd}"
+    # if [ "${#extcmd}" -gt "$cmdlen" ]; then
+    # slower but more portable; see http://mywiki.wooledge.org/BashFAQ/007
+    if [ "$(expr \( "X$extcmd" : ".*" \) - 1)" -gt "$cmdlen" ]; then
+      cmdlen=$(expr \( "X$extcmd" : ".*" \) - 1)
     fi
   done
 

@@ -1828,7 +1828,9 @@ while [ "$#" -gt 0 ]; do
       shift
       ;;
     *)
-      mode="${1#--}"
+      #mode="${1#--}"
+      # slower but more portable
+      mode=$(printf "%s\n" "$1" | sed 's/^--//')
       shift
       ;;
   esac
