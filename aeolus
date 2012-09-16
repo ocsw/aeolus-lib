@@ -1262,7 +1262,7 @@ dbdumpallcmd () {
 #              getdblist_exitval, dbmslist
 # config settings: lockfile, on_dblisterr
 # library functions: dblistcmd(), logstatusquiet(), logstatus(), sendalert(),
-#                    do_exit()
+#                    do_exit(), setexitval()
 # utilities: rm, printf, [
 # files: $lockfile/$alldbs$dbms_prefix
 # FDs: 3
@@ -1295,12 +1295,14 @@ getdblist () {
 
   # check status
   if [ "$?" != "0" ]; then
-    sendalert "could not get the list of $dbms_prefix databases; exiting" log
     case "$on_dblisterr" in
       exit)
+        sendalert "could not get the list of $dbms_prefix databases; exiting" log
         do_exit "$getdblist_exitval"
         ;;
       phase)
+        sendalert "could not get the list of $dbms_prefix databases; skipping $dbms_prefix dumps" log
+        setexitval "$getdblist_exitval"
         return 1  # skip to the next phase
         ;;
     esac
@@ -1437,7 +1439,7 @@ getdumppaths () {
 # library functions: rotatenumfiles(), prunefiles(), existsfilezip(),
 #                    removefilezip(), dbdumponecmd(), dbdumpmultcmd(),
 #                    dbdumpallcmd(), sendalert(), logstatus(),
-#                    logstatusquiet(), do_exit()
+#                    logstatusquiet(), do_exit(), setexitval()
 # utilities: (allowed values of $dbms_zipmode), rm, mv, date, printf, [
 # FDs: 3
 # bashisms: arrays
@@ -1461,11 +1463,13 @@ do_dbdump () {
         do_exit "$dbname_exitval"
         ;;
       phase)
-        sendalert "$dbms_prefix database name '$dbname' contains a problematic character;${newline}skipping to next phase of backup" log
+        sendalert "$dbms_prefix database name '$dbname' contains a problematic character;${newline}skipping $dbms_prefix dumps" log
+        setexitval "$dbname_exitval"
         return 1  # skip to the next phase
         ;;
       db)
-        sendalert "$dbms_prefix database name '$dbname' contains a problematic character; skipping" log
+        sendalert "$dbms_prefix database name '$dbname' contains a problematic character;${newline}skipping this database" log
+        setexitval "$dbname_exitval"
         return 2  # skip to the next DB
         ;;
     esac
@@ -1497,18 +1501,20 @@ do_dbdump () {
         ;;
       phase)
         if [ "$dbname" != "" ]; then
-          sendalert "dumpfile for $dbms_prefix database '$dbname' already exists;${newline}skipping to next phase of backup" log
+          sendalert "dumpfile for $dbms_prefix database '$dbname' already exists;${newline}skipping $dbms_prefix dumps" log
         else
-          sendalert "dumpfile for $dbms_prefix database(s) already exists;${newline}skipping to next phase of backup" log
+          sendalert "dumpfile for $dbms_prefix database(s) already exists;${newline}skipping $dbms_prefix dumps" log
         fi
+        setexitval "$dumpexists_exitval"
         return 1  # skip to the next phase
         ;;
       db)
         if [ "$dbname" != "" ]; then
-          sendalert "dumpfile for $dbms_prefix database '$dbname' already exists; skipping" log
+          sendalert "dumpfile for $dbms_prefix database '$dbname' already exists;${newline}skipping this database" log
         else
-          sendalert "dumpfile for $dbms_prefix database(s) already exists; skipping" log
+          sendalert "dumpfile for $dbms_prefix database(s) already exists;${newline}skipping this database" log
         fi
+        setexitval "$dumpexists_exitval"
         return 2  # skip to the next DB
         ;;
       warn)
@@ -1517,6 +1523,7 @@ do_dbdump () {
         else
           sendalert "warning: dumpfile for $dbms_prefix database(s) already exists; overwriting" log
         fi
+        setexitval "$dumpexists_exitval"
         ;;
       ignore)
         :  # do nothing
@@ -1602,18 +1609,20 @@ do_dbdump () {
         ;;
       phase)
         if [ "$dbname" != "" ]; then
-          sendalert "error dumping $dbms_prefix database '$dbname';${newline}skipping to next phase of backup" log
+          sendalert "error dumping $dbms_prefix database '$dbname';${newline}skipping $dbms_prefix dumps" log
         else
-          sendalert "error dumping $dbms_prefix database(s);${newline}skipping to next phase of backup" log
+          sendalert "error dumping $dbms_prefix database(s);${newline}skipping $dbms_prefix dumps" log
         fi
+        setexitval "$dbdump_exitval"
         return 1  # skip to the next phase
         ;;
       db)
         if [ "$dbname" != "" ]; then
-          sendalert "error dumping $dbms_prefix database '$dbname'; skipping" log
+          sendalert "error dumping $dbms_prefix database '$dbname'; skipping this database" log
         else
-          sendalert "error dumping $dbms_prefix database(s); skipping" log
+          sendalert "error dumping $dbms_prefix database(s); skipping this database" log
         fi
+        setexitval "$dbdump_exitval"
         return 2  # skip to the next DB
         ;;
     esac
@@ -1672,18 +1681,20 @@ do_dbdump () {
           ;;
         phase)
           if [ "$dbname" != "" ]; then
-            sendalert "error compressing $dbms_prefix database '$dbname';${newline}skipping to next phase of backup" log
+            sendalert "error compressing $dbms_prefix database '$dbname';${newline}skipping $dbms_prefix dumps" log
           else
-            sendalert "error compressing $dbms_prefix database(s);${newline}skipping to next phase of backup" log
+            sendalert "error compressing $dbms_prefix database(s);${newline}skipping $dbms_prefix dumps" log
           fi
+          setexitval "$dbzip_exitval"
           return 1  # skip to the next phase
           ;;
         db)
           if [ "$dbname" != "" ]; then
-            sendalert "error compressing $dbms_prefix database '$dbname'; skipping" log
+            sendalert "error compressing $dbms_prefix database '$dbname'; skipping this database" log
           else
-            sendalert "error compressing $dbms_prefix database(s); skipping" log
+            sendalert "error compressing $dbms_prefix database(s); skipping this database" log
           fi
+          setexitval "$dbzip_exitval"
           return 2  # skip to the next DB
           ;;
       esac
@@ -2014,7 +2025,10 @@ for dbms in $dbmslist; do
     if [ "$dbms_usetunnel" = "yes" ]; then
       switchtunnel "$dbms"
       opensshtunnel
-      [ "$?" = "1" ] && skip_dbms && continue  # skip to the next phase
+      [ "$?" = "1" ] && \
+        setexitval "$sshtunnel_exitval" && \
+        echo "skipping $dbms_prefix dumps" && \
+        skip_dbms && continue  # skip to the next phase
     fi
 
     # get the list of all DBs if necessary
@@ -2082,7 +2096,10 @@ while true; do  # only here to allow us to easily skip to the next phase
     if [ "$rsync_mode" = "tunnel" ]; then
       switchtunnel "rsync"
       opensshtunnel
-      [ "$?" = "1" ] && skip_rsync && break  # skip to the next phase
+      [ "$?" = "1" ] && \
+        setexitval "$sshtunnel_exitval" && \
+        echo "skipping rsync backup" && \
+        skip_rsync && break  # skip to the next phase
     fi
 
     # log that we're running the command
