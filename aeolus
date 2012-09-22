@@ -538,6 +538,9 @@ sendalert_body () {
 # $1 is the prefix for the settings to use (e.g., "rsync" or a member of
 # $dbmslist)
 #
+# $2 is a description of the tunnel's purpose (e.g. "mysql dumps" or
+# "rsync backups"); this is used in status and error messages
+#
 # (in the notes below, [tun] = the value of $1)
 #
 # note: the [tun]_* settings may still be used in addition to or instead of
@@ -545,8 +548,8 @@ sendalert_body () {
 #
 # [tun]_sshoptions must be an indexed, non-sparse array
 #
-# global vars: tun_prefix, tun_sshuser, tun_sshhost, tun_sshkeyfile,
-#              tun_sshport, tun_localport, tun_remoteport,
+# global vars: tun_prefix, tun_descr, tun_sshuser, tun_sshhost,
+#              tun_sshkeyfile, tun_sshport, tun_localport, tun_remoteport,
 #              tun_sshoptions, tun_sshtimeout
 # config settings: [tun]_sshuser, [tun]_sshhost, [tun]_sshkeyfile,
 #                  [tun]_sshport, [tun]_localport, [tun]_remoteport,
@@ -555,6 +558,7 @@ sendalert_body () {
 #
 switchtunnel () {
   tun_prefix="$1"
+  tun_descr="$2"
   copyvar "${1}_sshuser" "tun_sshuser"
   copyvar "${1}_sshhost" "tun_sshhost"
   copyvar "${1}_sshkeyfile" "tun_sshkeyfile"
@@ -1014,7 +1018,7 @@ validconf () {
   # DBMS dumps, including SSH tunnels
   for dbms in $dbmslist; do
     switchdbms "$dbms"
-    switchtunnel "$dbms"
+    switchtunnel "$dbms" "$dbms dumps"
 
     # note: lines like
     #   validlist "${dbms}_dodump" "yes" "no"
@@ -2023,17 +2027,14 @@ for dbms in $dbmslist; do
 
     # open the SSH tunnel if we're going to use one
     if [ "$dbms_usetunnel" = "yes" ]; then
-      switchtunnel "$dbms"
+      switchtunnel "$dbms" "$dbms dumps"
       opensshtunnel
-      [ "$?" = "1" ] && \
-        setexitval "$sshtunnel_exitval" && \
-        echo "skipping $dbms_prefix dumps" && \
-        skip_dbms && continue  # skip to the next phase
+      [ "$?" = "1" ] && { skip_dbms; continue; }  # skip to the next phase
     fi
 
     # get the list of all DBs if necessary
     getdblist
-    [ "$?" = "1" ] && skip_dbms && continue  # skip to the next phase
+    [ "$?" = "1" ] && { skip_dbms; continue; }  # skip to the next phase
 
     # get the path information for the DB dump(s), and create the
     # subdirectory if necessary (including rotation)
@@ -2051,7 +2052,7 @@ for dbms in $dbmslist; do
 
     # do the actual dump(s)
     do_dbdumploop
-    [ "$?" = "1" ] && skip_dbms && continue  # skip to the next phase
+    [ "$?" = "1" ] && { skip_dbms; continue; }  # skip to the next phase
 
     # prune old files ("dir" layouts, "data" preservation mode; see above)
     if [ "$dbms_preserve" = "data" ]; then
@@ -2094,12 +2095,9 @@ while true; do  # only here to allow us to easily skip to the next phase
 
     # open the SSH tunnel if we're going to use one
     if [ "$rsync_mode" = "tunnel" ]; then
-      switchtunnel "rsync"
+      switchtunnel "rsync" "rsync backup"
       opensshtunnel
-      [ "$?" = "1" ] && \
-        setexitval "$sshtunnel_exitval" && \
-        echo "skipping rsync backup" && \
-        skip_rsync && break  # skip to the next phase
+      [ "$?" = "1" ] && { skip_rsync; break; }  # skip to the next phase
     fi
 
     # log that we're running the command

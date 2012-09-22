@@ -2942,25 +2942,28 @@ killsshtunnel () {
 #
 # $1 is the name of a global variable to store the ssh PID in, to
 # differentiate between multiple tunnels; if unset or null, it defaults to
-# "tunpid"
+# "tunpid" (example setting suggestion: "rsynctunpid")
 #
-# $tun_prefix should be a label for this tunnel (e.g., "rsync");
-# a global variable with name "$1_prefix" (defaults to "tunpid_prefix"
+# $tun_descr should be a description of the tunnel's purpose (e.g.
+# "mysql dumps" or "rsync backups"); this is used in status and error
+# messages
+# a global variable with name "$1_descr" (defaults to "tunpid_descr"
 # if $1 is unset or null) will be used to save the current value of
-# $tun_prefix
+# $tun_descr
 #
 # returns 0 on success
 # on error, calls sendalert(), then acts according to the value of
 # $on_tunerr:
 #   "exit": exits with exitval $sshtunnel_exitval
-#   "phase": returns 1 ("skip to the next phase of the script")
+#   "phase": sets eventual exitval to $sshtunnel_exitval and returns 1
+#            ("skip to the next phase of the script")
 #
 # FD 3 gets a start message and the actual output (stdout and stderr) of
 # ssh
 #
 # "local" vars: tunpid_var, tunpid_l, waited, sshexit
-# global vars: (contents of $1, or tunpid, and the corresponding *_prefix),
-#              tun_prefix
+# global vars: (contents of $1, or tunpid, and the corresponding *_descr),
+#              tun_descr
 # config settings: tun_localport, tun_sshtimeout
 # library vars: on_tunerr, sshtunnel_exitval
 # library functions: sshtunnelcmd(), logstatus(), logstatusquiet(),
@@ -2976,12 +2979,12 @@ opensshtunnel () {
   # get value, if set
   [ "$1" != "" ] && tunpid_var="$1"
 
-  # save tun_prefix
-  printf -v "${tunpid_var}_prefix" "%s" "$tun_prefix"
+  # save tun_descr
+  printf -v "${tunpid_var}_descr" "%s" "$tun_descr"
 
   # log that we're running the command
-  logstatusquiet "running SSH tunnel command for $tun_prefix"
-  printf "%s\n" "running SSH tunnel command for $tun_prefix" >&3
+  logstatusquiet "running SSH tunnel command for $tun_descr"
+  printf "%s\n" "running SSH tunnel command for $tun_descr" >&3
 
   # run the command and get the PID
   sshtunnelcmd "$tunpid_var" >&3 2>&1
@@ -3006,11 +3009,12 @@ opensshtunnel () {
 
         case "$on_tunerr" in
           phase)
-            sendalert "could not establish SSH tunnel for $tun_prefix (timed out); skipping" log
+            sendalert "could not establish SSH tunnel for $tun_descr (timed out);${newline}skipping $tun_descr" log
+            setexitval "$sshtunnel_exitval"
             return 1  # skip to the next phase
             ;;
           *)  # exit
-            sendalert "could not establish SSH tunnel for $tun_prefix (timed out); exiting" log
+            sendalert "could not establish SSH tunnel for $tun_descr (timed out); exiting" log
             do_exit "$sshtunnel_exitval"
             ;;
         esac
@@ -3024,18 +3028,19 @@ opensshtunnel () {
 
       case "$on_tunerr" in
         phase)
-          sendalert "could not establish SSH tunnel for $tun_prefix (error code $sshexit); skipping" log
+          sendalert "could not establish SSH tunnel for $tun_descr (error code $sshexit);${newline}skipping $tun_descr" log
+          setexitval "$sshtunnel_exitval"
           return 1  # skip to the next phase
           ;;
         *)  # exit
-          sendalert "could not establish SSH tunnel for $tun_prefix (error code $sshexit); exiting" log
+          sendalert "could not establish SSH tunnel for $tun_descr (error code $sshexit); exiting" log
           do_exit "$sshtunnel_exitval"
           ;;
       esac
     fi  # if kill -0
   done  # while sleep 1
 
-  logstatus "SSH tunnel for $tun_prefix established"
+  logstatus "SSH tunnel for $tun_descr established"
 
   return 0
 }
@@ -3052,8 +3057,8 @@ opensshtunnel () {
 # but should not be run before the tunnel was started, or the logs won't
 # make sense
 #
-# "local" vars: tunpid_var, tunpid_l, prefix_l
-# global vars: (contents of $1, or tunpid, and the corresponding *_prefix)
+# "local" vars: tunpid_var, tunpid_l, descr_l
+# global vars: (contents of $1, or tunpid, and the corresponding *_descr)
 # library functions: copyvar(), logstatus()
 # utilities: printf, kill, [
 # bashisms: ${!var}, printf -v [v3.1]
@@ -3065,18 +3070,18 @@ closesshtunnel () {
   # get value, if set
   [ "$1" != "" ] && tunpid_var="$1"
 
-  # get the PID and the prefix
+  # get the PID and the descr
   tunpid_l="${!tunpid_var}"
-  copyvar "${tunpid_var}_prefix" "prefix_l"
+  copyvar "${tunpid_var}_descr" "descr_l"
 
   if [ "$tunpid_l" != "" ]; then
     kill "$tunpid_l" > /dev/null 2>&1  # don't complain if it's already dead
     wait "$tunpid_l"
     printf -v "$tunpid_var" "%s" ""  # so we know it's been closed
 
-    logstatus "SSH tunnel for $prefix_l closed"
+    logstatus "SSH tunnel for $descr_l closed"
   else
-    logstatus "SSH tunnel for $prefix_l was already closed"
+    logstatus "SSH tunnel for $descr_l was already closed"
   fi
 }
 
