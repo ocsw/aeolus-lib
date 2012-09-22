@@ -1512,7 +1512,7 @@ do_dbdump () {
         if [ "$dbname" != "" ]; then
           sendalert "dumpfile for $dbms_prefix database '$dbname' already exists;${newline}skipping this database" log
         else
-          sendalert "dumpfile for $dbms_prefix database(s) already exists;${newline}skipping this database" log
+          sendalert "dumpfile for $dbms_prefix database(s) already exists;${newline}skipping this dump" log
         fi
         setexitval "$dumpexists_exitval"
         return 2  # skip to the next DB
@@ -1620,7 +1620,7 @@ do_dbdump () {
         if [ "$dbname" != "" ]; then
           sendalert "error dumping $dbms_prefix database '$dbname'; skipping this database" log
         else
-          sendalert "error dumping $dbms_prefix database(s); skipping this database" log
+          sendalert "error dumping $dbms_prefix database(s); skipping this dump" log
         fi
         setexitval "$dbdump_exitval"
         return 2  # skip to the next DB
@@ -1692,7 +1692,7 @@ do_dbdump () {
           if [ "$dbname" != "" ]; then
             sendalert "error compressing $dbms_prefix database '$dbname'; skipping this database" log
           else
-            sendalert "error compressing $dbms_prefix database(s); skipping this database" log
+            sendalert "error compressing $dbms_prefix database(s); skipping this dump" log
           fi
           setexitval "$dbzip_exitval"
           return 2  # skip to the next DB
