@@ -18,6 +18,7 @@
 # queue sendalert()s for non-fatal messages (e.g., skipping many DB dumps)?
 # allow char devs / fifos in cases where we currently test for -f?
 #  (but could cause problems with, e.g., rm...)
+# speed up log rotation/pruning
 #
 # do more to protect against leading - in settings?
 
@@ -29,6 +30,10 @@
 #
 # if we're not running a high enough version of bash, we shouldn't even try
 # to parse the code below
+#
+# NOTE: despite the use of some bash-specific features, the code has been
+# written to be as portable as possible wherever those features are not
+# needed
 #
 
 # we can't use arithmetical tests because BASH_VERSINFO[1] wasn't always
@@ -1015,6 +1020,8 @@ filecomp () {
 # originally, the goal was to be able to just print timestamps, but it's
 # more or less impossible to to that portably, so this just prints the
 # output of 'ls -ld'
+#
+# similarly, now also used for getting the file size portably
 #
 # utilities: ls, echo, [
 #
@@ -3232,8 +3239,8 @@ rsynccmd () {
   case "$rsync_mode" in
     tunnel|direct)
       rsync \
-        ${rsync_pwfile:+"--password-file=$rsync_pwfile"} \
         ${rsync_port:+"--port=$rsync_port"} \
+        ${rsync_pwfile:+"--password-file=$rsync_pwfile"} \
         ${rsync_filterfile:+-f "merge $rsync_filterfile"} \
         ${rsync_options+"${rsync_options[@]}"} \
         ${rsync_add+"${rsync_add[@]}"} \

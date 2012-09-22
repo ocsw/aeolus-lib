@@ -82,6 +82,10 @@
 # if we're not running a high enough version of bash, we shouldn't even try
 # to parse the code below
 #
+# NOTE: despite the use of some bash-specific features, the code has been
+# written to be as portable as possible wherever those features are not
+# needed
+#
 
 # we can't use arithmetical tests because BASH_VERSINFO[1] wasn't always
 # purely numeric
