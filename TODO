@@ -13,6 +13,4 @@ reorder rsync opts (ssh)
 1504645 bytes, name /backups/mysql/04-02-2012-14/db0.2012040201.sql.gz
 pause when rotating logs
 eval funcs - unset vs null, esp. arrays (w/ declare -p)
-set -x for commands?
-messages for all phase cases
-retvals for phase, etc.
+set -x for commands?  but remember retvals
