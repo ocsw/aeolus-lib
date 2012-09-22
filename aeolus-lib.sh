@@ -2992,7 +2992,7 @@ opensshtunnel () {
 
   # make sure it's actually working;
   # see http://mywiki.wooledge.org/ProcessManagement#Starting_a_.22daemon.22_and_checking_whether_it_started_successfully
-  waited="0"
+  waited="1"  # will be 1 once we actually enter the loop
   while sleep 1; do
     nc -z localhost "$tun_localport" && break
 
