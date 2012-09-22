@@ -1674,6 +1674,10 @@ do_dbdump () {
   # wait until after pruning; we use less total space during the backup
   # process, and don't sacrifice any data preservation gain
   if [ "$dbms_zipmode" != "none" ]; then
+    # first print size before zip; hard to do portably, so just print
+    # all the metadata
+    logstatus "file size (and other metadata) before compression:${newline}$(getfilemetadata "$dumpprefix$dbname$dumpsuffix")"
+
     # starting timestamp
     printf "%s\n" "$dbms_zipmode started $(date)" >&3
 
