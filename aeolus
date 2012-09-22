@@ -1261,10 +1261,11 @@ dbdumpallcmd () {
 #
 # dbms_prefix must be one of the accepted values (see dbmslist)
 #
-# local vars: dbms
+# "local" vars: dbms, listexit
 # global vars: dbms_prefix, dbms_dbmode, dbms_splitdbs, alldbs,
 #              getdblist_exitval, dbmslist
 # config settings: lockfile, on_dblisterr
+# library vars: newline
 # library functions: dblistcmd(), logstatusquiet(), logstatus(), sendalert(),
 #                    do_exit(), setexitval()
 # utilities: rm, printf, [
@@ -1296,16 +1297,17 @@ getdblist () {
 
   # run the command
   dblistcmd > "$lockfile/$alldbs$dbms_prefix" 2>&3
+  listexit="$?"
 
   # check status
-  if [ "$?" != "0" ]; then
+  if [ "$listexit" != "0" ]; then
     case "$on_dblisterr" in
       exit)
-        sendalert "could not get the list of $dbms_prefix databases; exiting" log
+        sendalert "could not get the list of $dbms_prefix databases (status code $listexit); exiting" log
         do_exit "$getdblist_exitval"
         ;;
       phase)
-        sendalert "could not get the list of $dbms_prefix databases; skipping $dbms_prefix dumps" log
+        sendalert "could not get the list of $dbms_prefix databases (status code $listexit);${newline}skipping $dbms_prefix dumps" log
         setexitval "$getdblist_exitval"
         return 1  # skip to the next phase
         ;;
@@ -1432,7 +1434,7 @@ getdumppaths () {
 #
 # dbnames and dbms_zipoptions must be indexed, non-sparse arrays
 #
-# "local" vars: dumptype, dbname, fileexists
+# "local" vars: dumptype, dbname, fileexists, dumpexit, zipexit
 # global vars: dbnames, dumptmp, dumpprefix, dumpsuffix, rotateprefix,
 #              rotatesep, rotatesuffix, dbms_prefix, dbms_layout,
 #              dbms_numfiles, dbms_daysfiles, dbms_zipmode, dbms_zipoptions,
@@ -1599,32 +1601,33 @@ do_dbdump () {
       esac
       ;;
   esac
+  dumpexit="$?"
 
   # check status
-  if [ "$?" != "0" ]; then
+  if [ "$dumpexit" != "0" ]; then
     case "$on_dbdumperr" in
       exit)
         if [ "$dbname" != "" ]; then
-          sendalert "error dumping $dbms_prefix database '$dbname'; exiting" log
+          sendalert "error dumping $dbms_prefix database '$dbname' (status code $dumpexit); exiting" log
         else
-          sendalert "error dumping $dbms_prefix database(s); exiting" log
+          sendalert "error dumping $dbms_prefix database(s) (status code $dumpexit); exiting" log
         fi
         do_exit "$dbdump_exitval"
         ;;
       phase)
         if [ "$dbname" != "" ]; then
-          sendalert "error dumping $dbms_prefix database '$dbname';${newline}skipping $dbms_prefix dumps" log
+          sendalert "error dumping $dbms_prefix database '$dbname' (status code $dumpexit);${newline}skipping $dbms_prefix dumps" log
         else
-          sendalert "error dumping $dbms_prefix database(s);${newline}skipping $dbms_prefix dumps" log
+          sendalert "error dumping $dbms_prefix database(s) (status code $dumpexit);${newline}skipping $dbms_prefix dumps" log
         fi
         setexitval "$dbdump_exitval"
         return 1  # skip to the next phase
         ;;
       db)
         if [ "$dbname" != "" ]; then
-          sendalert "error dumping $dbms_prefix database '$dbname'; skipping this database" log
+          sendalert "error dumping $dbms_prefix database '$dbname' (status code $dumpexit);${newline}skipping this database" log
         else
-          sendalert "error dumping $dbms_prefix database(s); skipping this dump" log
+          sendalert "error dumping $dbms_prefix database(s) (status code $dumpexit);${newline}skipping this dump" log
         fi
         setexitval "$dbdump_exitval"
         return 2  # skip to the next DB
@@ -1671,32 +1674,33 @@ do_dbdump () {
     # do the zip
     "$dbms_zipmode" "${dbms_zipoptions[@]}" \
                     "$dumpprefix$dbname$dumpsuffix" >&3 2>&1
+    zipexit="$?"
 
     # check status
-    if [ "$?" != "0" ]; then
+    if [ "$zipexit" != "0" ]; then
       case "$on_dbziperr" in
         exit)
           if [ "$dbname" != "" ]; then
-            sendalert "error compressing $dbms_prefix database '$dbname'; exiting" log
+            sendalert "error compressing $dbms_prefix database '$dbname' (status code $dumpexit); exiting" log
           else
-            sendalert "error compressing $dbms_prefix database(s); exiting" log
+            sendalert "error compressing $dbms_prefix database(s) (status code $dumpexit); exiting" log
           fi
           do_exit "$dbzip_exitval"
           ;;
         phase)
           if [ "$dbname" != "" ]; then
-            sendalert "error compressing $dbms_prefix database '$dbname';${newline}skipping $dbms_prefix dumps" log
+            sendalert "error compressing $dbms_prefix database '$dbname' (status code $dumpexit);${newline}skipping $dbms_prefix dumps" log
           else
-            sendalert "error compressing $dbms_prefix database(s);${newline}skipping $dbms_prefix dumps" log
+            sendalert "error compressing $dbms_prefix database(s) (status code $dumpexit);${newline}skipping $dbms_prefix dumps" log
           fi
           setexitval "$dbzip_exitval"
           return 1  # skip to the next phase
           ;;
         db)
           if [ "$dbname" != "" ]; then
-            sendalert "error compressing $dbms_prefix database '$dbname'; skipping this database" log
+            sendalert "error compressing $dbms_prefix database '$dbname' (status code $dumpexit);${newline}skipping this database" log
           else
-            sendalert "error compressing $dbms_prefix database(s); skipping this dump" log
+            sendalert "error compressing $dbms_prefix database(s) (status code $dumpexit);${newline}skipping this dump" log
           fi
           setexitval "$dbzip_exitval"
           return 2  # skip to the next DB
@@ -2109,14 +2113,21 @@ while true; do  # only here to allow us to easily skip to the next phase
 
     # run the command
     rsynccmd >&3 2>&1
+    rsyncexit="$?"
 
     # check status
-    if [ "$?" != "0" ]; then
-      sendalert "warning: rsync finished with errors; please check the log" log
-      setexitval "$rsync_exitval"
-    else
-      logstatus "rsync completed without errors"
-    fi
+    case "$rsyncexit" in
+      0)
+        logstatus "rsync completed without errors"
+        ;;
+      24|25)
+        sendalert "warning: rsync finished with errors (status code $rsyncexit); please check the log" log
+        setexitval "$rsync_exitval"
+        ;;
+      *)
+        sendalert "error running rsync (status code $rsyncexit)" log
+        setexitval "$rsync_exitval"
+    esac
 
     # ending timestamp
     printf "%s\n" "rsync finished $(date)" >&3

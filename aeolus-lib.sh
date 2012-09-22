@@ -2965,7 +2965,7 @@ killsshtunnel () {
 # global vars: (contents of $1, or tunpid, and the corresponding *_descr),
 #              tun_descr
 # config settings: tun_localport, tun_sshtimeout
-# library vars: on_tunerr, sshtunnel_exitval
+# library vars: newline, on_tunerr, sshtunnel_exitval
 # library functions: sshtunnelcmd(), logstatus(), logstatusquiet(),
 #                    sendalert(), do_exit()
 # utilities: nc, printf, sleep, kill, expr, [
@@ -3028,12 +3028,12 @@ opensshtunnel () {
 
       case "$on_tunerr" in
         phase)
-          sendalert "could not establish SSH tunnel for $tun_descr (error code $sshexit);${newline}skipping $tun_descr" log
+          sendalert "could not establish SSH tunnel for $tun_descr (status code $sshexit);${newline}skipping $tun_descr" log
           setexitval "$sshtunnel_exitval"
           return 1  # skip to the next phase
           ;;
         *)  # exit
-          sendalert "could not establish SSH tunnel for $tun_descr (error code $sshexit); exiting" log
+          sendalert "could not establish SSH tunnel for $tun_descr (status code $sshexit); exiting" log
           do_exit "$sshtunnel_exitval"
           ;;
       esac
