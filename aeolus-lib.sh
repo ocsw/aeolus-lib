@@ -19,6 +19,7 @@
 # allow char devs / fifos in cases where we currently test for -f?
 #  (but could cause problems with, e.g., rm...)
 # speed up log rotation/pruning
+# do more with function settings?
 #
 # do more to protect against leading - in settings?
 
@@ -1353,13 +1354,13 @@ EOF
 # save setting variables supplied on the command line (even if they're set
 # to null)
 #
-# the calling script must define configsettingisarray(), which takes the
-# name of a config setting and returns 0 (true) or 1 (false)
+# the calling script must define configsettingtype(), which takes the name
+# of a config setting and prints "scalar", "array", or "function"
 #
 # "local" vars: setting
 # global vars: configsettings, clsetsaved
 # config settings: (*, cl_*)
-# user-defined functions: configsettingisarray()
+# user-defined functions: configsettingtype()
 # library functions: arrayisset(), copyarray(), isset()
 # bashisms: ${!var}, printf -v [v3.1]
 #
@@ -1368,17 +1369,23 @@ saveclset () {
   clsetsaved="no"
 
   for setting in $configsettings; do
-    if configsettingisarray "$setting"; then
-      if arrayisset "$setting"; then
-        copyarray "$setting" "cl_$setting"
-        clsetsaved="yes"
-      fi
-    else
-      if isset "$setting"; then
-        printf -v "cl_$setting" "%s" "${!setting}"
-        clsetsaved="yes"
-      fi
-    fi
+    case "$(configsettingtype "$setting")" in
+      scalar)
+        if isset "$setting"; then
+          printf -v "cl_$setting" "%s" "${!setting}"
+          clsetsaved="yes"
+        fi
+        ;;
+      array)
+        if arrayisset "$setting"; then
+          copyarray "$setting" "cl_$setting"
+          clsetsaved="yes"
+        fi
+        ;;
+      function)
+        :  # ignore
+        ;;
+    esac
   done
 }
 
@@ -1386,26 +1393,32 @@ saveclset () {
 # restore setting variables supplied on the command line, overriding the
 # config file
 #
-# the calling script must define configsettingisarray(), which takes the
-# name of a config setting and returns 0 (true) or 1 (false)
+# the calling script must define configsettingtype(), which takes the name
+# of a config setting and prints "scalar", "array", or "function"
 #
 # "local" vars: setting
 # global vars: configsettings
 # config settings: (*, cl_*)
-# user-defined functions: configsettingisarray()
+# user-defined functions: configsettingtype()
 # library functions: arrayisset(), copyarray(), isset(), copyvar()
 #
 restoreclset () {
   for setting in $configsettings; do
-    if configsettingisarray "$setting"; then
-      if arrayisset "cl_$setting"; then
-        copyarray "cl_$setting" "$setting"
-      fi
-    else
-      if isset "cl_$setting"; then
-        copyvar "cl_$setting" "$setting"
-      fi
-    fi
+    case "$(configsettingtype "$setting")" in
+      scalar)
+        if isset "cl_$setting"; then
+          copyvar "cl_$setting" "$setting"
+        fi
+        ;;
+      array)
+        if arrayisset "cl_$setting"; then
+          copyarray "cl_$setting" "$setting"
+        fi
+        ;;
+      function)
+        :  # ignore
+        ;;
+    esac
   done
 }
 
@@ -1415,13 +1428,13 @@ restoreclset () {
 #
 # saveclset() must be called before this function, to set up $cl_*
 #
-# the calling script must define configsettingisarray(), which takes the
-# name of a config setting and returns 0 (true) or 1 (false)
+# the calling script must define configsettingtype(), which takes the name
+# of a config setting and prints "scalar", "array", or "function"
 #
 # "local" vars: setting
 # global vars: configsettings, noconfigfile, configfile, clsetsaved
 # config settings: (*, cl_*)
-# user-defined functions: configsettingisarray()
+# user-defined functions: configsettingtype()
 # library functions: logstatus(), arrayisset(), printarray(), isset(),
 #                    printvar()
 # utilities: pwd, [
@@ -1437,15 +1450,21 @@ logclconfig () {
   if [ "$clsetsaved" = "yes" ]; then
     logstatus "settings passed on the command line:"
     for setting in $configsettings; do
-      if configsettingisarray "$setting"; then
-        if arrayisset "cl_$setting"; then
-          logstatus "$setting=$(printarray "cl_$setting")"
-        fi
-      else
-        if isset "cl_$setting"; then
-          logstatus "$setting='$(printvar "cl_$setting")'"
-        fi
-      fi
+      case "$(configsettingtype "$setting")" in
+        scalar)
+          if isset "cl_$setting"; then
+            logstatus "$setting='$(printvar "cl_$setting")'"
+          fi
+          ;;
+        array)
+          if arrayisset "cl_$setting"; then
+            logstatus "$setting=$(printarray "cl_$setting")"
+          fi
+          ;;
+        function)
+          :  # ignore
+          ;;
+      esac
     done
   else
     logstatus "no settings passed on the command line"
@@ -1458,24 +1477,30 @@ logclconfig () {
 # note: does not print all types of sub-quoting correctly (i.e., in a format
 # that can be used on the command line or in a config file)
 #
-# the calling script must define configsettingisarray(), which takes the
-# name of a config setting and returns 0 (true) or 1 (false)
+# the calling script must define configsettingtype(), which takes the name
+# of a config setting and prints "scalar", "array", or "function"
 #
 # "local" vars: setting
 # global vars: configsettings
 # config settings: (all)
-# user-defined functions: configsettingisarray()
+# user-defined functions: configsettingtype()
 # library functions: printarray()
 # utilities: printf
 # bashisms: ${!var}
 #
 printsettings () {
   for setting in $configsettings; do
-    if configsettingisarray "$setting"; then
-      printf "%s\n" "$setting=$(printarray "$setting")"
-    else
-      printf "%s\n" "$setting='${!setting}'"
-    fi
+    case "$(configsettingtype "$setting")" in
+      scalar)
+        printf "%s\n" "$setting='${!setting}'"
+        ;;
+      array)
+        printf "%s\n" "$setting=$(printarray "$setting")"
+        ;;
+      function)
+        :  # ignore
+        ;;
+    esac
   done
 }
 
@@ -1521,15 +1546,15 @@ printconfig () {
 #
 # returns 1 if the config file already exists, else 0
 #
-# the calling script must define configsettingisarray(), which takes the
-# name of a config setting and returns 0 (true) or 1 (false)
+# the calling script must define configsettingtype(), which takes the name
+# of a config setting and prints "scalar", "array", or "function"
 #
 # note: this function is mostly meant to be run from a manual command line
 # mode, but for flexibility, it does not call do_exit() itself
 #
 # "local" vars: setting
 # global vars: configfile, noconfigfile, configsettings
-# user-defined functions: configsettingisarray()
+# user-defined functions: configsettingtype()
 # utilities: printf, [
 # FDs: 4
 #
@@ -1551,11 +1576,17 @@ createblankconfig () {
 
   # config settings
   for setting in $configsettings; do
-    if configsettingisarray "$setting"; then
-      printf "%s\n" "#$setting=()"
-    else
-      printf "%s\n" "#$setting=\"\""
-    fi
+    case "$(configsettingtype "$setting")" in
+      scalar)
+        printf "%s\n" "#$setting=\"\""
+        ;;
+      array)
+        printf "%s\n" "#$setting=()"
+        ;;
+      function)
+        printf "%s\n" "#$setting () { }"
+        ;;
+    esac
   done
 
   if [ "$noconfigfile" = "no" ] && [ "$configfile" != "" ]; then

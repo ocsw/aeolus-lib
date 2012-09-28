@@ -39,7 +39,7 @@
 #
 # any change to the setting variables (additions, deletions, name changes,
 # type changes, etc.) must be reflected in: the sample config file,
-# $configsettings, configsettingisarray() [possibly], the default settings
+# $configsettings, configsettingtype() [possibly], the default settings
 # section, some of switch*() [possibly], applydefaults() [probably], and
 # validconf()
 #
@@ -204,6 +204,7 @@ defaultconfigfile="/etc/aeolus/aeolus.conf"
 sampleconfigfile="/etc/aeolus/CONFIG.SAMPLE"
 
 # names of all config file settings, in logical order
+# includes optional functions; see configsettingtype()
 configsettings="
   usepath
   useumask
@@ -274,6 +275,7 @@ configsettings="
   mysql_options
   mysql_dumpoptions
   mysql_usealtopts
+  mysql_altopts
   mysql_dumpdir
   mysql_layout
   mysql_fileprefix
@@ -289,27 +291,30 @@ configsettings="
 "
 
 #
-# which settings are arrays?
+# which settings are arrays or functions?
 #
 # (this is the only reasonable way I have come up with to handle this,
 # without requiring bash4 for associative arrays)
 #
 # $1 is the name of a config setting
 #
-# returns 0 (true) if the setting is an array, 1 (false) if not
+# prints "scalar", "array", or "function"
 #
-configsettingisarray () {
-  # break this up for readability
+configsettingtype () {
+  # arrays broken up for readability
   case "$1" in
     rsync_sshoptions|rsync_source|rsync_options|rsync_add)
-      return 0  # true
+      echo "array"
       ;;
     mysql_sshoptions|mysql_dblist|mysql_options|mysql_dumpoptions|mysql_zipoptions)
-      return 0  # true
+      echo "array"
       ;;
+    mysql_altopts)
+      echo "function"
+      ;;
+    *)
+      echo "scalar"
   esac
-
-  return 1  # false
 }
 
 #
