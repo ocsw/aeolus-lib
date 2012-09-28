@@ -7,6 +7,6 @@ rsync log (incl. rotation)
 rdiff
 
 script, docs re library install and source
+hooks for after each/all dumps
 eval funcs - unset vs null, esp. arrays (w/ declare -p)
 set -x for commands?  but remember retvals
-warn re num/date?
