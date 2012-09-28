@@ -1782,6 +1782,38 @@ validnochar () {
 }
 
 #
+# validate a setting that can be one of a list of possiblities
+#
+# $1 = variable name ("mode" treated specially)
+# other args = list of possiblities (can include "")
+#
+# "local" vars: vname, vval, poss
+# global vars: (contents of $1, if "mode")
+# config settings: (contents of $1, usually)
+# library functions: throwusageerr(), throwsettingerr()
+# utilities: [
+# bashisms: ${!var}
+#
+validlist () {
+  vname="$1"
+  vval="${!vname}"
+  shift
+
+  # implied $@ isn't supported by ksh
+  for poss in ${1+"$@"}; do
+    if [ "$vval" = "$poss" ]; then
+      return
+    fi
+  done
+
+  if [ "$vname" = "mode" ]; then
+    throwusageerr "Error: invalid mode supplied on the command line; exiting."
+  else
+    throwsettingerr "$vname"
+  fi
+}
+
+#
 # validate a directory setting, for directories in which we need to create
 # and/or rotate files:
 # setting must not be blank, and directory must exist, be a directory or a
@@ -1968,34 +2000,20 @@ validrwfile () {
 }
 
 #
-# validate a setting that can be one of a list of possiblities
+# validate a user-supplied config function
 #
-# $1 = variable name ("mode" treated specially)
-# other args = list of possiblities (can include "")
+# $1 = variable name
 #
-# "local" vars: vname, vval, poss
-# global vars: (contents of $1, if "mode")
-# config settings: (contents of $1, usually)
-# library functions: throwusageerr(), throwsettingerr()
-# utilities: [
-# bashisms: ${!var}
+# "local" vars: vname
+# config functions: (contents of $1)
+# library functions: throwstartuperr()
+# bashisms: if !, declare -F
 #
-validlist () {
+validfunction () {
   vname="$1"
-  vval="${!vname}"
-  shift
 
-  # implied $@ isn't supported by ksh
-  for poss in ${1+"$@"}; do
-    if [ "$vval" = "$poss" ]; then
-      return
-    fi
-  done
-
-  if [ "$vname" = "mode" ]; then
-    throwusageerr "Error: invalid mode supplied on the command line; exiting."
-  else
-    throwsettingerr "$vname"
+  if ! declare -F "$vname" > /dev/null 2>&1; then
+    throwstartuperr "Error: $vname function is not defined; exiting."
   fi
 }
 
