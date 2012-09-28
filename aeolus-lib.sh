@@ -2776,16 +2776,15 @@ existsfilezip () {
 #
 # $1 = file to remove
 # $2 = type of zip to remove ("gzip", "pigz", "bzip2", "lzip", "all" for all
-# of the above, or "none")
+# of the above, or "none"; default is "none")
+# note that $1 will still be removed if $2 is "none"
 #
 # utilities: rm
 #
 removefilezip () {
   rm -f "$1"
+
   case "$2" in
-    none)
-      :  # nothing else to remove
-      ;;
     gzip|pigz)
       rm -f "$1.gz"
       ;;
@@ -2801,6 +2800,46 @@ removefilezip () {
       rm -f "$1.bz"
       rm -f "$1.bz2"
       rm -f "$1.lz"
+      ;;
+    none|*)
+      :  # nothing else to remove
+      ;;
+  esac
+}
+
+#
+# move a file, including zipped versions of it
+#
+# $1 = file to move
+# $2 = destination
+# $3 = type of zip to move ("gzip", "pigz", "bzip2", "lzip", "all" for all
+# of the above, or "none"; default is "none")
+# note that $1 will still be moved if $3 is "none"
+#
+# utilities: mv
+#
+movefilezip () {
+  mv -f "$1" "$2" >/dev/null 2>&1
+
+  case "$3" in
+    gzip|pigz)
+      mv -f "$1.gz" "$2" >/dev/null 2>&1
+      ;;
+    bzip2)
+      mv -f "$1.bz" "$2" >/dev/null 2>&1
+      mv -f "$1.bz2" "$2" >/dev/null 2>&1
+      ;;
+    lzip)
+      mv -f "$1.lz" "$2" >/dev/null 2>&1
+      ;;
+    all)
+      mv -f "$1.gz" "$2" >/dev/null 2>&1
+      mv -f "$1.bz" "$2" >/dev/null 2>&1
+      mv -f "$1.bz2" "$2" >/dev/null 2>&1
+      mv -f "$1.lz" "$2" >/dev/null 2>&1
+      ;;
+    none|*)
+      :  # nothing else to move
       ;;
   esac
 }
