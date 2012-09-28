@@ -1757,7 +1757,36 @@ do_dbdump () {
 }
 
 #
-# wrapper around the different modes of DB dumps
+# wrapper around do_dbdump, to handle aftereach functions
+#
+# (yes, another layer of wrappers - it was easier, and easier to read, than
+# modifying all the exits from do_dbdump())
+#
+# has the same parameters and return values as do_dbdump()
+#
+# (in the notes below, [dbms] = the value of $dbms_prefix)
+#
+# "local" vars: dodumpexit
+# global vars: dbms_prefix, dbms_useaftereach
+# config functions: [dbms]_aftereach()
+# library functions: logstatus()
+# utilities: [
+#
+do_dbdump_wrapper () {
+  do_dbdump "$1" "$2"
+  dodumpexit="$?"
+
+  if [ "$dbms_useaftereach" = "yes" ]; then
+    logstatus "running user-supplied ${dbms_prefix}_aftereach() function"
+    "${dbms_prefix}_aftereach" "$2" "$dodumpexit"
+    logstatus "${dbms_prefix}_aftereach() complete"
+  fi
+
+  return "$dodumpexit"
+}
+
+#
+# handle the different modes of DB dumps
 # (split/unsplit, all/include/exclude)
 #
 # returns 1 to mean "skip to the next phase of the backup", else 0
@@ -1779,13 +1808,14 @@ do_dbdumploop () {
   if [ "$dbms_splitdbs" = "no" ]; then
     case "$dbms_dbmode" in
       all)
-        do_dbdump "all"
+        do_dbdump_wrapper "all"
+
         [ "$?" = "1" ] && return 1  # skip to the next phase
         ;;
       include)
         copyarray "dbms_dblist" "dbnames"
 
-        do_dbdump "mult"
+        do_dbdump_wrapper "mult"
         [ "$?" = "1" ] && return 1  # skip to the next phase
         ;;
       exclude)
@@ -1806,7 +1836,7 @@ do_dbdumploop () {
         done < "$lockfile/$alldbs$dbms_prefix"
         IFS="$OLDIFS"
 
-        do_dbdump "mult"
+        do_dbdump_wrapper "mult"
         [ "$?" = "1" ] && return 1  # skip to the next phase
         ;;
     esac  # case "$dbms_dbmode"
@@ -1818,7 +1848,7 @@ do_dbdumploop () {
           IFS="$OLDIFS"
           dbname=$(dbunescape "$dbname_esc")
 
-          do_dbdump "one" "$dbname"
+          do_dbdump_wrapper "one" "$dbname"
           [ "$?" = "1" ] && return 1  # skip to the next phase
 
           IFS=""
@@ -1827,7 +1857,7 @@ do_dbdumploop () {
         ;;
       include)
         for dbname in "${dbms_dblist[@]}"; do
-          do_dbdump "one" "$dbname"
+          do_dbdump_wrapper "one" "$dbname"
           [ "$?" = "1" ] && return 1  # skip to the next phase
         done
         ;;
@@ -1843,7 +1873,7 @@ do_dbdumploop () {
             fi
           done
 
-          do_dbdump "one" "$dbname"
+          do_dbdump_wrapper "one" "$dbname"
           [ "$?" = "1" ] && return 1  # skip to the next phase
 
           IFS=""
