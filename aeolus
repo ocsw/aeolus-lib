@@ -288,6 +288,8 @@ configsettings="
   mysql_zipmode
   mysql_zipoptions
   mysql_preserve
+  mysql_useaftereach
+  mysql_aftereach
 "
 
 #
@@ -309,7 +311,7 @@ configsettingtype () {
     mysql_sshoptions|mysql_dblist|mysql_options|mysql_dumpoptions|mysql_zipoptions)
       echo "array"
       ;;
-    mysql_altopts)
+    mysql_altopts|mysql_aftereach)
       echo "function"
       ;;
     *)
@@ -381,6 +383,7 @@ dbms_numfiles_default="0"
 dbms_daysfiles_default="7"
 dbms_zipmode_default="gzip"
 dbms_preserve_default="data"
+dbms_useaftereach_default="no"
 
 # default settings: MySQL (see also above)
 mysql_pwfile_default="/etc/aeolus/mysql.pw"  # only if unset
@@ -603,7 +606,7 @@ switchtunnel () {
 #              dbms_layout, dbms_fileprefix, dbms_filesuffix,
 #              dbms_subdirprefix, dbms_filedirsep, dbms_filedirdate,
 #              dbms_numfiles, dbms_daysfiles, dbms_zipmode, dbms_zipoptions,
-#              dbms_preserve, dbms_datestring
+#              dbms_preserve, dbms_useaftereach, dbms_datestring
 # config settings: [dbms]_dodump, [dbms]_usetunnel, [dbms]_user,
 #                  [dbms]_pwfile, [dbms]_protocol, [dbms]_host, [dbms]_port,
 #                  [dbms]_socketfile, [dbms]_dbmode, [dbms]_dblist,
@@ -613,7 +616,8 @@ switchtunnel () {
 #                  [dbms]_layout, [dbms]_fileprefix, [dbms]_filesuffix,
 #                  [dbms]_subdirprefix, [dbms]_filedirsep,
 #                  [dbms]_filedirdate, [dbms]_numfiles, [dbms]_daysfiles,
-#                  [dbms]_zipmode, [dbms]_zipoptions, [dbms]_preserve
+#                  [dbms]_zipmode, [dbms]_zipoptions, [dbms]_preserve,
+#                  [dbms]_useaftereach
 # library functions: copyvar(), copyarray()
 #
 switchdbms () {
@@ -647,6 +651,7 @@ switchdbms () {
   copyvar "${1}_zipmode" "dbms_zipmode"
   copyarray "${1}_zipoptions" "dbms_zipoptions"
   copyvar "${1}_preserve" "dbms_preserve"
+  copyvar "${1}_useaftereach" "dbms_useaftereach"
   # internal, not from config
   copyvar "${1}_datestring" "dbms_datestring"
 }
@@ -676,8 +681,11 @@ Usage:
   Multiple settings can be added to the command line, separated by spaces;
   command-line settings override the config file.  Array settings may have
   to be supplied by creating a wrapper script that sets them, then sources
-  this script.  There is no way to override a config-file-supplied array
-  setting with an empty array, but ("") may suffice in some cases.
+  (not runs) this script.  There is no way to override a config-file-
+  supplied array setting with an empty array, but ("") may suffice in some
+  cases.  Function settings can be overridden from the command line by
+  sourcing (not running) the script after defining them, or a wrapper can be
+  used as with array settings.
 
 Options:
 
@@ -919,6 +927,7 @@ applydefaults () {
   [ "$mysql_daysfiles" = "" ] && mysql_daysfiles="$dbms_daysfiles_default"
   [ "$mysql_zipmode" = "" ] && mysql_zipmode="$dbms_zipmode_default"
   [ "$mysql_preserve" = "" ] && mysql_preserve="$dbms_preserve_default"
+  [ "$mysql_useaftereach" = "" ] && mysql_useaftereach="$dbms_useaftereach_default"
 
   # DBMSes (individual defaults; see also above)
   # MySQL
@@ -948,9 +957,9 @@ applydefaults () {
 # global vars: dbmslist
 # config settings: (most of them)
 # library functions: validnoblank(), validnoblankarr(), validnotbothblank(),
-#                    validnum(), validnochar(), validrwxdir(),
+#                    validnum(), validnochar(), validlist(), validrwxdir(),
 #                    validcreate(), validreadfile(), validrwfile(),
-#                    validlist(), copyvar(), unsparsearray()
+#                    validfunction(), copyvar(), unsparsearray()
 # utilities: [
 # files: $startedfile, $lockfile, $alertfile, $outputlog, $statuslog,
 #        $rsync_sshkeyfile, $rsync_pwfile, $rsync_filterfile,
@@ -1094,6 +1103,7 @@ validconf () {
       unsparsearray "${dbms}_dumpalloptions"
       unsparsearray "dbms_dumpalloptions"
       validlist "${dbms}_usealtopts" "yes" "no"
+      [ "$dbms_usealtopts" = "yes" ] && validfunction "${dbms}_altopts"
       validrwxdir "${dbms}_dumpdir"
       validlist "${dbms}_layout" "single" "number" "date" "singledir" \
                 "numberdir" "datedir"
@@ -1124,6 +1134,8 @@ validconf () {
       unsparsearray "${dbms}_zipoptions"
       unsparsearray "dbms_zipoptions"
       validlist "${dbms}_preserve" "data" "space"
+      validlist "${dbms}_useaftereach" "yes" "no"
+      [ "$dbms_useaftereach" = "yes" ] && validfunction "${dbms}_aftereach"
     fi  # if [ "$dbms_dodump" = "yes" ]
   done  # for dbms in $dbmslist
 }

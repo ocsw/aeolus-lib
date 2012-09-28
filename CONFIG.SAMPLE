@@ -1033,3 +1033,46 @@
 # * if blank or unset, defaults to "data"
 #
 ###mysql_preserve=
+
+#
+# hook to run a function after each dump
+#
+# this feature allows you to run arbitrary code after each MySQL dump
+#
+# mysql_useaftereach can be "yes" or "no"
+#
+# if "yes", you must define a function called mysql_aftereach which takes
+# two parameters:
+# $1 = the database name if the dump was of a single database, else blank
+# $2 = the return value from db_dodump():
+#      1 to mean "skip to the next phase of the backup (e.g., DBMS/rsync)",
+#      2 to mean "we have skipped this dump",
+#      else 0
+#
+# your function can access any of the internal variables of the script;
+# it is recommended to study the code before writing functions, and to use
+# the available logging tools
+#
+# sample function:
+#
+# ----------
+# #
+# # if the function already exists, don't redefine it;
+# # use this technique with your functions if you want to be able to
+# # override them from the command line
+# #
+# if ! declare -F mysql_aftereach > /dev/null 2>&1; then
+#   # dump locally for speed, but then offload the files to an NFS mount to
+#   # save space; move everything, even if the dump failed
+#   mysql_aftereach () {
+#     logstatus "moving dump file $dumpprefix$1$dumpsuffix, including compressed versions, to /some/nfs/mount/"
+#     movefilezip "$dumpprefix$1$dumpsuffix" "/some/nfs/mount/"
+#   }
+# fi
+# ----------
+#
+# * function is ignored if setting is "no"
+# * if blank or unset, setting defaults to "no"
+#
+###mysql_useaftereach=
+###mysql_aftereach () { }
