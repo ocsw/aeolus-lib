@@ -70,6 +70,8 @@
 #  (but could cause problems with, e.g., rm...)
 # on_*err -> mysql_*, rsync_*, etc.? (incl. splitting tunerr)
 # add on_rsyncerr/warn?  startup_warn?
+# phone-home check for newer version?
+#   or auto-update?? (e.g., with 2x md5 and global lock)
 #
 # do more to protect against leading - in settings?
 
