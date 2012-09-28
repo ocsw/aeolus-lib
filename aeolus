@@ -986,6 +986,10 @@ validconf () {
       validnum "numlogs"
       validnum "dayslogs"
     fi
+    if [ "$outputlog_layout" = "date" ] && [ "$numlogs" != "0" ]; then
+      sendalert "warning: outputlog_layout=date; ignoring non-0 numlogs" log
+      setexitval "$startup_exitval"
+    fi
   fi
   validlist "usesyslog" "yes" "no"
   validlist "quiet" "yes" "no"
@@ -1105,6 +1109,11 @@ validconf () {
       if [ "$dbms_layout" != "single" ] && [ "$dbms_layout" != "singledir" ]; then
         validnum "${dbms}_numfiles"
         validnum "${dbms}_daysfiles"
+      fi
+      if { [ "$dbms_layout" = "date" ] || [ "$dbms_layout" = "datedir" ]; } && \
+         [ "$dbms_numfiles" != "0" ]; then
+        sendalert "warning: ${dbms}_layout=$dbms_layout; ignoring non-0 ${dbms}_numfiles" log
+        setexitval "$startup_exitval"
       fi
       validlist "${dbms}_zipmode" "none" "gzip" "pigz" "bzip2" "lzip"
       unsparsearray "${dbms}_zipoptions"
