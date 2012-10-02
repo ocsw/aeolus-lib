@@ -177,6 +177,7 @@ externalcmds="
   pigz
   bzip2
   lzip
+  xz
   date
   hostname
   logger
@@ -1132,7 +1133,7 @@ validconf () {
         sendalert "warning: ${dbms}_layout=$dbms_layout; ignoring non-0 ${dbms}_numfiles" log
         setexitval "$startup_exitval"
       fi
-      validlist "${dbms}_zipmode" "none" "gzip" "pigz" "bzip2" "lzip"
+      validlist "${dbms}_zipmode" "none" "gzip" "pigz" "bzip2" "lzip" "xz"
       unsparsearray "${dbms}_zipoptions"
       unsparsearray "dbms_zipoptions"
       validlist "${dbms}_preserve" "data" "space"

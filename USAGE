@@ -471,7 +471,7 @@ CONTENTS
    b) The script uses these utilities:
         awk, bzip2, cat, date, expr, find, gawk, grep, gzip, hostname,
         logger, ls, lzip, mailx, mkdir, mkfifo, mv, mysql, mysqldump, nc,
-        pigz, rm, rsync, sed, sleep, ssh, tee, touch, tr
+        pigz, rm, rsync, sed, sleep, ssh, tee, touch, tr, xz
 
    c) Some of the above are optional, depending on the settings used.  In
       the list below, [dbms] means any DBMS, but the same one throughout any
@@ -499,9 +499,9 @@ CONTENTS
 
         gawk: see awk
 
-        gzip, pigz, bzip2, and lzip are only needed if [dbms]_dodump="yes"
-        and [dbms]_zipmode="gzip", "pigz", "bzip2", or "lzip",
-        respectively
+        gzip, pigz, bzip2, lzip, and xz are only needed if
+        [dbms]_dodump="yes" and [dbms]_zipmode="gzip", "pigz", "bzip2",
+        "lzip", or "xz", respectively
 
         hostname is not strictly necessary, but it will be used if
         available (to set defaults)
@@ -537,6 +537,8 @@ CONTENTS
         "nodaemon", or [dbms]_dodump="yes" and [dbms]_usetunnel="yes"
 
         tee is only needed if quiet="no" and outputlog is not null
+
+        xz: see gzip
 
    d) Some utilities must support particular options, e.g.:
         * see the timecomptype setting in the sample config file for more

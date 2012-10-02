@@ -2410,7 +2410,7 @@ clearlock () {
 # $3: suffix after the number, including any leading separator
 #     (cannot begin with a number)
 #
-# filenames can have an optional .gz, .bz, .bz2, or .lz after $3
+# filenames can have an optional .gz, .bz2, .lz, or .xz after $3
 #
 # also works on directories
 #
@@ -2442,11 +2442,11 @@ rotatenumfiles () {
        && \
        printf "%s\n" "$filename" | grep -v "^$(escregex "$prefix$sep")[0-9][0-9]*$(escregex "$suffix")\.gz$" > /dev/null 2>&1 \
        && \
-       printf "%s\n" "$filename" | grep -v "^$(escregex "$prefix$sep")[0-9][0-9]*$(escregex "$suffix")\.bz$" > /dev/null 2>&1 \
-       && \
        printf "%s\n" "$filename" | grep -v "^$(escregex "$prefix$sep")[0-9][0-9]*$(escregex "$suffix")\.bz2$" > /dev/null 2>&1 \
        && \
-       printf "%s\n" "$filename" | grep -v "^$(escregex "$prefix$sep")[0-9][0-9]*$(escregex "$suffix")\.lz$" > /dev/null 2>&1 ; then
+       printf "%s\n" "$filename" | grep -v "^$(escregex "$prefix$sep")[0-9][0-9]*$(escregex "$suffix")\.lz$" > /dev/null 2>&1 \
+       && \
+       printf "%s\n" "$filename" | grep -v "^$(escregex "$prefix$sep")[0-9][0-9]*$(escregex "$suffix")\.xz$" > /dev/null 2>&1 ; then
       continue
     fi
 
@@ -2494,11 +2494,11 @@ rotatenumfiles () {
        && \
        printf "%s\n" "$filename" | grep -v "^$(escregex "$prefix$sep")[0-9][0-9]*$(escregex "$suffix")\.gz\.new$" > /dev/null 2>&1 \
        && \
-       printf "%s\n" "$filename" | grep -v "^$(escregex "$prefix$sep")[0-9][0-9]*$(escregex "$suffix")\.bz\.new$" > /dev/null 2>&1 \
-       && \
        printf "%s\n" "$filename" | grep -v "^$(escregex "$prefix$sep")[0-9][0-9]*$(escregex "$suffix")\.bz2\.new$" > /dev/null 2>&1 \
        && \
-       printf "%s\n" "$filename" | grep -v "^$(escregex "$prefix$sep")[0-9][0-9]*$(escregex "$suffix")\.lz\.new$" > /dev/null 2>&1 ; then
+       printf "%s\n" "$filename" | grep -v "^$(escregex "$prefix$sep")[0-9][0-9]*$(escregex "$suffix")\.lz\.new$" > /dev/null 2>&1 \
+       && \
+       printf "%s\n" "$filename" | grep -v "^$(escregex "$prefix$sep")[0-9][0-9]*$(escregex "$suffix")\.xz\.new$" > /dev/null 2>&1 ; then
       continue
     else
       mv "$filename" "$(printf "%s\n" "$filename" | sed 's|\.new$||')"
@@ -2519,11 +2519,11 @@ rotatenumfiles () {
        && \
        printf "%s\n" "$filename" | grep -v "^$(escregex "$prefix$suffix")\.gz$" > /dev/null 2>&1 \
        && \
-       printf "%s\n" "$filename" | grep -v "^$(escregex "$prefix$suffix")\.bz$" > /dev/null 2>&1 \
-       && \
        printf "%s\n" "$filename" | grep -v "^$(escregex "$prefix$suffix")\.bz2$" > /dev/null 2>&1 \
        && \
-       printf "%s\n" "$filename" | grep -v "^$(escregex "$prefix$suffix")\.lz$" > /dev/null 2>&1 ; then
+       printf "%s\n" "$filename" | grep -v "^$(escregex "$prefix$suffix")\.lz$" > /dev/null 2>&1 \
+       && \
+       printf "%s\n" "$filename" | grep -v "^$(escregex "$prefix$suffix")\.xz$" > /dev/null 2>&1 ; then
       continue
     fi
 
@@ -2549,7 +2549,7 @@ rotatenumfiles () {
 # $4: number of files, 0=unlimited
 # $5: days worth of files, 0=unlimited
 #
-# filenames can have an optional .gz, .bz, .bz2, or .lz after $3
+# filenames can have an optional .gz, .bz2, .lz, or .xz after $3
 #
 # also works on directories
 #
@@ -2583,11 +2583,11 @@ prunenumfiles () {
        && \
        printf "%s\n" "$filename" | grep -v "^$(escregex "$prefix$sep")[0-9][0-9]*$(escregex "$suffix")\.gz$" > /dev/null 2>&1 \
        && \
-       printf "%s\n" "$filename" | grep -v "^$(escregex "$prefix$sep")[0-9][0-9]*$(escregex "$suffix")\.bz$" > /dev/null 2>&1 \
-       && \
        printf "%s\n" "$filename" | grep -v "^$(escregex "$prefix$sep")[0-9][0-9]*$(escregex "$suffix")\.bz2$" > /dev/null 2>&1 \
        && \
-       printf "%s\n" "$filename" | grep -v "^$(escregex "$prefix$sep")[0-9][0-9]*$(escregex "$suffix")\.lz$" > /dev/null 2>&1 ; then
+       printf "%s\n" "$filename" | grep -v "^$(escregex "$prefix$sep")[0-9][0-9]*$(escregex "$suffix")\.lz$" > /dev/null 2>&1 \
+       && \
+       printf "%s\n" "$filename" | grep -v "^$(escregex "$prefix$sep")[0-9][0-9]*$(escregex "$suffix")\.xz$" > /dev/null 2>&1 ; then
       continue
     fi
 
@@ -2629,7 +2629,7 @@ prunenumfiles () {
 #
 # $4: days worth of files, 0=unlimited
 #
-# filenames can have an optional .gz, .bz, .bz2, or .lz after $3
+# filenames can have an optional .gz, .bz2, .lz, or .xz after $3
 #
 # also works on directories
 #
@@ -2667,11 +2667,11 @@ prunedatefiles () {
          && \
          printf "%s\n" "$filename" | grep -v "^$(escregex "$prefix$sep").*$(escregex "$suffix")\.gz$" > /dev/null 2>&1 \
          && \
-         printf "%s\n" "$filename" | grep -v "^$(escregex "$prefix$sep").*$(escregex "$suffix")\.bz$" > /dev/null 2>&1 \
-         && \
          printf "%s\n" "$filename" | grep -v "^$(escregex "$prefix$sep").*$(escregex "$suffix")\.bz2$" > /dev/null 2>&1 \
          && \
-         printf "%s\n" "$filename" | grep -v "^$(escregex "$prefix$sep").*$(escregex "$suffix")\.lz$" > /dev/null 2>&1 ; then
+         printf "%s\n" "$filename" | grep -v "^$(escregex "$prefix$sep").*$(escregex "$suffix")\.lz$" > /dev/null 2>&1 \
+         && \
+         printf "%s\n" "$filename" | grep -v "^$(escregex "$prefix$sep").*$(escregex "$suffix")\.xz$" > /dev/null 2>&1 ; then
         continue
       fi
 
@@ -2700,7 +2700,7 @@ prunedatefiles () {
 # $5: number of files, 0=unlimited
 # $6: days worth of files, 0=unlimited
 #
-# filenames can have an optional .gz, .bz, .bz2, or .lz after $4
+# filenames can have an optional .gz, .bz2, .lz, or .xz after $4
 #
 # also works on directories
 #
@@ -2724,7 +2724,7 @@ prunefiles () {
 #
 # rotate and prune output logs
 #
-# filenames can have an optional trailing .gz, .bz, .bz2, or .lz
+# filenames can have an optional trailing .gz, .bz2, .lz, or .xz
 #
 # config settings: outputlog, outputlog_layout, outputlog_sep, numlogs,
 #                  dayslogs
@@ -2759,8 +2759,8 @@ rotatepruneoutputlogs () {
 # check if a file exists, including zipped versions of it
 #
 # $1 = filename
-# $2 = type of zip to check for ("gzip", "pigz", "bzip2", "lzip", "all" for
-# all of the above, or "none"; default is "all")
+# $2 = type of zip to check for ("gzip", "pigz", "bzip2", "lzip", "xz",
+# "all" for all of the above, or "none"; default is "all")
 #
 # if they exist, files must be regular files or symlinks to regular files
 #
@@ -2779,14 +2779,17 @@ existsfilezip () {
       [ -f "$1" ] || [ -f "$1.gz" ]
       ;;
     bzip2)
-      [ -f "$1" ] || [ -f "$1.bz" ] || [ -f "$1.bz2" ]
+      [ -f "$1" ] || [ -f "$1.bz2" ]
       ;;
     lzip)
       [ -f "$1" ] || [ -f "$1.lz" ]
       ;;
+    xz)
+      [ -f "$1" ] || [ -f "$1.xz" ]
+      ;;
     all|*)  # default
-      [ -f "$1" ] || [ -f "$1.gz" ] || [ -f "$1.bz" ] || [ -f "$1.bz2" ] || \
-          [ -f "$1.lz" ]
+      [ -f "$1" ] || [ -f "$1.gz" ] || [ -f "$1.bz2" ] || \
+          [ -f "$1.lz" ] || [ -f "$1.xz" ]
       ;;
   esac
 }
@@ -2795,8 +2798,8 @@ existsfilezip () {
 # remove a file, including zipped versions of it
 #
 # $1 = file to remove
-# $2 = type of zip to remove ("gzip", "pigz", "bzip2", "lzip", "all" for all
-# of the above, or "none"; default is "none")
+# $2 = type of zip to remove ("gzip", "pigz", "bzip2", "lzip", "xz",
+# "all" for all of the above, or "none"; default is "none")
 # note that $1 will still be removed if $2 is "none"
 #
 # utilities: rm
@@ -2809,17 +2812,19 @@ removefilezip () {
       rm -f "$1.gz"
       ;;
     bzip2)
-      rm -f "$1.bz"
       rm -f "$1.bz2"
       ;;
     lzip)
       rm -f "$1.lz"
       ;;
+    xz)
+      rm -f "$1.xz"
+      ;;
     all)
       rm -f "$1.gz"
-      rm -f "$1.bz"
       rm -f "$1.bz2"
       rm -f "$1.lz"
+      rm -f "$1.xz"
       ;;
     none|*)
       :  # nothing else to remove
@@ -2832,8 +2837,8 @@ removefilezip () {
 #
 # $1 = file to move
 # $2 = destination
-# $3 = type of zip to move ("gzip", "pigz", "bzip2", "lzip", "all" for all
-# of the above, or "none"; default is "none")
+# $3 = type of zip to move ("gzip", "pigz", "bzip2", "lzip", "xz",
+# "all" for all of the above, or "none"; default is "none")
 # note that $1 will still be moved if $3 is "none"
 #
 # utilities: mv
@@ -2846,17 +2851,19 @@ movefilezip () {
       mv -f "$1.gz" "$2" >/dev/null 2>&1
       ;;
     bzip2)
-      mv -f "$1.bz" "$2" >/dev/null 2>&1
       mv -f "$1.bz2" "$2" >/dev/null 2>&1
       ;;
     lzip)
       mv -f "$1.lz" "$2" >/dev/null 2>&1
       ;;
+    xz)
+      mv -f "$1.xz" "$2" >/dev/null 2>&1
+      ;;
     all)
       mv -f "$1.gz" "$2" >/dev/null 2>&1
-      mv -f "$1.bz" "$2" >/dev/null 2>&1
       mv -f "$1.bz2" "$2" >/dev/null 2>&1
       mv -f "$1.lz" "$2" >/dev/null 2>&1
+      mv -f "$1.xz" "$2" >/dev/null 2>&1
       ;;
     none|*)
       :  # nothing else to move

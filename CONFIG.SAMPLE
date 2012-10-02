@@ -214,8 +214,8 @@
 # if outputlog_layout="date", the filename will have outputlog_sep and a
 # date string appended to it (see outputlog_sep and outputlog_date)
 #
-# output logs may be gzipped, bzipped, or lzipped in place without
-# disrupting the script
+# output logs may be compressed in place (using any of the utilities
+# supported by mysql_zipmode) without disrupting the script
 #
 # * can be blank for no log
 # * if this is unset (as opposed to just blank), it defaults to
@@ -1000,19 +1000,22 @@
 
 #
 # what kind of compression to use: "none", "gzip", "pigz", "bzip2",
-# or "lzip"
+# "lzip", or "xz"
 #
-# (lzip is particularly useful because it has features to aid in the
-# recovery of damaged files)
+# lzip is particularly useful because it has features to aid in the
+# recovery of damaged files
 #
-# if not set to "none", each file will be zipped in place
+# xz is only supported in the regular format; use of --format=lzma will
+# cause problems
+#
+# if not set to "none", each file will be compressed in place
 #
 # * if blank or unset, defaults to "gzip"
 #
 ###mysql_zipmode=
 
 #
-# additional options to pass to the zip utility
+# additional options to pass to the compression utility
 #
 # for GNU gzip, "--rsyncable" is useful; other options include "-1" through
 # "-9" to tune the size of the file vs. the amount of CPU resources required
