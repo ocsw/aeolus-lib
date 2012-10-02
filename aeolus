@@ -53,7 +53,7 @@
 #   add to dbdump*cmd(), getdblist()
 #   add to the database functions in the library
 #   add to dbmslist
-#   add to usage notes on installation and portability
+#   add to usage notes on setup and portability
 #
 # see notes in the hardcoded variables section for other things that should
 # be kept in sync (e.g., the name of the script and $scriptname, the values
