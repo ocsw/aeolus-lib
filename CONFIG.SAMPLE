@@ -1088,3 +1088,130 @@
 #
 ###mysql_useaftereach=
 ###mysql_aftereach () { }
+
+
+#################################################
+# PostgreSQL dump settings, including SSH tunnel
+#################################################
+
+#
+# see MySQL for descriptions; only differences from MySQL
+# will be noted below
+#
+
+###postgres_dodump=
+
+###postgres_usetunnel=
+###postgres_sshuser=
+###postgres_sshhost=
+###postgres_sshkeyfile=
+###postgres_sshport=
+###postgres_localport=  # defaults to 6432
+###postgres_remoteport=  # defaults to 5432
+###postgres_sshoptions=()
+###postgres_sshtimeout=
+
+###postgres_user=
+
+#
+# path to the password file for connecting to the PostgreSQL server
+#
+# the file must contain lines of the form:
+#   hostname:port:database:username:password
+# where:
+#   - only the colons are literal; all 5 parts must be substituted with
+#     the relevant values
+#   - the first 4 values specify a context in which to use the password;
+#     they can each be * (for "any"), so usually the file will contain:
+#       *:*:*:*:password
+#   - by adding a more specific context to each line, a single file can
+#     be made to contain multiple passwords for different invocations of the
+#     script
+#   - any : or \ characters in the values must be preceded by a \
+#   - the file must not be group- or world-accessible or it will be ignored;
+#     i.e., set it to mode 600
+#
+# * if blank, PostgreSQL's default will be used (~/.pgpass)
+# * if this is unset (as opposed to just blank), it defaults to
+#   "/etc/aeolus/postgres.pw"
+#
+###postgres_pwfile=
+
+#
+# there is no postgres_protocol setting (i.e., it is always ignored)
+#
+
+#
+# hostname of the PostgreSQL server
+#
+# localhost and 127.0.0.1 will both connect via TCP
+#
+# * ignored if postgres_usetunnel="yes" (specify the host in postgres_sshhost
+#   instead in that case)
+# * if blank or unset, PostgreSQL's default will be used (generally localhost)
+#
+###postgres_host=
+
+###postgres_port=  # defaults to 5432
+
+#
+# path to the socket file for connecting to the PostgreSQL server
+#
+# typically /tmp/.s.PGSQL.5432 or /var/run/postgresql/.s.PGSQL.5432
+#
+# * ignored if postgres_usetunnel="yes", postgres_host is specified, or postgres_port
+#   is specified
+# * if blank or unset, PostgreSQL's default will be used
+#
+###postgres_socketfile=
+
+###postgres_dbmode=
+###postgres_dblist=()
+###postgres_splitdbs=  # may only be "no" if postgres_dbmode="all"
+
+#
+# options to pass to the PostgreSQL client
+#
+# client will also be passed "-Atc" regardless of this setting, as well as
+# the necessary connection/password options
+#
+# if connecting with SSL, add your SSL options here
+#
+###postgres_options=()
+
+#
+# options to pass to the pg_dump / pg_dumpall utilities
+#
+# utilities will also be passed:
+#
+# if connecting with SSL, add your SSL options here
+#
+# postgres_options will NOT be included
+#
+# the usual options are "--opt" and "-Q" (which are on by default in recent
+# versions), but some other (potentially) useful options include:
+#
+# * must be an array (see usage notes on the config file)
+# * can be blank (i.e., postgres_dumpoptions=(""))
+# * if this is unset (as opposed to just blank), it defaults to
+#   (--opt -Q -R -c)
+#
+###postgres_dumponeoptions=()
+###postgres_dumpalloptions=()
+
+###postgres_usealtopts=
+###postgres_altopts () { }  # no default for PostgreSQL
+###postgres_dumpdir=
+###postgres_layout=
+###postgres_fileprefix=
+###postgres_filesuffix=
+###postgres_subdirprefix=
+###postgres_filedirsep=
+###postgres_filedirdate=
+###postgres_numfiles=
+###postgres_daysfiles=
+###postgres_zipmode=
+###postgres_zipoptions=()
+###postgres_preserve=
+###postgres_useaftereach=
+###postgres_aftereach () { }
