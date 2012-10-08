@@ -2836,7 +2836,7 @@ removefilezip () {
 # move a file, including zipped versions of it
 #
 # $1 = file to move
-# $2 = destination
+# $2 = destination directory
 # $3 = type of zip to move ("gzip", "pigz", "bzip2", "lzip", "xz",
 # "all" for all of the above, or "none"; default is "none")
 # note that $1 will still be moved if $3 is "none"
