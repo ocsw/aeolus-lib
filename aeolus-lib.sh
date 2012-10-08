@@ -3197,8 +3197,8 @@ closesshtunnel () {
 #
 # run a database command
 #
-# dbms_prefix must be one of the accepted values (currently only
-# "mysql"
+# dbms_prefix must be one of the accepted values (currently "mysql" or
+# "postgres")
 #
 # when using an SSH tunnel, set host to "localhost" and port to the local
 # port of the tunnel
@@ -3211,7 +3211,7 @@ closesshtunnel () {
 # config settings: [dbms]_user, [dbms]_pwfile, [dbms]_protocol, [dbms]_host,
 #                  [dbms]_port, [dbms]_socketfile, [dbms]_options,
 #                  [dbms]_dbname, [dbms]_command
-# utilities: mysql
+# utilities: mysql, psql
 # files: $[dbms]_pwfile, $[dbms]_socketfile
 # bashisms: arrays
 #
@@ -3230,6 +3230,16 @@ dbcmd () {
         ${mysql_dbname:+"$mysql_dbname"} \
         ${mysql_command+-e "${mysql_command[@]}"}
       ;;
+    postgres)
+      PGPASSFILE=${postgres_pwfile:+"$postgres_pwfile"} \
+      psql \
+        ${postgres_user:+-U "$postgres_user"} \
+        ${postgres_host:+-h "$postgres_host"} \
+        ${postgres_port:+-p "$postgres_port"} \
+        ${postgres_options+"${postgres_options[@]}"} \
+        ${postgres_dbname:+-d "$postgres_dbname"} \
+        ${postgres_command+-c "${postgres_command[@]}"}
+      ;;
   esac
 }
 
@@ -3245,6 +3255,7 @@ dbcmd () {
 # port of the tunnel
 #
 # for MySQL, '-BN' is already included in the options
+# for PostgreSQL, '-At' is already included in the options
 #
 # (in the notes below, [dbms] = the value of $dbms_prefix)
 #

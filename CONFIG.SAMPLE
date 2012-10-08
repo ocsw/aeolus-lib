@@ -1199,8 +1199,8 @@
 ###postgres_dumponeoptions=()
 ###postgres_dumpalloptions=()
 
-###postgres_usealtopts=
-###postgres_altopts () { }  # no default for PostgreSQL
+###postgres_usealtopts=  # note that MySQL examples do not apply here
+###postgres_altopts () { }  # no default function for PostgreSQL
 ###postgres_dumpdir=
 ###postgres_layout=
 ###postgres_fileprefix=
