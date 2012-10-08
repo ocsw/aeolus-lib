@@ -2,17 +2,12 @@ git (gitolite?  github?)
 checker script
 
 postgres
-rsync log (incl. rotation)
 rdiff
+sbm threshold
 
 script, docs re library install and source
 eval funcs - unset vs null, esp. arrays (w/ declare -p)
 set -x for commands?  but remember retvals
-
-test rot/pru/pr with all 5
-test ex/rm/mv fz with bz, xz, all->both
-
-sbm threshold
 
 psql -Atc 'select datname from pg_catalog.pg_database;'
 
@@ -29,8 +24,10 @@ psql -Atc 'select datname from pg_catalog.pg_database;'
 
        -C, --create
 
-       -g, --globals-only
-       -r, --roles-only
-       -t, --tablespaces-only
-
 restore: -c -C -a -s -x
+
+       -h hostname, --host=hostname
+           running. If the value begins with a slash, it is used as the dir
+       -p port, --port=port
+           Specifies the TCP port or the local Unix-domain socket file
+           extension on which the server is listening for connections.
