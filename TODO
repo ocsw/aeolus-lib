@@ -9,25 +9,4 @@ script, docs re library install and source
 eval funcs - unset vs null, esp. arrays (w/ declare -p)
 set -x for commands?  but remember retvals
 
-psql -Atc 'select datname from pg_catalog.pg_database;'
-
-       -c, --clean
-       -a, --data-only
-       -s, --schema-only
-       --column-inserts
-       --inserts
-       --lock-wait-timeout=timeout
-       --quote-all-identifiers
-       -x, --no-privileges, --no-acl
-       -O, --no-owner
-       --no-tablespaces
-
-       -C, --create
-
-restore: -c -C -a -s -x
-
-       -h hostname, --host=hostname
-           running. If the value begins with a slash, it is used as the dir
-       -p port, --port=port
-           Specifies the TCP port or the local Unix-domain socket file
-           extension on which the server is listening for connections.
+mysql: localhost vs 127 for tunnel

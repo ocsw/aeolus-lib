@@ -3254,8 +3254,11 @@ dbcmd () {
 # when using an SSH tunnel, set host to "localhost" and port to the local
 # port of the tunnel
 #
-# for MySQL, '-BN' is already included in the options
-# for PostgreSQL, '-At' is already included in the options
+# some options are pre-included;
+# for MySQL:
+#   -BN -e "SHOW DATABASES;"
+# for PostgreSQL:
+#   -At -c "SELECT datname FROM pg_catalog.pg_database;"
 #
 # (in the notes below, [dbms] = the value of $dbms_prefix)
 #

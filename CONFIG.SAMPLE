@@ -689,8 +689,10 @@
 #
 # options to pass to the MySQL client
 #
-# client will also be passed "-BNe" regardless of this setting, as well as
-# the necessary connection/password options
+# the client will also be passed
+#   -BN -e "SHOW DATABASES;"
+# regardless of this setting, as well as the necessary connection/password
+# options
 #
 # if connecting with SSL, add your SSL options here
 #
@@ -705,7 +707,7 @@
 #
 # options to pass to the mysqldump utility
 #
-# utility will also be passed:
+# the utility will also be passed:
 #   "-A" if mysql_dbmode="all" and mysql_splitdbs="no", or
 #   "-B" if mysql_dbmode is not "all" and mysql_splitdbs="no"
 # regardless of this setting, as well as the necessary connection/password
@@ -1101,6 +1103,19 @@
 
 ###postgres_dodump=
 
+#
+# this script does not directly support connection options other than the
+# basics (e.g., no SSL); to use advanced features, set the environment
+# variables listed in:
+# http://www.postgresql.org/docs/9.2/static/libpq-envars.html
+# (or the relevant version), _excluding_ PGPASSFILE, which is set by the
+# script
+#
+# these variables can be set in the config file and exported, set on the
+# command line when calling the script, or set in and exported from the
+# shell/wrapper/etc. which runs the script
+#
+
 ###postgres_usetunnel=
 ###postgres_sshuser=
 ###postgres_sshhost=
@@ -1142,28 +1157,36 @@
 #
 
 #
-# hostname of the PostgreSQL server
+# hostname and port of the PostgreSQL server
 #
-# localhost and 127.0.0.1 will both connect via TCP
+# to connect via TCP:
+#   - specify a hostname (a string not starting with '/')
+#   - both 'localhost' and '127.0.0.1' will connect via TCP
+#   - the port is optional
 #
-# * ignored if postgres_usetunnel="yes" (specify the host in postgres_sshhost
-#   instead in that case)
-# * if blank or unset, PostgreSQL's default will be used (generally localhost)
+# to connect via socket file:
+#   - specify the directory containing the socket in postgres_host; this
+#     must start with '/', so it must be an absolute (not relative) path
+#   - optionally, specify a port number in postgres_port; this will be used
+#     as the suffix of the socket file
+#   - the file used will be 'HOST/.s.PGSQL.PORT', where HOST and PORT are
+#     the given settings
+#   - there is apparently no way to specify the full name of the socket
+#     file, or to use anything other than a port number as the suffix
+#   - typical socket locations are /tmp/.s.PGSQL.5432 and
+#     /var/run/postgresql/.s.PGSQL.5432
+#
+# * ignored if postgres_usetunnel="yes" (instead, specify the host in
+#   postgres_sshhost and the port in postgres_localport)
+# * if blank or unset, PostgreSQL's defaults will be used
 #
 ###postgres_host=
+###postgres_port=
 
-###postgres_port=  # defaults to 5432
-
 #
-# path to the socket file for connecting to the PostgreSQL server
+# there is no postgres_socketfile setting (see postgres_host and
+# postgres_port instead)
 #
-# typically /tmp/.s.PGSQL.5432 or /var/run/postgresql/.s.PGSQL.5432
-#
-# * ignored if postgres_usetunnel="yes", postgres_host is specified, or postgres_port
-#   is specified
-# * if blank or unset, PostgreSQL's default will be used
-#
-###postgres_socketfile=
 
 ###postgres_dbmode=
 ###postgres_dblist=()
@@ -1172,29 +1195,49 @@
 #
 # options to pass to the PostgreSQL client
 #
-# client will also be passed "-Atc" regardless of this setting, as well as
-# the necessary connection/password options
-#
-# if connecting with SSL, add your SSL options here
+# the client will also be passed
+#   -At -c "SELECT datname FROM pg_catalog.pg_database;"
+# regardless of this setting, as well as the necessary connection/password
+# options
 #
 ###postgres_options=()
 
 #
 # options to pass to the pg_dump / pg_dumpall utilities
 #
-# utilities will also be passed:
-#
-# if connecting with SSL, add your SSL options here
-#
 # postgres_options will NOT be included
 #
-# the usual options are "--opt" and "-Q" (which are on by default in recent
-# versions), but some other (potentially) useful options include:
+# the only option usually needed is "-c" (drop DBs/tables/etc. before
+# recreating), but some other (potentially) useful options include:
 #
-# * must be an array (see usage notes on the config file)
-# * can be blank (i.e., postgres_dumpoptions=(""))
-# * if this is unset (as opposed to just blank), it defaults to
-#   (--opt -Q -R -c)
+# "-a": only include the data, not the schema
+# "-s": only include the schema, not the data
+# "--inserts": use individual INSERT statements instead of mass COPYs;
+#              slower, but more portable and easier to post-process
+# "--column-inserts": like "--inserts", but also includes column names
+# "--quote-all-identifiers": put all DB/table/column/etc. names in double-
+#                            quotes (mainly useful for future-proofing
+#                            and post-processing)
+# "-x": don't include the permissions with the DB(s) (dumps usually include
+#       applicable permissions, but not the roles (users) themselves)
+# "-O": don't include ownership assignments of tables, etc.
+# "--no-tablespaces": don't include tablespace assignments of tables, etc.
+# "--lock-wait-timeout=N": N is the maximum number of milliseconds to wait
+#                          for a lock to be obtained before dumping
+#                          (if exceeded, dump fails)
+# "-C": add commands to the dump to create and connect to the DB (only
+#       applies to postgres_dumponeoptions; see below)
+#
+# pg_dumpall always adds commands to the dump to create and connect to the
+# DBs (equivalent of "-C"); if this is undesired, do not set both
+# postgres_dbmode="all" and postgres_splitdbs="no"
+# the main reason why one might not want this behavior is so that one
+# can reload into a different DB name easily; this is why "-C" is not
+# included in the default for postgres_dumponeoptions
+#
+# * must be arrays (see usage notes on the config file)
+# * can be blank (e.g., postgres_dumponeoptions=(""))
+# * if these are unset (as opposed to just blank), they default to (-c)
 #
 ###postgres_dumponeoptions=()
 ###postgres_dumpalloptions=()
