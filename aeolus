@@ -173,6 +173,9 @@ externalcmds="
   nc
   mysql
   mysqldump
+  psql
+  pg_dump
+  pg_dumpall
   gzip
   pigz
   bzip2
@@ -293,6 +296,42 @@ configsettings="
   mysql_preserve
   mysql_useaftereach
   mysql_aftereach
+  postgres_dodump
+  postgres_usetunnel
+  postgres_sshuser
+  postgres_sshhost
+  postgres_sshkeyfile
+  postgres_sshport
+  postgres_localport
+  postgres_remoteport
+  postgres_sshoptions
+  postgres_sshtimeout
+  postgres_user
+  postgres_pwfile
+  postgres_host
+  postgres_port
+  postgres_dbmode
+  postgres_dblist
+  postgres_splitdbs
+  postgres_options
+  postgres_dumponeoptions
+  postgres_dumpalloptions
+  postgres_usealtopts
+  postgres_altopts
+  postgres_dumpdir
+  postgres_layout
+  postgres_fileprefix
+  postgres_filesuffix
+  postgres_subdirprefix
+  postgres_filedirsep
+  postgres_filedirdate
+  postgres_numfiles
+  postgres_daysfiles
+  postgres_zipmode
+  postgres_zipoptions
+  postgres_preserve
+  postgres_useaftereach
+  postgres_aftereach
 "
 
 #
@@ -308,15 +347,34 @@ configsettings="
 configsettingtype () {
   # arrays broken up for readability
   case "$1" in
+    # rsync
     rsync_sshoptions|rsync_source|rsync_options|rsync_add)
       echo "array"
       ;;
-    mysql_sshoptions|mysql_dblist|mysql_options|mysql_dumpoptions|mysql_zipoptions)
+
+    # MySQL
+    mysql_sshoptions|mysql_dblist|mysql_options|mysql_dumpoptions)
+      echo "array"
+      ;;
+    mysql_zipoptions)
       echo "array"
       ;;
     mysql_altopts|mysql_aftereach)
       echo "function"
       ;;
+
+    # PostgreSQL
+    postgres_sshoptions|postgres_dblist|postgres_options)
+      echo "array"
+      ;;
+    postgres_dumponeoptions|postgres_dumpalloptions|postgres_zipoptions)
+      echo "array"
+      ;;
+    postgres_altopts|postgres_aftereach)
+      echo "function"
+      ;;
+
+    # default
     *)
       echo "scalar"
   esac
@@ -367,6 +425,8 @@ rsync_localport_default="8873"
 rsync_remoteport_default="873"
 mysql_localport_default="4306"
 mysql_remoteport_default="3306"
+postgres_localport_default="6432"
+postgres_remoteport_default="5432"
 sshtimeout_default="15"  # applies to all SSH tunnels
 
 # default settings: rsync
@@ -393,9 +453,19 @@ mysql_pwfile_default="/etc/aeolus/mysql.pw"  # only if unset
 mysql_dbmode_default="all"
 mysql_splitdbs_default="no"
 mysql_dumpoptions_default=(--opt -Q -R -c)  # only if unset
-mysql_usealtopts_default="no"
+mysql_usealtopts_default="yes"
 mysql_fileprefix_default="mysqldump"  # only if unset
 mysql_subdirprefix_default="mysqldump"  # only if unset
+
+# default settings: PostgreSQL (see also above)
+postgres_pwfile_default="/etc/aeolus/postgres.pw"  # only if unset
+postgres_dbmode_default="all"
+postgres_splitdbs_default="no"
+postgres_dumponeoptions_default=(-c)  # only if unset
+postgres_dumpalloptions_default=(-c)  # only if unset
+postgres_usealtopts_default="no"
+postgres_fileprefix_default="postgresdump"  # only if unset
+postgres_subdirprefix_default="postgresdump"  # only if unset
 
 # settings that have no default, and can't be blank
 # (but may be ignored, depending on other settings)
@@ -409,7 +479,7 @@ mysql_subdirprefix_default="mysqldump"  # only if unset
 # must correspond to the relevant variable prefixes
 #
 # removing a DBMS from this list will effectively disable it
-dbmslist="mysql"
+dbmslist="mysql postgres"
 
 # names of tempfiles stored in the lockfile directory
 lfalertssilenced="lfalertssilenced"
@@ -909,9 +979,12 @@ applydefaults () {
   [ "$rsync_remoteport" = "" ] && rsync_remoteport="$rsync_remoteport_default"
   [ "$mysql_localport" = "" ] && mysql_localport="$mysql_localport_default"
   [ "$mysql_remoteport" = "" ] && mysql_remoteport="$mysql_remoteport_default"
+  [ "$postgres_localport" = "" ] && postgres_localport="$postgres_localport_default"
+  [ "$postgres_remoteport" = "" ] && postgres_remoteport="$postgres_remoteport_default"
   # global
   [ "$rsync_sshtimeout" = "" ] && rsync_sshtimeout="$sshtimeout_default"
   [ "$mysql_sshtimeout" = "" ] && mysql_sshtimeout="$sshtimeout_default"
+  [ "$postgres_sshtimeout" = "" ] && postgres_sshtimeout="$sshtimeout_default"
 
   # rsync
   [ "$do_rsync" = "" ] && do_rsync="$do_rsync_default"
@@ -931,6 +1004,18 @@ applydefaults () {
   [ "$mysql_zipmode" = "" ] && mysql_zipmode="$dbms_zipmode_default"
   [ "$mysql_preserve" = "" ] && mysql_preserve="$dbms_preserve_default"
   [ "$mysql_useaftereach" = "" ] && mysql_useaftereach="$dbms_useaftereach_default"
+  [ "$postgres_dodump" = "" ] && postgres_dodump="$dbms_dodump_default"
+  [ "$postgres_usetunnel" = "" ] && postgres_usetunnel="$dbms_usetunnel_default"
+  [ "$postgres_dumpdir" = "" ] && postgres_dumpdir="$dbms_dumpdir_default"
+  [ "$postgres_layout" = "" ] && postgres_layout="$dbms_layout_default"
+  [ "${postgres_filesuffix+X}" = "" ] && postgres_filesuffix="$dbms_filesuffix_default"
+  [ "${postgres_filedirsep+X}" = "" ] && postgres_filedirsep="$dbms_filedirsep_default"
+  [ "${postgres_filedirdate+X}" = "" ] && postgres_filedirdate="$dbms_filedirdate_default"
+  [ "$postgres_numfiles" = "" ] && postgres_numfiles="$dbms_numfiles_default"
+  [ "$postgres_daysfiles" = "" ] && postgres_daysfiles="$dbms_daysfiles_default"
+  [ "$postgres_zipmode" = "" ] && postgres_zipmode="$dbms_zipmode_default"
+  [ "$postgres_preserve" = "" ] && postgres_preserve="$dbms_preserve_default"
+  [ "$postgres_useaftereach" = "" ] && postgres_useaftereach="$dbms_useaftereach_default"
 
   # DBMSes (individual defaults; see also above)
   # MySQL
@@ -942,6 +1027,17 @@ applydefaults () {
   [ "$mysql_usealtopts" = "" ] && mysql_usealtopts="$mysql_usealtopts_default"
   [ "${mysql_fileprefix+X}" = "" ] && mysql_fileprefix="$mysql_fileprefix_default"
   [ "${mysql_subdirprefix+X}" = "" ] && mysql_subdirprefix="$mysql_subdirprefix_default"
+  # PostgreSQL
+  [ "${postgres_pwfile+X}" = "" ] && postgres_pwfile="$postgres_pwfile_default"
+  [ "$postgres_dbmode" = "" ] && postgres_dbmode="$postgres_dbmode_default"
+  [ "$postgres_splitdbs" = "" ] && postgres_splitdbs="$postgres_splitdbs_default"
+  declare -p "postgres_dumponeoptions" > /dev/null 2>&1 || \
+      copyarray "postgres_dumponeoptions_default" "postgres_dumponeoptions"
+  declare -p "postgres_dumpalloptions" > /dev/null 2>&1 || \
+      copyarray "postgres_dumpalloptions_default" "postgres_dumpalloptions"
+  [ "$postgres_usealtopts" = "" ] && postgres_usealtopts="$postgres_usealtopts_default"
+  [ "${postgres_fileprefix+X}" = "" ] && postgres_fileprefix="$postgres_fileprefix_default"
+  [ "${postgres_subdirprefix+X}" = "" ] && postgres_subdirprefix="$postgres_subdirprefix_default"
 }
 
 #
@@ -1156,7 +1252,8 @@ validconf () {
 #
 # $1 is the name of the database to dump
 #
-# dbms_prefix must be one of the accepted values (see dbmslist)
+# dbms_prefix must be one of the accepted values (see dbmslist),
+# but not all of them will necessarily work; see the code
 #
 # when using an SSH tunnel, set host to "localhost" and port to the local
 # port of the tunnel
@@ -1174,7 +1271,7 @@ validconf () {
 #                  on the DBMS), [dbms]_usealtopts
 # config functions: [dbms]_altopts()
 # library functions: copyarray()
-# utilities: mysqldump, [
+# utilities: mysqldump, pg_dump, [
 # files: $[dbms]_pwfile, $[dbms]_socketfile
 # bashisms: arrays
 #
@@ -1199,6 +1296,22 @@ dbdumponecmd () {
         ${opts_l+"${opts_l[@]}"} \
         "$1"
       ;;
+    postgres)
+      if [ "$postgres_splitdbs" = "yes" ] && \
+         [ "$postgres_usealtopts" = "yes" ] && postgres_altopts "$1"; then
+        copyarray "altopts" "opts_l"
+      else
+        copyarray "postgres_dumponeoptions" "opts_l"
+      fi
+
+      PGPASSFILE=${postgres_pwfile:+"$postgres_pwfile"} \
+      pg_dump \
+        ${postgres_user:+-U "$postgres_user"} \
+        ${postgres_host:+-h "$postgres_host"} \
+        ${postgres_port:+-p "$postgres_port"} \
+        ${opts_l+"${opts_l[@]}"} \
+        "$1"
+      ;;
   esac
 }
 
@@ -1210,7 +1323,8 @@ dbdumponecmd () {
 #
 # the names of the databases to dump must be in the dbnames array
 #
-# dbms_prefix must be one of the accepted values (see dbmslist)
+# dbms_prefix must be one of the accepted values (see dbmslist),
+# but not all of them will necessarily work; see the code
 #
 # when using an SSH tunnel, set host to "localhost" and port to the local
 # port of the tunnel
@@ -1243,6 +1357,9 @@ dbdumpmultcmd () {
         ${mysql_dumpoptions+"${mysql_dumpoptions[@]}"} \
         -B "${dbnames[@]}"
       ;;
+    postgres)
+      :  # can't be done with PostgreSQL
+      ;;
   esac
 }
 
@@ -1252,7 +1369,8 @@ dbdumpmultcmd () {
 # (may not be possible with all DBMSes; see also dbdumponecmd(),
 # dbdumpmultcmd())
 #
-# dbms_prefix must be one of the accepted values (see dbmslist)
+# dbms_prefix must be one of the accepted values (see dbmslist),
+# but not all of them will necessarily work; see the code
 #
 # when using an SSH tunnel, set host to "localhost" and port to the local
 # port of the tunnel
@@ -1267,7 +1385,7 @@ dbdumpmultcmd () {
 #                  [dbms]_port, [dbms]_socketfile,
 #                  [dbms]_dumpoptions/[dbms]_dumpalloptions/etc. (depending
 #                  on the DBMS)
-# utilities: mysqldump
+# utilities: mysqldump, pg_dumpall
 # files: $[dbms]_pwfile, $[dbms]_socketfile
 # bashisms: arrays
 #
@@ -1284,6 +1402,14 @@ dbdumpallcmd () {
         ${mysql_socketfile:+-S "$mysql_socketfile"} \
         ${mysql_dumpoptions+"${mysql_dumpoptions[@]}"} \
         -A
+      ;;
+    postgres)
+      PGPASSFILE=${postgres_pwfile:+"$postgres_pwfile"} \
+      pg_dumpall \
+        ${postgres_user:+-U "$postgres_user"} \
+        ${postgres_host:+-h "$postgres_host"} \
+        ${postgres_port:+-p "$postgres_port"} \
+        ${postgres_dumpalloptions+"${postgres_dumpalloptions[@]}"}
       ;;
   esac
 }
@@ -1315,7 +1441,7 @@ getdblist () {
   # do we need the list?
   case "$dbms_prefix" in
     # use dbms_ vars in case we need to lump DBMSes together
-    mysql)
+    mysql|postgres)
       if { [ "$dbms_dbmode" = "all" ] && [ "$dbms_splitdbs" = "yes" ]; } \
          || \
          [ "$dbms_dbmode" = "exclude" ]; then

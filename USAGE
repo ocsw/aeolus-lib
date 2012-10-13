@@ -45,7 +45,44 @@ CONTENTS
 2) Setup And Permissions
 ------------------------
 
-   a) SSH
+   a) Files
+
+      Here are the minimium permissions required for the various files used
+      by the script, relative to the user running the script:
+
+      r (read), and x (execute) on the parent directory:
+        [the config file]
+        rsync_sshkeyfile
+        rsync_pwfile
+        rsync_filterfile
+        [dbms]_sshkeyfile
+        [dbms]_pwfile
+
+      rw (read/write), and x (execute) on the parent directory:
+        [dbms]_socketfile
+        [the dump files]
+
+      rwx (read/write/execute), and x (execute) on the parent directory:
+        [dbms]_dumpdir
+
+      w (write), and wx (write/execute) on the parent directory:
+        startedfile
+        alertfile
+        statuslog
+
+      wx (write/execute), and wx (write/execute) on the parent directory:
+        lockfile
+
+      w (write), and rwx (read/write/execute) on the parent directory:
+        outputlog
+
+   b) Email
+
+      Make sure the system running the script can successfully send email to
+      the account(s) you will be using in mailto; this may involve setting
+      it to use a smarthost in some cases.
+
+   c) SSH
 
       For any SSH tunnel you plan to use (or rsync_mode="nodaemon"), you
       will need:
@@ -66,7 +103,7 @@ CONTENTS
           rsync, replace the port number; to allow multiple ports, add more
           permitopen sections.)
 
-   b) rsync
+   d) rsync
 
       For rsync_mode="tunnel" or "direct", you will need to configure rsync
       on the remote host.  Here is a sample rsyncd.conf for tunnel mode,
@@ -122,7 +159,7 @@ CONTENTS
       Note that rsyncd.conf is re-read on each connection, so changes do not
       require restarting rsyncd.
 
-   c) MySQL
+   e) MySQL
 
       You will need a MySQL account with privileges for the databases you
       want to dump.  This can mean setting separate permissions for each
@@ -134,42 +171,21 @@ CONTENTS
         ON *.* ...
       (if using --master-data, add REPLICATION CLIENT).
 
-   d) Files
+   f) PostgreSQL
 
-      Here are the minimium permissions required for the various files used
-      by the script, relative to the user running the script:
+      You will need a PostgreSQL account with privileges for the databases
+      you want to dump.  This may mean needing superuser privileges,
+      especially in the case of pg_dumpall, which is used when
+      postgres_dbmode="all" and postgres_splitdbs="no".  Pg_dumpall not only
+      needs to access the databases, but to access global data which is not
+      stored in a database (e.g., roles and tablespaces; see
+      postgres_dumpalloptions in the sample config file for more
+      information).
 
-      r (read), and x (execute) on the parent directory:
-        [the config file]
-        rsync_sshkeyfile
-        rsync_pwfile
-        rsync_filterfile
-        [dbms]_sshkeyfile
-        [dbms]_pwfile
-
-      rw (read/write), and x (execute) on the parent directory:
-        [dbms]_socketfile
-        [the dump files]
-
-      rwx (read/write/execute), and x (execute) on the parent directory:
-        [dbms]_dumpdir
-
-      w (write), and wx (write/execute) on the parent directory:
-        startedfile
-        alertfile
-        statuslog
-
-      wx (write/execute), and wx (write/execute) on the parent directory:
-        lockfile
-
-      w (write), and rwx (read/write/execute) on the parent directory:
-        outputlog
-
-   e) Email
-
-      Make sure the system running the script can successfully send email to
-      the account(s) you will be using in mailto; this may involve setting
-      it to use a smarthost in some cases.
+      Further, from the pg_dumpall man page:
+          Also you will need superuser privileges to execute the saved
+          script in order to be allowed to add users and groups, and to
+          create databases.
 
 
 3) Running The Script
@@ -471,7 +487,8 @@ CONTENTS
    b) The script uses these utilities:
         awk, bzip2, cat, date, expr, find, gawk, grep, gzip, hostname,
         logger, ls, lzip, mailx, mkdir, mkfifo, mv, mysql, mysqldump, nc,
-        pigz, rm, rsync, sed, sleep, ssh, tee, touch, tr, xz
+        pg_dump, pg_dumpall, pigz, psql, rm, rsync, sed, sleep, ssh, tee,
+        touch, tr, xz
 
    c) Some of the above are optional, depending on the settings used.  In
       the list below, [dbms] means any DBMS, but the same one throughout any
@@ -527,7 +544,18 @@ CONTENTS
           * do_rsync="yes" and rsync_mode="tunnel"
           * [dbms]_dodump="yes" and [dbms]_usetunnel="yes"
 
+        pg_dump is only needed if postgres_dodump="yes" and either
+        postgres_dbmode is not "all", or postgres_dbmode="all" and
+        postgres_splitdbs="yes"
+
+        pg_dumpall is only needed if postgres_dodump="yes",
+        postgres_dbmode="all", and postgres_splitdbs="no"
+
         pigz: see gzip
+
+        psql is only needed if postgres_dodump="yes" and either
+        postgres_dbmode="all" and postgres_splitdbs="yes", or
+        postgres_dbmode="exclude"
 
         rsync is only needed if do_rsync="yes"
 

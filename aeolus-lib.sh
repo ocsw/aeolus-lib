@@ -3248,17 +3248,17 @@ dbcmd () {
 #
 # (may not be possible/straightforward for all DBMSes)
 #
-# dbms_prefix must be one of the accepted values (currently only
-# "mysql"
+# dbms_prefix must be one of the accepted values (currently "mysql" or
+# "postgres")
 #
 # when using an SSH tunnel, set host to "localhost" and port to the local
 # port of the tunnel
 #
-# some options are pre-included;
-# for MySQL:
-#   -BN -e "SHOW DATABASES;"
-# for PostgreSQL:
-#   -At -c "SELECT datname FROM pg_catalog.pg_database;"
+# some options are pre-included:
+#   MySQL:
+#     -BN -e "SHOW DATABASES;"
+#   PostgreSQL:
+#     -At -c "SELECT datname FROM pg_catalog.pg_database;"
 #
 # (in the notes below, [dbms] = the value of $dbms_prefix)
 #
@@ -3267,7 +3267,7 @@ dbcmd () {
 # global vars: dbms_prefix
 # config settings: [dbms]_user, [dbms]_pwfile, [dbms]_protocol, [dbms]_host,
 #                  [dbms]_port, [dbms]_socketfile, [dbms]_options
-# utilities: mysql
+# utilities: mysql, psql
 # files: $[dbms]_pwfile, $[dbms]_socketfile
 # bashisms: arrays
 #
@@ -3285,6 +3285,16 @@ dblistcmd () {
         ${mysql_options+"${mysql_options[@]}"} \
         -BN -e "SHOW DATABASES;"
       ;;
+    postgres)
+      PGPASSFILE=${postgres_pwfile:+"$postgres_pwfile"} \
+      psql \
+        ${postgres_user:+-U "$postgres_user"} \
+        ${postgres_host:+-h "$postgres_host"} \
+        ${postgres_port:+-p "$postgres_port"} \
+        ${postgres_options+"${postgres_options[@]}"} \
+        ${postgres_dbname:+-d "$postgres_dbname"} \
+        -At -c "SELECT datname FROM pg_catalog.pg_database;"
+      ;;
   esac
 }
 
@@ -3301,11 +3311,14 @@ dblistcmd () {
 #     \t -> tab
 #     \\ -> \
 #
+#   PostgreSQL:
+#     (none; DB names with newlines or tabs may cause problems)
+#
 # (that is, this function will carry out the mappings above, which are the
 # reverse of the mappings used by the DBMSes)
 #
-# dbms_prefix must be one of the accepted values (currently only
-# "mysql"
+# dbms_prefix must be one of the accepted values (currently "mysql" or
+# "postgres")
 #
 # global vars: dbms_prefix
 # library vars: tab
@@ -3320,6 +3333,9 @@ dbunescape () {
           -e 's/^\\n/\n/' -e 's/\([^\]\)\\n/\1\n/g' \
           -e "s/^\\\\t/$tab/" -e "s/\\([^\\]\)\\\\t/\\1$tab/g" \
           -e 's/\\\\/\\/g'
+      ;;
+    postgres)
+      :  # do nothing
       ;;
   esac
 }

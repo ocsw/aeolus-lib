@@ -809,7 +809,7 @@
 #
 # * setting and function are ignored if mysql_splitdbs="no"; function is
 #   also ignored if setting is "no"
-# * if blank or unset, setting defaults to "no"; see above for function
+# * if blank or unset, setting defaults to "yes"; see above for function
 #   default
 #
 ###mysql_usealtopts=
@@ -1205,35 +1205,59 @@
 #
 # options to pass to the pg_dump / pg_dumpall utilities
 #
+# pg_dumpall (postgres_dumpalloptions) is only used if postgres_dbmode="all"
+# and postgres_splitdbs="no" (which is the default); there are several
+# differences in behavior beyond simply dumping all of the databases at once
+# vs. one database at a time:
+#
+#   - PostgreSQL maintains some information outside of any database,
+#     including roles and tablespaces; pg_dumpall includes this information
+#     by default, but there is apparently no way to get it using pg_dump,
+#     so if you need to dump the DBs separately but you also need the global
+#     data, you will need to do a second dump using pg_dumpall with the "-g"
+#     option (see below)
+#     [an option to do this automatically will eventually be added to the
+#     script; currently you will need a separate invocation of the script
+#     with the appropriate options]
+#
+#   - pg_dumpall always adds commands to the dump to create and connect to
+#     the DBs (the equivalent of "-C", see below); this is generally fine
+#     for dumping and reloading an entire DB installation, but it makes it
+#     harder to reload DBs while changing their names (e.g. to make an old
+#     version accessible while not destroying a live version)
+#     this is also why "-C" is not included in the default for
+#     postgres_dumponeoptions
+#
+#   - when using "-c" (see below), pg_dumpall adds commands to the dump to
+#     drop all DBs before reloading any of them, whereas pg_dump drops all
+#     tables before reloading any of them; if you want to drop/reload only
+#     one DB at a time, you will need to use separate dumps for each DB
+#
 # postgres_options will NOT be included
 #
 # the only option usually needed is "-c" (drop DBs/tables/etc. before
-# recreating), but some other (potentially) useful options include:
+# recreating, see above), but some other (potentially) useful options
+# include:
 #
+# "--lock-wait-timeout=N": N is the maximum number of milliseconds to wait
+#                          for a lock to be obtained before dumping
+#                          (if exceeded, dump fails)
 # "-a": only include the data, not the schema
 # "-s": only include the schema, not the data
+# "-g": only include global data such as roles and tablespaces, no DBs
+#       (only applies to postgres_dumpalloptions; see above)
+# "-C": add commands to the dump to create and connect to the DB (only
+#       applies to postgres_dumponeoptions; see above)
+# "-x": don't include the permissions with the DB(s) (dumps usually include
+#       applicable permissions, but not the roles (users) themselves)
+# "-O": don't include ownership assignments of tables, etc.
+# "--no-tablespaces": don't include tablespace assignments of tables, etc.
 # "--inserts": use individual INSERT statements instead of mass COPYs;
 #              slower, but more portable and easier to post-process
 # "--column-inserts": like "--inserts", but also includes column names
 # "--quote-all-identifiers": put all DB/table/column/etc. names in double-
 #                            quotes (mainly useful for future-proofing
 #                            and post-processing)
-# "-x": don't include the permissions with the DB(s) (dumps usually include
-#       applicable permissions, but not the roles (users) themselves)
-# "-O": don't include ownership assignments of tables, etc.
-# "--no-tablespaces": don't include tablespace assignments of tables, etc.
-# "--lock-wait-timeout=N": N is the maximum number of milliseconds to wait
-#                          for a lock to be obtained before dumping
-#                          (if exceeded, dump fails)
-# "-C": add commands to the dump to create and connect to the DB (only
-#       applies to postgres_dumponeoptions; see below)
-#
-# pg_dumpall always adds commands to the dump to create and connect to the
-# DBs (equivalent of "-C"); if this is undesired, do not set both
-# postgres_dbmode="all" and postgres_splitdbs="no"
-# the main reason why one might not want this behavior is so that one
-# can reload into a different DB name easily; this is why "-C" is not
-# included in the default for postgres_dumponeoptions
 #
 # * must be arrays (see usage notes on the config file)
 # * can be blank (e.g., postgres_dumponeoptions=(""))
@@ -1242,13 +1266,14 @@
 ###postgres_dumponeoptions=()
 ###postgres_dumpalloptions=()
 
-###postgres_usealtopts=  # note that MySQL examples do not apply here
+###postgres_usealtopts=  # defaults to no; note that MySQL examples do not
+                         # apply here
 ###postgres_altopts () { }  # no default function for PostgreSQL
 ###postgres_dumpdir=
 ###postgres_layout=
-###postgres_fileprefix=
+###postgres_fileprefix=  # defaults to "postgresdump" if unset (not blank)
 ###postgres_filesuffix=
-###postgres_subdirprefix=
+###postgres_subdirprefix=  # defaults to "postgresdump" if unset (not blank)
 ###postgres_filedirsep=
 ###postgres_filedirdate=
 ###postgres_numfiles=
