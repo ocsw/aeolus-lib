@@ -3335,7 +3335,7 @@ dbunescape () {
           -e 's/\\\\/\\/g'
       ;;
     postgres)
-      :  # do nothing
+      printf "%s\n" "$1"  # just echo the input
       ;;
   esac
 }

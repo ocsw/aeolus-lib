@@ -26,6 +26,7 @@
 #   9  = error dumping DB
 #   10 = error compressing DB dump
 #   11 = rsync error
+#   99 = internal error; should never happen
 # if there are multiple errors, the first one to occur is used
 
 # modification notes:
@@ -506,6 +507,7 @@ dumpexists_exitval="8"
 dbdump_exitval="9"
 dbzip_exitval="10"
 rsync_exitval="11"
+internal_exitval="99"
 
 
 ###########################
@@ -1335,11 +1337,13 @@ dbdumponecmd () {
 # dbnames and [dbms]_dumpoptions/[dbms]_dumpmultoptions/etc. must be indexed,
 # non-sparse arrays
 #
-# global vars: dbnames, dbms_prefix
+# global vars: dbnames, dbms_prefix, internal_exitval
 # config settings: [dbms]_user, [dbms]_pwfile, [dbms]_protocol, [dbms]_host,
 #                  [dbms]_port, [dbms]_socketfile,
 #                  [dbms]_dumpoptions/[dbms]_dumpmultoptions/etc. (depending
 #                  on the DBMS)
+# library vars: newline
+# library functions: sendalert(), do_exit()
 # utilities: mysqldump
 # files: $[dbms]_pwfile, $[dbms]_socketfile
 # bashisms: arrays
@@ -1359,7 +1363,8 @@ dbdumpmultcmd () {
         -B "${dbnames[@]}"
       ;;
     postgres)
-      :  # can't be done with PostgreSQL
+      sendalert "Internal Error: PostgreSQL cannot dump multiple DBs at once; exiting${newline}-> THERE IS A BUG IN THE SCRIPT! <-" log
+      do_exit "$internal_exitval"
       ;;
   esac
 }
