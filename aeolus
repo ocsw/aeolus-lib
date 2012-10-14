@@ -1158,6 +1158,21 @@ validconf () {
 
     validlist "${dbms}_dodump" "yes" "no"
     if [ "$dbms_dodump" = "yes" ]; then
+      # account for differences between DBMSs, so we don't need special
+      # cases below
+      case "$dbms" in
+        postgres)
+          # make sure socketfile is blank even if the user sets it,
+          # because we compare to it below
+          postgres_socketfile=""
+          dbms_socketfile=""
+
+          # PostgreSQL can't dump multiple DBs at once
+          [ "$postgres_splitdbs" = "no" ] && [ "$postgres_dbmode" != "all" ] && \
+              throwstartuperr "Error: postgres_splitdbs may only be 'no' if postgres_dbmode is 'all'; exiting."
+          ;;
+      esac
+
       validlist "${dbms}_usetunnel" "yes" "no"
       if [ "$dbms_usetunnel" = "yes" ]; then
         validnoblank "${dbms}_sshhost"
