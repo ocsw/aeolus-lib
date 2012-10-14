@@ -13,7 +13,8 @@
 #   0  = no error (e.g., runevery hasn't expired, or backup was completed
 #        without errors)
 #   1  = problem with the script invocation, the config file, or a setting
-#        (also used in command modes like 'disable' as a generic error value)
+#        (also used in command modes like 'disable' as a generic error
+#        value)
 #   2  = previous lockfile still exists (possibly because backups were
 #        manually disabled)
 #   3  = bad variable name or subscript key
@@ -1053,7 +1054,7 @@ applydefaults () {
 # members of $dbmslist), and [dbms] = all of the members of $dbmslist)
 #
 # "local" vars: dbms
-# global vars: dbmslist
+# global vars: dbmslist, dbms_*
 # config settings: (most of them)
 # library functions: validnoblank(), validnoblankarr(), validnotbothblank(),
 #                    validnum(), validnochar(), validlist(), validrwxdir(),

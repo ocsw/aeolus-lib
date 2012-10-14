@@ -3210,7 +3210,7 @@ closesshtunnel () {
 # global vars: dbms_prefix
 # config settings: [dbms]_user, [dbms]_pwfile, [dbms]_protocol, [dbms]_host,
 #                  [dbms]_port, [dbms]_socketfile, [dbms]_options,
-#                  [dbms]_dbname, [dbms]_command
+#                  [dbms]_database, [dbms]_command
 # utilities: mysql, psql
 # files: $[dbms]_pwfile, $[dbms]_socketfile
 # bashisms: arrays
@@ -3227,7 +3227,7 @@ dbcmd () {
         ${mysql_port:+-P "$mysql_port"} \
         ${mysql_socketfile:+-S "$mysql_socketfile"} \
         ${mysql_options+"${mysql_options[@]}"} \
-        ${mysql_dbname:+"$mysql_dbname"} \
+        ${mysql_database:+"$mysql_database"} \
         ${mysql_command+-e "${mysql_command[@]}"}
       ;;
     postgres)
@@ -3237,7 +3237,7 @@ dbcmd () {
         ${postgres_host:+-h "$postgres_host"} \
         ${postgres_port:+-p "$postgres_port"} \
         ${postgres_options+"${postgres_options[@]}"} \
-        ${postgres_dbname:+-d "$postgres_dbname"} \
+        ${postgres_database:+-d "$postgres_database"} \
         ${postgres_command+-c "${postgres_command[@]}"}
       ;;
   esac
@@ -3292,7 +3292,7 @@ dblistcmd () {
         ${postgres_host:+-h "$postgres_host"} \
         ${postgres_port:+-p "$postgres_port"} \
         ${postgres_options+"${postgres_options[@]}"} \
-        ${postgres_dbname:+-d "$postgres_dbname"} \
+        ${postgres_database:+-d "$postgres_database"} \
         -At -c "SELECT datname FROM pg_catalog.pg_database;"
       ;;
   esac
