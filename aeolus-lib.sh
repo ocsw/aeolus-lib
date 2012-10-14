@@ -762,7 +762,7 @@ logalert () {
     do_syslog "$1" "$syslogerr" "$syslogtag"
   fi
 
-  logprint "$1"
+  logprinterr "$1"
 }
 
 #
