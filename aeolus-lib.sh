@@ -188,7 +188,7 @@ isset () {
     eval "[ \"\${${1}+X}\" = \"X\" ]"
   else
     printf "%s\n" "Internal Error: illegal variable name ('$1') in isset(); exiting."
-    exit "$badvarname_exitval"
+    do_exit "$badvarname_exitval"
   fi
 }
 
@@ -215,7 +215,7 @@ isunset () {
     eval "[ \"\${${1}+X}\" = \"\" ]"
   else
     printf "%s\n" "Internal Error: illegal variable name ('$1') in isunset(); exiting."
-    exit "$badvarname_exitval"
+    do_exit "$badvarname_exitval"
   fi
 }
 
@@ -243,7 +243,7 @@ arrayisset () {
     eval "[ \"\${#${1}[@]}\" != \"0\" ]"
   else
     printf "%s\n" "Internal Error: illegal variable name ('$1') in arrayisset(); exiting."
-    exit "$badvarname_exitval"
+    do_exit "$badvarname_exitval"
   fi
 }
 
@@ -271,7 +271,7 @@ arrayisunset () {
     eval "[ \"\${#${1}[@]}\" = \"0\" ]"
   else
     printf "%s\n" "Internal Error: illegal variable name ('$1') in arrayisunset(); exiting."
-    exit "$badvarname_exitval"
+    do_exit "$badvarname_exitval"
   fi
 }
 
@@ -314,11 +314,11 @@ copyvar () {
   # but this standardizes the errors and the exit values
   if ! islegalvarname "$1"; then
     printf "%s\n" "Internal Error: illegal variable name ('$1') in copyvar(); exiting."
-    exit "$badvarname_exitval"
+    do_exit "$badvarname_exitval"
   fi
   if ! islegalvarname "$2"; then
     printf "%s\n" "Internal Error: illegal variable name ('$2') in copyvar(); exiting."
-    exit "$badvarname_exitval"
+    do_exit "$badvarname_exitval"
   fi
 
   printf -v "$2" "%s" "${!1}"
@@ -360,11 +360,11 @@ copyvar () {
 copyarray () {
   if ! islegalvarname "$1"; then
     printf "%s\n" "Internal Error: illegal variable name ('$1') in copyarray(); exiting."
-    exit "$badvarname_exitval"
+    do_exit "$badvarname_exitval"
   fi
   if ! islegalvarname "$2"; then
     printf "%s\n" "Internal Error: illegal variable name ('$2') in copyarray(); exiting."
-    exit "$badvarname_exitval"
+    do_exit "$badvarname_exitval"
   fi
 
   eval "skeys=(\"\${!${1}[@]}\")"
@@ -378,7 +378,7 @@ copyarray () {
   for skey in "${skeys[@]}"; do
     if ! issafesubscript "$skey"; then
       printf "%s\n" "Internal Error: illegal subscript name ('$skey') in copyarray(); exiting."
-      exit "$badvarname_exitval"
+      do_exit "$badvarname_exitval"
     fi
     eval "${2}[\"$skey\"]=\"\${${1}[\"$skey\"]}\""
   done
@@ -419,7 +419,7 @@ printvar () {
   # but this standardizes the errors and the exit values
   if ! islegalvarname "$1"; then
     printf "%s\n" "Internal Error: illegal variable name ('$1') in printvar(); exiting."
-    exit "$badvarname_exitval"
+    do_exit "$badvarname_exitval"
   fi
 
   printf "%s" "${!1}"
@@ -455,7 +455,7 @@ printvar () {
 printarray () {
   if ! islegalvarname "$1"; then
     printf "%s\n" "Internal Error: illegal variable name ('$1') in printarray(); exiting."
-    exit "$badvarname_exitval"
+    do_exit "$badvarname_exitval"
   fi
 
   eval "akeys=(\"\${!${1}[@]}\")"
@@ -467,7 +467,7 @@ printarray () {
       # implying that it's legal; but just in case...
       if ! issafesubscript "$akey"; then
         printf "%s\n" "Internal Error: illegal subscript name ('$akey') in printarray(); exiting."
-        exit "$badvarname_exitval"
+        do_exit "$badvarname_exitval"
       fi
       eval "printf \"%s\" \"'\${${1}[\"$akey\"]}' \""
     done
@@ -478,7 +478,7 @@ printarray () {
       # (paranoid) than that anyway
       if ! issafesubscript "$akey"; then
         printf "%s\n" "Internal Error: illegal subscript name ('$akey') in printarray(); exiting."
-        exit "$badvarname_exitval"
+        do_exit "$badvarname_exitval"
       fi
       eval "printf \"%s\" \"['$akey']='\${${1}[\"$akey\"]}' \""
     done
@@ -502,7 +502,7 @@ printarray () {
 unsparsearray () {
   if ! islegalvarname "$1"; then
     printf "%s\n" "Internal Error: illegal variable name ('$1') in unsparsearray(); exiting."
-    exit "$badvarname_exitval"
+    do_exit "$badvarname_exitval"
   fi
 
   eval "akeys=(\"\${!${1}[@]}\")"
@@ -515,7 +515,7 @@ unsparsearray () {
     # (paranoid) than that anyway
     if ! issafesubscript "$akey"; then
       printf "%s\n" "Internal Error: illegal subscript name ('$akey') in unsparsearray(); exiting."
-      exit "$badvarname_exitval"
+      do_exit "$badvarname_exitval"
     fi
     eval "unsparsetmp+=(\"\${${1}[\"$akey\"]}\")"
   done
