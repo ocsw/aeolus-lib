@@ -99,8 +99,8 @@ aeolus_lib_sourced="yes"
 
 # names of tempfiles stored in the lockfile directory
 #
-# (note: past tense partly because some shells have issues with functions
-# having the same names as variables)
+# (note: names are in past tense partly because some shells have issues
+# with functions having the same names as variables)
 #
 [ "${lfalertssilenced+X}" = "" ] && lfalertssilenced="lfalertssilenced"
 [ "${scriptdisabled+X}" = "" ] && scriptdisabled="scriptdisabled"

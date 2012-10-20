@@ -694,20 +694,21 @@ switchtunnel () {
 # global vars: [dbms]_datestring, dbms_prefix,
 #              dbms_dodump, dbms_usetunnel, dbms_user, dbms_pwfile,
 #              dbms_protocol, dbms_host, dbms_port, dbms_socketfile,
-#              dbms_dbmode, dbms_dblist, dbms_splitdbs, dbms_options,
-#              dbms_dumpoptions, dbms_dumponeoptions, dbms_dumpmultoptions,
-#              dbms_dumpalloptions, dbms_usealtopts, dbms_dumpdir,
-#              dbms_layout, dbms_fileprefix, dbms_filesuffix,
+#              dbms_connectdb, dbms_dbmode, dbms_dblist, dbms_splitdbs,
+#              dbms_options, dbms_dumpoptions, dbms_dumponeoptions,
+#              dbms_dumpmultoptions, dbms_dumpalloptions, dbms_usealtopts,
+#              dbms_dumpdir, dbms_layout, dbms_fileprefix, dbms_filesuffix,
 #              dbms_subdirprefix, dbms_filedirsep, dbms_filedirdate,
 #              dbms_numfiles, dbms_daysfiles, dbms_zipmode, dbms_zipoptions,
 #              dbms_preserve, dbms_useaftereach, dbms_datestring
 # config settings: [dbms]_dodump, [dbms]_usetunnel, [dbms]_user,
 #                  [dbms]_pwfile, [dbms]_protocol, [dbms]_host, [dbms]_port,
-#                  [dbms]_socketfile, [dbms]_dbmode, [dbms]_dblist,
-#                  [dbms]_splitdbs, [dbms]_options, [dbms]_dumpoptions,
-#                  [dbms]_dumponeoptions, [dbms]_dumpmultoptions,
-#                  [dbms]_dumpalloptions, [dbms]_usealtopts, [dbms]_dumpdir,
-#                  [dbms]_layout, [dbms]_fileprefix, [dbms]_filesuffix,
+#                  [dbms]_socketfile, [dbms]_connectdb, [dbms]_dbmode,
+#                  [dbms]_dblist, [dbms]_splitdbs, [dbms]_options,
+#                  [dbms]_dumpoptions, [dbms]_dumponeoptions,
+#                  [dbms]_dumpmultoptions, [dbms]_dumpalloptions,
+#                  [dbms]_usealtopts, [dbms]_dumpdir, [dbms]_layout,
+#                  [dbms]_fileprefix, [dbms]_filesuffix,
 #                  [dbms]_subdirprefix, [dbms]_filedirsep,
 #                  [dbms]_filedirdate, [dbms]_numfiles, [dbms]_daysfiles,
 #                  [dbms]_zipmode, [dbms]_zipoptions, [dbms]_preserve,
@@ -1142,7 +1143,9 @@ validconf () {
     validlist "rsync_mode" "tunnel" "direct" "nodaemon" "local"
     if [ "$rsync_mode" = "tunnel" ]; then
       validnoblank "rsync_sshhost"
+      validnoblank "rsync_localhost"
       validnum "rsync_localport" 1 65535
+      validnoblank "rsync_remotehost"
       validnum "rsync_remoteport" 1 65535
       validnum "rsync_sshtimeout" 1
       # use the local port for rsync_port
@@ -1192,6 +1195,10 @@ validconf () {
           postgres_socketfile=""
           dbms_socketfile=""
 
+          # this can be blank and still work in _some_ cases, but we're
+          # just going to require it
+          validnoblank "postgres_connectdb"
+
           # PostgreSQL can't dump multiple DBs at once
           [ "$postgres_splitdbs" = "no" ] && [ "$postgres_dbmode" != "all" ] && \
               throwstartuperr "Error: postgres_splitdbs may only be 'no' if postgres_dbmode is 'all'; exiting."
@@ -1203,7 +1210,9 @@ validconf () {
         validnoblank "${dbms}_sshhost"
         [ "$tun_sshkeyfile" != "" ] && validreadfile "${dbms}_sshkeyfile"
         [ "$tun_sshport" != "" ] && validnum "${dbms}_sshport" 1 65535
+        validnoblank "${dbms}_localhost"
         validnum "${dbms}_localport" 1 65535
+        validnoblank "${dbms}_remotehost"
         validnum "${dbms}_remoteport" 1 65535
         validnum "${dbms}_sshtimeout" 1
         unsparsearray "${dbms}_sshoptions"
