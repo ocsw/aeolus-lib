@@ -653,11 +653,13 @@ sendalert_body () {
 # [tun]_sshoptions must be an indexed, non-sparse array
 #
 # global vars: tun_prefix, tun_descr, tun_sshuser, tun_sshhost,
-#              tun_sshkeyfile, tun_sshport, tun_localport, tun_remoteport,
-#              tun_sshoptions, tun_sshtimeout
+#              tun_sshkeyfile, tun_sshport, tun_localhost, tun_localport,
+#              tun_remotehost, tun_remoteport, tun_sshoptions,
+#              tun_sshtimeout
 # config settings: [tun]_sshuser, [tun]_sshhost, [tun]_sshkeyfile,
-#                  [tun]_sshport, [tun]_localport, [tun]_remoteport,
-#                  [tun]_sshoptions, [tun]_sshtimeout
+#                  [tun]_sshport, [tun]_localhost, [tun]_localport,
+#                  [tun]_remotehost, [tun]_remoteport, [tun]_sshoptions,
+#                  [tun]_sshtimeout
 # library functions: copyvar(), copyarray()
 #
 switchtunnel () {
@@ -1076,11 +1078,10 @@ applydefaults () {
 #
 # also un-sparses arrays to be on the safe side
 #
-# (in the notes below, [tun] = all tunnel prefixes (e.g., "rsync" and the
-# members of $dbmslist), and [dbms] = all of the members of $dbmslist)
+# (in the notes below, [dbms] = all of the members of $dbmslist)
 #
 # "local" vars: dbms
-# global vars: dbmslist, dbms_*
+# global vars: dbmslist, dbms_*, some of tun_*
 # config settings: (most of them)
 # library functions: validnoblank(), validnoblankarr(), validnotbothblank(),
 #                    validnum(), validnochar(), validlist(), validrwxdir(),
