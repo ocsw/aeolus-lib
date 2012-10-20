@@ -3211,7 +3211,7 @@ closesshtunnel () {
 # global vars: dbms_prefix
 # config settings: [dbms]_user, [dbms]_pwfile, [dbms]_protocol, [dbms]_host,
 #                  [dbms]_port, [dbms]_socketfile, [dbms]_options,
-#                  [dbms]_database, [dbms]_command
+#                  [dbms]_connectdb, [dbms]_command
 # utilities: mysql, psql
 # files: $[dbms]_pwfile, $[dbms]_socketfile
 # bashisms: arrays
@@ -3227,8 +3227,8 @@ dbcmd () {
         ${mysql_host:+-h "$mysql_host"} \
         ${mysql_port:+-P "$mysql_port"} \
         ${mysql_socketfile:+-S "$mysql_socketfile"} \
+        ${mysql_connectdb:+"$mysql_connectdb"} \
         ${mysql_options+"${mysql_options[@]}"} \
-        ${mysql_database:+"$mysql_database"} \
         ${mysql_command+-e "${mysql_command[@]}"}
       ;;
     postgres)
@@ -3237,8 +3237,8 @@ dbcmd () {
         ${postgres_user:+-U "$postgres_user"} \
         ${postgres_host:+-h "$postgres_host"} \
         ${postgres_port:+-p "$postgres_port"} \
+        ${postgres_connectdb:+-d "$postgres_connectdb"} \
         ${postgres_options+"${postgres_options[@]}"} \
-        ${postgres_database:+-d "$postgres_database"} \
         ${postgres_command+-c "${postgres_command[@]}"}
       ;;
   esac
@@ -3267,7 +3267,8 @@ dbcmd () {
 #
 # global vars: dbms_prefix
 # config settings: [dbms]_user, [dbms]_pwfile, [dbms]_protocol, [dbms]_host,
-#                  [dbms]_port, [dbms]_socketfile, [dbms]_options
+#                  [dbms]_port, [dbms]_socketfile, [dbms]_connectdb,
+#                  [dbms]_options
 # utilities: mysql, psql
 # files: $[dbms]_pwfile, $[dbms]_socketfile
 # bashisms: arrays
@@ -3292,8 +3293,8 @@ dblistcmd () {
         ${postgres_user:+-U "$postgres_user"} \
         ${postgres_host:+-h "$postgres_host"} \
         ${postgres_port:+-p "$postgres_port"} \
+        ${postgres_connectdb:+-d "$postgres_connectdb"} \
         ${postgres_options+"${postgres_options[@]}"} \
-        ${postgres_database:+-d "$postgres_database"} \
         -At -c "SELECT datname FROM pg_catalog.pg_database;"
       ;;
   esac

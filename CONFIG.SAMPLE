@@ -677,6 +677,10 @@
 ###mysql_socketfile=
 
 #
+# there is no mysql_connectdb setting (see postgres_connectdb)
+#
+
+#
 # dump all databases?
 #
 # "all" to dump everything
@@ -1215,6 +1219,18 @@
 # there is no postgres_socketfile setting (see postgres_host and
 # postgres_port instead)
 #
+
+#
+# database for initial PostgreSQL connections
+#
+# PostgreSQL requires a database to connect to even for commands that don't
+# use any (such as getting the list of databases)
+#
+# * ignored unless either postgres_dbmode="all" and postgres_splitdbs="yes",
+#   or postgres_dbmode="exclude" (may be different for other DBMSes)
+# * if blank or unset, defaults to "postgres"
+#
+###postgres_connectdb=
 
 ###postgres_dbmode=
 ###postgres_dblist=()

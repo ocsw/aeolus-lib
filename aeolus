@@ -318,6 +318,7 @@ configsettings="
   postgres_pwfile
   postgres_host
   postgres_port
+  postgres_connectdb
   postgres_dbmode
   postgres_dblist
   postgres_splitdbs
@@ -473,6 +474,7 @@ mysql_subdirprefix_default="mysqldump"  # only if unset
 
 # default settings: PostgreSQL (see also above)
 postgres_pwfile_default="/etc/aeolus/postgres.pw"  # only if unset
+postgres_connectdb_default="postgres"
 postgres_dbmode_default="all"
 postgres_splitdbs_default="no"
 postgres_dumponeoptions_default=(-c)  # only if unset
@@ -720,6 +722,7 @@ switchdbms () {
   copyvar "${1}_host" "dbms_host"
   copyvar "${1}_port" "dbms_port"
   copyvar "${1}_socketfile" "dbms_socketfile"
+  copyvar "${1}_connectdb" "dbms_connectdb"
   copyvar "${1}_dbmode" "dbms_dbmode"
   copyarray "${1}_dblist" "dbms_dblist"
   copyvar "${1}_splitdbs" "dbms_splitdbs"
@@ -1052,6 +1055,7 @@ applydefaults () {
   [ "${mysql_subdirprefix+X}" = "" ] && mysql_subdirprefix="$mysql_subdirprefix_default"
   # PostgreSQL
   [ "${postgres_pwfile+X}" = "" ] && postgres_pwfile="$postgres_pwfile_default"
+  [ "$postgres_connectdb" = "" ] && postgres_connectdb="$postgres_connectdb_default"
   [ "$postgres_dbmode" = "" ] && postgres_dbmode="$postgres_dbmode_default"
   [ "$postgres_splitdbs" = "" ] && postgres_splitdbs="$postgres_splitdbs_default"
   declare -p "postgres_dumponeoptions" > /dev/null 2>&1 || \
