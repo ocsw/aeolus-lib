@@ -248,7 +248,9 @@ configsettings="
   rsync_sshhost
   rsync_sshkeyfile
   rsync_sshport
+  rsync_localhost
   rsync_localport
+  rsync_remotehost
   rsync_remoteport
   rsync_sshoptions
   rsync_sshtimeout
@@ -267,7 +269,9 @@ configsettings="
   mysql_sshhost
   mysql_sshkeyfile
   mysql_sshport
+  mysql_localhost
   mysql_localport
+  mysql_remotehost
   mysql_remoteport
   mysql_sshoptions
   mysql_sshtimeout
@@ -304,7 +308,9 @@ configsettings="
   postgres_sshhost
   postgres_sshkeyfile
   postgres_sshport
+  postgres_localhost
   postgres_localport
+  postgres_remotehost
   postgres_remoteport
   postgres_sshoptions
   postgres_sshtimeout
@@ -423,11 +429,17 @@ quiet_default="no"
 statuslog_default="/var/log/aeolus.log"  # only if unset
 
 # default settings: SSH tunnels (all)
+rsync_localhost_default="localhost"
 rsync_localport_default="8873"
+rsync_remotehost_default="localhost"
 rsync_remoteport_default="873"
+mysql_localhost_default="127.0.0.1"
 mysql_localport_default="4306"
+mysql_remotehost_default="localhost"
 mysql_remoteport_default="3306"
+postgres_localhost_default="localhost"
 postgres_localport_default="6432"
+postgres_remotehost_default="localhost"
 postgres_remoteport_default="5432"
 sshtimeout_default="15"  # applies to all SSH tunnels
 
@@ -653,7 +665,9 @@ switchtunnel () {
   copyvar "${1}_sshhost" "tun_sshhost"
   copyvar "${1}_sshkeyfile" "tun_sshkeyfile"
   copyvar "${1}_sshport" "tun_sshport"
+  copyvar "${1}_localhost" "tun_localhost"
   copyvar "${1}_localport" "tun_localport"
+  copyvar "${1}_remotehost" "tun_remotehost"
   copyvar "${1}_remoteport" "tun_remoteport"
   copyarray "${1}_sshoptions" "tun_sshoptions"
   copyvar "${1}_sshtimeout" "tun_sshtimeout"
@@ -978,11 +992,17 @@ applydefaults () {
   [ "${statuslog+X}" = "" ] && statuslog="$statuslog_default"
 
   # SSH tunnels (individual and global defaults)
+  [ "$rsync_localhost" = "" ] && rsync_localhost="$rsync_localhost_default"
   [ "$rsync_localport" = "" ] && rsync_localport="$rsync_localport_default"
+  [ "$rsync_remotehost" = "" ] && rsync_remotehost="$rsync_remotehost_default"
   [ "$rsync_remoteport" = "" ] && rsync_remoteport="$rsync_remoteport_default"
+  [ "$mysql_localhost" = "" ] && mysql_localhost="$mysql_localhost_default"
   [ "$mysql_localport" = "" ] && mysql_localport="$mysql_localport_default"
+  [ "$mysql_remotehost" = "" ] && mysql_remotehost="$mysql_remotehost_default"
   [ "$mysql_remoteport" = "" ] && mysql_remoteport="$mysql_remoteport_default"
+  [ "$postgres_localhost" = "" ] && postgres_localhost="$postgres_localhost_default"
   [ "$postgres_localport" = "" ] && postgres_localport="$postgres_localport_default"
+  [ "$postgres_remotehost" = "" ] && postgres_remotehost="$postgres_remotehost_default"
   [ "$postgres_remoteport" = "" ] && postgres_remoteport="$postgres_remoteport_default"
   # global
   [ "$rsync_sshtimeout" = "" ] && rsync_sshtimeout="$sshtimeout_default"
@@ -1047,7 +1067,7 @@ applydefaults () {
 # validate the configuration settings
 #
 # adjusts/blanks some settings based on others; e.g.:
-# - host/port -> "localhost"/localport when using tunnels
+# - host/port -> localhost/localport when using tunnels
 # - ignore socketfile when using TCP
 #
 # also un-sparses arrays to be on the safe side
@@ -1184,8 +1204,8 @@ validconf () {
         unsparsearray "${dbms}_sshoptions"
         unsparsearray "tun_sshoptions"
         # adjust/ignore these
-        printf -v "${dbms}_host" "%s" "localhost"
-        dbms_host="localhost"
+        printf -v "${dbms}_host" "%s" "$tun_localhost"
+        dbms_host="$tun_localhost"
         copyvar "${dbms}_localport" "${dbms}_port"
         copyvar "${dbms}_localport" "dbms_port"
         printf -v "${dbms}_socketfile" "%s" ""
@@ -1273,8 +1293,8 @@ validconf () {
 # dbms_prefix must be one of the accepted values (see dbmslist),
 # but not all of them will necessarily work; see the code
 #
-# when using an SSH tunnel, set host to "localhost" and port to the local
-# port of the tunnel
+# when using an SSH tunnel, set host to localhost (or 127.0.0.1/::1/etc.
+# as necessary) and port to the local port of the tunnel
 #
 # (in the notes below, [dbms] = the value of $dbms_prefix)
 #
@@ -1344,8 +1364,8 @@ dbdumponecmd () {
 # dbms_prefix must be one of the accepted values (see dbmslist),
 # but not all of them will necessarily work; see the code
 #
-# when using an SSH tunnel, set host to "localhost" and port to the local
-# port of the tunnel
+# when using an SSH tunnel, set host to localhost (or 127.0.0.1/::1/etc.
+# as necessary) and port to the local port of the tunnel
 #
 # (in the notes below, [dbms] = the value of $dbms_prefix)
 #
@@ -1393,8 +1413,8 @@ dbdumpmultcmd () {
 # dbms_prefix must be one of the accepted values (see dbmslist),
 # but not all of them will necessarily work; see the code
 #
-# when using an SSH tunnel, set host to "localhost" and port to the local
-# port of the tunnel
+# when using an SSH tunnel, set host to localhost (or 127.0.0.1/::1/etc.
+# as necessary) and port to the local port of the tunnel
 #
 # (in the notes below, [dbms] = the value of $dbms_prefix)
 #

@@ -2979,8 +2979,9 @@ killsshremotebg () {
 #
 # "local" vars: tunpid_var, tunpid_l
 # global vars: (contents of $1, or tunpid)
-# config settings: tun_localport, tun_remoteport, tun_sshport,
-#                  tun_sshkeyfile, tun_sshoptions, tun_sshuser, tun_sshhost
+# config settings: tun_localport, tun_remotehost, tun_remoteport,
+#                  tun_sshport, tun_sshkeyfile, tun_sshoptions, tun_sshuser,
+#                  tun_sshhost
 # utilities: ssh, printf, [
 # files: $tun_sshkeyfile
 # bashisms: arrays, printf -v [v3.1]
@@ -2994,7 +2995,7 @@ sshtunnelcmd () {
 
   # run the command
   ssh \
-    -L "$tun_localport:localhost:$tun_remoteport" -N \
+    -L "${tun_localport}:${tun_remotehost}:${tun_remoteport}" -N \
     ${tun_sshport:+-p "$tun_sshport"} \
     ${tun_sshkeyfile:+-i "$tun_sshkeyfile"} \
     ${tun_sshoptions+"${tun_sshoptions[@]}"} \
@@ -3068,7 +3069,7 @@ killsshtunnel () {
 # "local" vars: tunpid_var, tunpid_l, waited, sshexit
 # global vars: (contents of $1, or tunpid, and the corresponding *_descr),
 #              tun_descr
-# config settings: tun_localport, tun_sshtimeout
+# config settings: tun_localhost, tun_localport, tun_sshtimeout
 # library vars: newline, on_tunerr, sshtunnel_exitval
 # library functions: sshtunnelcmd(), logstatus(), logstatusquiet(),
 #                    sendalert(), do_exit()
@@ -3098,7 +3099,7 @@ opensshtunnel () {
   # see http://mywiki.wooledge.org/ProcessManagement#Starting_a_.22daemon.22_and_checking_whether_it_started_successfully
   waited="1"  # will be 1 once we actually enter the loop
   while sleep 1; do
-    nc -z localhost "$tun_localport" && break
+    nc -z "$tun_localhost" "$tun_localport" && break
 
     # not working yet, but is it still running?
     if kill -0 "$tunpid_l" > /dev/null 2>&1; then  # quiet if already dead
@@ -3200,8 +3201,8 @@ closesshtunnel () {
 # dbms_prefix must be one of the accepted values (currently "mysql" or
 # "postgres")
 #
-# when using an SSH tunnel, set host to "localhost" and port to the local
-# port of the tunnel
+# when using an SSH tunnel, set host to localhost (or 127.0.0.1/::1/etc.
+# as necessary) and port to the local port of the tunnel
 #
 # (in the notes below, [dbms] = the value of $dbms_prefix)
 #
@@ -3251,8 +3252,8 @@ dbcmd () {
 # dbms_prefix must be one of the accepted values (currently "mysql" or
 # "postgres")
 #
-# when using an SSH tunnel, set host to "localhost" and port to the local
-# port of the tunnel
+# when using an SSH tunnel, set host to localhost (or 127.0.0.1/::1/etc.
+# as necessary) and port to the local port of the tunnel
 #
 # some options are pre-included:
 #   MySQL:
@@ -3349,8 +3350,8 @@ dbunescape () {
 # run an rsync command
 #
 # for "tunnel" mode, SSH tunnel must be opened/closed separately; use
-# "localhost" for the host (in rsync_source/dest) and set rsync_port to the
-# local port of the tunnel
+# localhost (or 127.0.0.1/::1/etc.) for the host (in rsync_source/dest)
+# and set rsync_port to the local port of the tunnel
 #
 # rsync_sshoptions, rsync_options, rsync_add, and rsync_source must be
 # indexed, non-sparse arrays

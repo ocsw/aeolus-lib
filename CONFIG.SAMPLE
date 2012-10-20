@@ -401,14 +401,38 @@
 ###rsync_sshport=
 
 #
+# hostname on the local end of the tunnel
+#
+# generally "localhost", but may need to be (e.g.) 127.0.0.1 or ::1
+#
+# * ignored if rsync_mode is not "tunnel"
+# * if blank or unset, defaults to "localhost"
+#
+###rsync_localhost=
+
+#
 # port number on the local end of the tunnel
 #
 # can be any valid unused port
 #
 # * ignored if rsync_mode is not "tunnel"
-# * if blank or unset, defaults to 8873
+# * if blank or unset, defaults to "8873"
 #
 ###rsync_localport=
+
+#
+# hostname on the remote end of the tunnel; connected to from rsync_sshhost
+#
+# generally "localhost", but may need to be (e.g.) 127.0.0.1 or ::1
+#
+# it can also be something else entirely, for example if the purpose of the
+# tunnel is to get through a firewall, but a connection cannot be made
+# directly to the necessary server
+#
+# * ignored if rsync_mode is not "tunnel"
+# * if blank or unset, defaults to "localhost"
+#
+###rsync_remotehost=
 
 #
 # port number on remote end of the tunnel
@@ -416,7 +440,7 @@
 # generally 873
 #
 # * ignored if rsync_mode is not "tunnel"
-# * if blank or unset, defaults to 873
+# * if blank or unset, defaults to "873"
 #
 ###rsync_remoteport=
 
@@ -435,7 +459,7 @@
 # minimum setting allowed is 1 second
 #
 # * ignored if rsync_mode is not "tunnel"
-# * if blank or unset, defaults to 15
+# * if blank or unset, defaults to "15"
 #
 ###rsync_sshtimeout=
 
@@ -572,8 +596,10 @@
 ###mysql_sshhost=
 ###mysql_sshkeyfile=
 ###mysql_sshport=
-###mysql_localport=  # * if blank or unset, defaults to 4306
-###mysql_remoteport=  # * if blank or unset, defaults to 3306 (usual port)
+###mysql_localhost=  # defaults to "127.0.0.1"
+###mysql_localport=  # * if blank or unset, defaults to "4306"
+###mysql_remotehost=
+###mysql_remoteport=  # * if blank or unset, defaults to "3306" (usual port)
 ###mysql_sshoptions=()
 ###mysql_sshtimeout=
 
@@ -1121,8 +1147,10 @@
 ###postgres_sshhost=
 ###postgres_sshkeyfile=
 ###postgres_sshport=
-###postgres_localport=  # defaults to 6432
-###postgres_remoteport=  # defaults to 5432
+###postgres_localhost=  # defaults to "localhost"
+###postgres_localport=  # defaults to "6432"
+###postgres_remotehost=
+###postgres_remoteport=  # defaults to "5432"
 ###postgres_sshoptions=()
 ###postgres_sshtimeout=
 
