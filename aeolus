@@ -505,8 +505,8 @@ lfalertssilenced="lfalertssilenced"
 scriptdisabled="scriptdisabled"
 timetemp="timetemp"
 logfifo="logfifo"
-replstatus="replstatus-"  # gets DBMS name appended
-alldbs="alldbs-"  # gets DBMS name appended
+replstatus="replstatus"  # gets [DBMS]- prepended
+alldbs="alldbs"  # gets [DBMS]- prepended
 
 # extension to use for temporary dumpfiles
 dumptmp=".tmp"
@@ -889,7 +889,7 @@ EOF
 # utilities: cat, echo, [
 # files: $startedfile, $alertfile, $lockfile, $lockfile/$lfalertssilenced,
 #        $lockfile/$scriptdisabled, $lockfile/$timetemp, $lockfile/$logfifo,
-#        $lockfile/$alldbs${DBMSes}
+#        $lockfile/${DBMSes}-$alldbs
 #
 printstatus () {
   cat <<-EOF
@@ -955,11 +955,11 @@ printstatus () {
     for dbms in $dbmslist; do
       cat <<-EOF
 
-	replstatus-$dbms:
-	$(getfilemetadata "$lockfile/$replstatus$dbms")
+	${dbms}-replstatus:
+	$(getfilemetadata "$lockfile/${dbms}-replstatus")
 
-	alldbs-$dbms:
-	$(getfilemetadata "$lockfile/$alldbs$dbms")
+	${dbms}-alldbs:
+	$(getfilemetadata "$lockfile/${dbms}-$alldbs")
 	EOF
     done
   fi
@@ -1504,13 +1504,13 @@ dbdumpallcmd () {
 # library functions: dbcmd(), logstatusquiet(), logstatus(), sendalert(),
 #                    do_exit(), setexitval()
 # utilities: rm, grep, sed, printf, [
-# files: $lockfile/$replstatus$dbms_prefix
+# files: $lockfile/${dbms_prefix}-$replstatus
 # FDs: 3
 #
 checkdbmsrepl () {
   # remove any existing file, to prevent both confusion and noclobber-type
   # issues
-  rm -f "$lockfile/$replstatus$dbms_prefix"
+  rm -f "$lockfile/${dbms_prefix}-$replstatus"
 
   # do we need to check?
   case "$dbms_prefix" in
@@ -1534,7 +1534,7 @@ checkdbmsrepl () {
   case "$dbms_prefix" in
     mysql)
       # note no -BN
-      dbcmd 'SHOW SLAVE STATUS\G' > "$lockfile/$replstatus$dbms_prefix" 2>&3
+      dbcmd 'SHOW SLAVE STATUS\G' > "$lockfile/${dbms_prefix}-$replstatus" 2>&3
       replexit="$?"
       ;;
     postgres)
@@ -1562,8 +1562,8 @@ checkdbmsrepl () {
   # extract the actual information
   case "$dbms_prefix" in
     mysql)
-      replval=$(grep "Seconds_Behind_Master" "$lockfile/$replstatus$dbms_prefix" | \
-                sed 's/.*: //')
+      replval=$(grep "Seconds_Behind_Master" \
+                "$lockfile/${dbms_prefix}-$replstatus" | sed 's/.*: //')
 
       # is it even acting as a replication slave?
       #
@@ -1613,13 +1613,13 @@ checkdbmsrepl () {
 # library functions: dblistcmd(), logstatusquiet(), logstatus(), sendalert(),
 #                    do_exit(), setexitval()
 # utilities: rm, printf, [
-# files: $lockfile/$alldbs$dbms_prefix
+# files: $lockfile/${dbms_prefix}-$alldbs
 # FDs: 3
 #
 getdblist () {
   # remove any existing file, to prevent both confusion and noclobber-type
   # issues
-  rm -f "$lockfile/$alldbs$dbms_prefix"
+  rm -f "$lockfile/${dbms_prefix}-$alldbs"
 
   # do we need the list?
   case "$dbms_prefix" in
@@ -1640,7 +1640,7 @@ getdblist () {
   printf "%s\n" "running $dbms_prefix get-DB-list command" >&3
 
   # run the command
-  dblistcmd > "$lockfile/$alldbs$dbms_prefix" 2>&3
+  dblistcmd > "$lockfile/${dbms_prefix}-$alldbs" 2>&3
   listexit="$?"
 
   # check status
@@ -2111,7 +2111,7 @@ do_dbdump_wrapper () {
 # config settings: lockfile
 # library functions: copyarray(), dbunescape()
 # utilities: [
-# files: $lockfile/$alldbs$dbms_prefix
+# files: $lockfile/${dbms_prefix}-$alldbs
 # bashisms: array+=() [v3.1]
 #
 do_dbdumploop () {
@@ -2133,7 +2133,7 @@ do_dbdumploop () {
       exclude)
         dbnames=()
         IFS=""
-        while read -r dbname_esc; do  # < "$lockfile/$alldbs$dbms_prefix"
+        while read -r dbname_esc; do  # < "$lockfile/${dbms_prefix}-$alldbs"
           IFS="$OLDIFS"
           dbname=$(dbunescape "$dbname_esc")
 
@@ -2145,7 +2145,7 @@ do_dbdumploop () {
 
           dbnames+=("$dbname")
           IFS=""
-        done < "$lockfile/$alldbs$dbms_prefix"
+        done < "$lockfile/${dbms_prefix}-$alldbs"
         IFS="$OLDIFS"
 
         do_dbdump_wrapper "mult"
@@ -2156,7 +2156,7 @@ do_dbdumploop () {
     case "$dbms_dbmode" in
       all)
         IFS=""
-        while read -r dbname_esc; do  # < "$lockfile/$alldbs$dbms_prefix"
+        while read -r dbname_esc; do  # < "$lockfile/${dbms_prefix}-$alldbs"
           IFS="$OLDIFS"
           dbname=$(dbunescape "$dbname_esc")
 
@@ -2164,7 +2164,7 @@ do_dbdumploop () {
           [ "$?" = "1" ] && return 1  # skip to the next phase
 
           IFS=""
-        done < "$lockfile/$alldbs$dbms_prefix"
+        done < "$lockfile/${dbms_prefix}-$alldbs"
         IFS="$OLDIFS"
         ;;
       include)
@@ -2175,7 +2175,7 @@ do_dbdumploop () {
         ;;
       exclude)
         IFS=""
-        while read -r dbname_esc; do  # < "$lockfile/$alldbs$dbms_prefix"
+        while read -r dbname_esc; do  # < "$lockfile/${dbms_prefix}-$alldbs"
           IFS="$OLDIFS"
           dbname=$(dbunescape "$dbname_esc")
 
@@ -2189,7 +2189,7 @@ do_dbdumploop () {
           [ "$?" = "1" ] && return 1  # skip to the next phase
 
           IFS=""
-        done < "$lockfile/$alldbs$dbms_prefix"
+        done < "$lockfile/${dbms_prefix}-$alldbs"
         IFS="$OLDIFS"
        ;;
     esac  # case "$dbms_dbmode"
