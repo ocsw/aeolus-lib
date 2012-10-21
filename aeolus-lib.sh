@@ -3198,6 +3198,8 @@ closesshtunnel () {
 #
 # run a database command
 #
+# $1 is the command to run
+#
 # dbms_prefix must be one of the accepted values (currently "mysql" or
 # "postgres")
 #
@@ -3206,12 +3208,12 @@ closesshtunnel () {
 #
 # (in the notes below, [dbms] = the value of $dbms_prefix)
 #
-# [dbms]_options and [dbms]_command must be indexed, non-sparse arrays
+# [dbms]_options must be an indexed, non-sparse array
 #
 # global vars: dbms_prefix
 # config settings: [dbms]_user, [dbms]_pwfile, [dbms]_protocol, [dbms]_host,
 #                  [dbms]_port, [dbms]_socketfile, [dbms]_options,
-#                  [dbms]_connectdb, [dbms]_command
+#                  [dbms]_connectdb
 # utilities: mysql, psql
 # files: $[dbms]_pwfile, $[dbms]_socketfile
 # bashisms: arrays
@@ -3229,7 +3231,7 @@ dbcmd () {
         ${mysql_socketfile:+-S "$mysql_socketfile"} \
         ${mysql_connectdb:+"$mysql_connectdb"} \
         ${mysql_options+"${mysql_options[@]}"} \
-        ${mysql_command+-e "${mysql_command[@]}"}
+        ${1+-e "$1"}
       ;;
     postgres)
       PGPASSFILE=${postgres_pwfile:+"$postgres_pwfile"} \
@@ -3239,7 +3241,7 @@ dbcmd () {
         ${postgres_port:+-p "$postgres_port"} \
         ${postgres_connectdb:+-d "$postgres_connectdb"} \
         ${postgres_options+"${postgres_options[@]}"} \
-        ${postgres_command+-c "${postgres_command[@]}"}
+        ${1+-e "$1"}
       ;;
   esac
 }

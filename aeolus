@@ -20,12 +20,13 @@
 #   3  = bad variable name or subscript key
 #   4  = error finding a delimiter for a string
 #   5  = error opening SSH tunnel
-#   6  = error getting DB list
-#   7  = DB name contains a problematic character
-#   8  = DB dumpfile already exists
-#   9  = error dumping DB
-#   10 = error compressing DB dump
-#   11 = rsync error
+#   6  = error getting DBMS replication status
+#   7  = error getting DB list
+#   8  = DB name contains a problematic character
+#   9  = DB dumpfile already exists
+#   10 = error dumping DB
+#   11 = error compressing DB dump
+#   12 = rsync error
 #   99 = internal error; should never happen
 # if there are multiple errors, the first one to occur is used
 
@@ -36,14 +37,13 @@
 #
 # lockfile dir is used for the following files:
 #   $lfalertssilenced, $scriptdisabled, $timetemp, $logfifo,
-#   $alldbs${DBMSes}
+#   $replstatus${DBMSes}, $alldbs${DBMSes}
 # all files should be in printstatus()
 #
 # any change to the setting variables (additions, deletions, name changes,
-# type changes, etc.) must be reflected in: the sample config file,
-# $configsettings, configsettingtype() [possibly], the default settings
-# section, some of switch*() [possibly], applydefaults() [probably], and
-# validconf()
+# type changes, etc.) must be reflected in the following, as appropriate:
+# the sample config file, $configsettings, configsettingtype(), the default
+# settings section, switch*(), applydefaults(), and validconf()
 #
 # all external commands used should be listed in $externalcmds and the usage
 # notes (including those used in library functions)
@@ -52,7 +52,7 @@
 #   add vars to the sample config file, modeling after MySQL (but split up
 #     [dbms]_dump*options if necessary)
 #   add vars to the relevant variables/functions (see above)
-#   add to dbdump*cmd(), getdblist()
+#   add to dbdump*cmd(), checkdbmsrepl(), getdblist()
 #   add to the database functions in the library
 #   add to dbmslist
 #   add to usage notes on setup and portability
@@ -219,6 +219,7 @@ configsettings="
   timecomptype
   debugme
   on_tunerr
+  on_dbreplerr
   on_dblisterr
   on_dbnameerr
   on_dbduplerr
@@ -281,6 +282,7 @@ configsettings="
   mysql_host
   mysql_port
   mysql_socketfile
+  mysql_replstatus
   mysql_dbmode
   mysql_dblist
   mysql_splitdbs
@@ -399,6 +401,7 @@ configsettingtype () {
 timecomptype_default="find"
 debugme_default="no"
 on_tunerr_default="phase"
+on_dbreplerr_default="phase"
 on_dblisterr_default="phase"
 on_dbnameerr_default="db"
 on_dbduplerr_default="db"
@@ -502,6 +505,7 @@ lfalertssilenced="lfalertssilenced"
 scriptdisabled="scriptdisabled"
 timetemp="timetemp"
 logfifo="logfifo"
+replstatus="replstatus-"  # gets DBMS name appended
 alldbs="alldbs-"  # gets DBMS name appended
 
 # extension to use for temporary dumpfiles
@@ -515,12 +519,13 @@ lockfile_exitval="2"
 badvarname_exitval="3"
 nodelim_exitval="4"
 sshtunnel_exitval="5"
-getdblist_exitval="6"
-dbname_exitval="7"
-dumpexists_exitval="8"
-dbdump_exitval="9"
-dbzip_exitval="10"
-rsync_exitval="11"
+getdbrepl_exitval="6"
+getdblist_exitval="7"
+dbname_exitval="8"
+dumpexists_exitval="9"
+dbdump_exitval="10"
+dbzip_exitval="11"
+rsync_exitval="12"
 internal_exitval="99"
 
 
@@ -694,18 +699,19 @@ switchtunnel () {
 # global vars: [dbms]_datestring, dbms_prefix,
 #              dbms_dodump, dbms_usetunnel, dbms_user, dbms_pwfile,
 #              dbms_protocol, dbms_host, dbms_port, dbms_socketfile,
-#              dbms_connectdb, dbms_dbmode, dbms_dblist, dbms_splitdbs,
-#              dbms_options, dbms_dumpoptions, dbms_dumponeoptions,
-#              dbms_dumpmultoptions, dbms_dumpalloptions, dbms_usealtopts,
-#              dbms_dumpdir, dbms_layout, dbms_fileprefix, dbms_filesuffix,
+#              dbms_connectdb, dbms_replstatus, dbms_dbmode, dbms_dblist,
+#              dbms_splitdbs, dbms_options, dbms_dumpoptions,
+#              dbms_dumponeoptions, dbms_dumpmultoptions,
+#              dbms_dumpalloptions, dbms_usealtopts, dbms_dumpdir,
+#              dbms_layout, dbms_fileprefix, dbms_filesuffix,
 #              dbms_subdirprefix, dbms_filedirsep, dbms_filedirdate,
 #              dbms_numfiles, dbms_daysfiles, dbms_zipmode, dbms_zipoptions,
 #              dbms_preserve, dbms_useaftereach, dbms_datestring
 # config settings: [dbms]_dodump, [dbms]_usetunnel, [dbms]_user,
 #                  [dbms]_pwfile, [dbms]_protocol, [dbms]_host, [dbms]_port,
-#                  [dbms]_socketfile, [dbms]_connectdb, [dbms]_dbmode,
-#                  [dbms]_dblist, [dbms]_splitdbs, [dbms]_options,
-#                  [dbms]_dumpoptions, [dbms]_dumponeoptions,
+#                  [dbms]_socketfile, [dbms]_connectdb, [dbms]_replstatus,
+#                  [dbms]_dbmode, [dbms]_dblist, [dbms]_splitdbs,
+#                  [dbms]_options, [dbms]_dumpoptions, [dbms]_dumponeoptions,
 #                  [dbms]_dumpmultoptions, [dbms]_dumpalloptions,
 #                  [dbms]_usealtopts, [dbms]_dumpdir, [dbms]_layout,
 #                  [dbms]_fileprefix, [dbms]_filesuffix,
@@ -726,6 +732,7 @@ switchdbms () {
   copyvar "${1}_port" "dbms_port"
   copyvar "${1}_socketfile" "dbms_socketfile"
   copyvar "${1}_connectdb" "dbms_connectdb"
+  copyvar "${1}_replstatus" "dbms_replstatus"
   copyvar "${1}_dbmode" "dbms_dbmode"
   copyarray "${1}_dblist" "dbms_dblist"
   copyvar "${1}_splitdbs" "dbms_splitdbs"
@@ -948,6 +955,9 @@ printstatus () {
     for dbms in $dbmslist; do
       cat <<-EOF
 
+	replstatus-$dbms:
+	$(getfilemetadata "$lockfile/$replstatus$dbms")
+
 	alldbs-$dbms:
 	$(getfilemetadata "$lockfile/$alldbs$dbms")
 	EOF
@@ -972,6 +982,7 @@ applydefaults () {
   [ "$timecomptype" = "" ] && timecomptype="$timecomptype_default"
   [ "$debugme" = "" ] && debugme="$debugme_default"
   [ "$on_tunerr" = "" ] && on_tunerr="$on_tunerr_default"
+  [ "$on_dbreplerr" = "" ] && on_dbreplerr="$on_dbreplerr_default"
   [ "$on_dblisterr" = "" ] && on_dblisterr="$on_dblisterr_default"
   [ "$on_dbnameerr" = "" ] && on_dbnameerr="$on_dbnameerr_default"
   [ "$on_dbduplerr" = "" ] && on_dbduplerr="$on_dbduplerr_default"
@@ -1102,6 +1113,7 @@ validconf () {
   validlist "timecomptype" "find" "date-r" "date-d" "awk" "gawk"
   validlist "debugme" "yes" "no"
   validlist "on_tunerr" "phase" "exit"
+  validlist "on_dbreplerr" "phase" "exit"
   validlist "on_dblisterr" "phase" "exit"
   validlist "on_dbnameerr" "db" "phase" "exit"
   validlist "on_dbduplerr" "ignore" "warn" "db" "phase" "exit"
@@ -1189,6 +1201,10 @@ validconf () {
       # account for differences between DBMSs, so we don't need special
       # cases below
       case "$dbms" in
+        mysql)
+          [ "$mysql_replstatus" != "" ] && validnum "mysql_replstatus"
+          ;;
+
         postgres)
           # make sure socketfile is blank even if the user sets it,
           # because we compare to it below
@@ -1470,6 +1486,118 @@ dbdumpallcmd () {
 }
 
 #
+# check if the DBMS is lagging too far in replication
+#
+# can be used to not dump old data, or to let the DBMS catch up before
+# performing dumps which might make it even further behind
+#
+# returns 1 to mean "skip to the next phase of the backup", else 0
+#
+# dbms_prefix must be one of the accepted values (see dbmslist),
+# but not all of them will necessarily work; see the code
+#
+# "local" vars: replexit, replval
+# global vars: dbms_prefix, dbms_replstatus, replstatus, dbrepl_exitval,
+#              internal_exitval
+# config settings: lockfile, on_dbreplerr
+# library vars: newline
+# library functions: dbcmd(), logstatusquiet(), logstatus(), sendalert(),
+#                    do_exit(), setexitval()
+# utilities: rm, grep, sed, printf, [
+# files: $lockfile/$replstatus$dbms_prefix
+# FDs: 3
+#
+checkdbmsrepl () {
+  # remove any existing file, to prevent both confusion and noclobber-type
+  # issues
+  rm -f "$lockfile/$replstatus$dbms_prefix"
+
+  # do we need to check?
+  case "$dbms_prefix" in
+    mysql)
+      if [ "$dbms_replstatus" = "" ]; then
+        logstatus "${dbms_prefix}_replstatus is null; not checking replication status"
+        return 0
+      fi
+      ;;
+    postgres)
+      # don't know how to do this yet, may not be possible
+      return 0
+      ;;
+  esac
+
+  # log that we're running the command
+  logstatusquiet "running $dbms_prefix replication-status command"
+  printf "%s\n" "running $dbms_prefix replication-status command" >&3
+
+  # run the command
+  case "$dbms_prefix" in
+    mysql)
+      # note no -BN
+      dbcmd 'SHOW SLAVE STATUS\G' > "$lockfile/$replstatus$dbms_prefix" 2>&3
+      replexit="$?"
+      ;;
+    postgres)
+      :  # do nothing; not reached
+      ;;
+  esac
+
+  # check status
+  if [ "$replexit" != "0" ]; then
+    case "$on_dbreplerr" in
+      exit)
+        sendalert "could not get the replication status of the $dbms_prefix DBMS (status code $replexit); exiting" log
+        do_exit "$getdbrepl_exitval"
+        ;;
+      phase)
+        sendalert "could not get the replication status of the $dbms_prefix DBMS (status code $replexit);${newline}skipping $dbms_prefix dumps" log
+        setexitval "$getdbrepl_exitval"
+        return 1  # skip to the next phase
+        ;;
+    esac
+  else
+    logstatus "obtained the replication status of the $dbms_prefix DBMS"
+  fi
+
+  # extract the actual information
+  case "$dbms_prefix" in
+    mysql)
+      replval=$(grep "Seconds_Behind_Master" "$lockfile/$replstatus$dbms_prefix" | \
+                sed 's/.*: //')
+
+      # is it even acting as a replication slave?
+      #
+      # use extra [0-9] to avoid having to use egrep
+      if printf "%s\n" "$replval" | \
+           grep -v '^[0-9][0-9]*$' >/dev/null 2>&1; then
+        sendalert "Warning: $dbms_prefix DBMS is not acting as a replication slave, but ${dbms_prefix}_replstatus is set;${newline}continuing with $dbms_prefix dumps" log
+        return 0
+      fi
+
+      if [ "$replval" -gt "$dbms_replstatus" ]; then
+        case "$on_dbreplerr" in
+          exit)
+            logstatus "$dbms_prefix Seconds_Behind_Master ($replval) is greater than ${dbms_prefix}_replstatus ($dbms_replstatus); exiting"
+            do_exit "$no_error_exitval"
+            ;;
+          phase)
+            logstatus "$dbms_prefix Seconds_Behind_Master ($replval) is greater than ${dbms_prefix}_replstatus ($dbms_replstatus);${newline}skipping $dbms_prefix dumps"
+            return 1  # skip to the next phase
+            ;;
+        esac
+      else
+        logstatus "$dbms_prefix Seconds_Behind_Master ($replval) is less than or equal to ${dbms_prefix}_replstatus ($dbms_replstatus); continuing"
+      fi
+      ;;
+
+    postgres)
+      :  # do nothing; not reached
+      ;;
+  esac
+
+  return 0
+}
+
 #
 # get the list of all DBs if necessary
 #
@@ -1477,9 +1605,9 @@ dbdumpallcmd () {
 #
 # dbms_prefix must be one of the accepted values (see dbmslist)
 #
-# "local" vars: dbms, listexit
+# "local" vars: listexit
 # global vars: dbms_prefix, dbms_dbmode, dbms_splitdbs, alldbs,
-#              getdblist_exitval, dbmslist
+#              getdblist_exitval
 # config settings: lockfile, on_dblisterr
 # library vars: newline
 # library functions: dblistcmd(), logstatusquiet(), logstatus(), sendalert(),
@@ -1489,7 +1617,7 @@ dbdumpallcmd () {
 # FDs: 3
 #
 getdblist () {
-  # remove any existing files, to prevent both confusion and noclobber-type
+  # remove any existing file, to prevent both confusion and noclobber-type
   # issues
   rm -f "$lockfile/$alldbs$dbms_prefix"
 
@@ -2285,6 +2413,10 @@ for dbms in $dbmslist; do
       opensshtunnel
       [ "$?" = "1" ] && { skip_dbms; continue; }  # skip to the next phase
     fi
+
+    # check the DBMS replication status if necessary
+    checkdbmsrepl
+    [ "$?" = "1" ] && { skip_dbms; continue; }  # skip to the next phase
 
     # get the list of all DBs if necessary
     getdblist

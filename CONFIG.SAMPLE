@@ -74,6 +74,7 @@
 # error       | explanation
 # ------------------------------------------------------
 #   tunerr    | error opening SSH tunnel
+#   dbreplerr | error getting DBMS replication status
 #   dblisterr | error getting DB list
 #   dbnameerr | DB name contains a problematic character
 #   dbduplerr | DB dumpfile already exists
@@ -83,6 +84,7 @@
 # error       | allowed vals   | default
 # --------------------------------------
 #   tunerr    |          ph ex | "phase"
+#   dbreplerr |          ph ex | "phase"
 #   dblisterr |          ph ex | "phase"
 #   dbnameerr |       db ph ex | "db"
 #   dbduplerr | ig wa db ph ex | "db"
@@ -91,6 +93,7 @@
 #
 # note:
 #   -= tunerr applies to all tunnels, including for rsync
+#   -= dbreplerr is also used if the [dbms]_replstatus check fails
 #   -= dbnameerr does not apply if [dbms]_splitdbs=no; see the usage notes
 #      for more information
 #   -= dbduplerr does not apply in single/singledir modes (errors are always
@@ -101,6 +104,7 @@
 #      the backup
 #
 ###on_tunerr=
+###on_dbreplerr=
 ###on_dblisterr=
 ###on_dbnameerr=
 ###on_dbduplerr=
@@ -681,6 +685,19 @@
 #
 
 #
+# replication status required to do the dump(s)
+#
+# can be used to not dump old data, or to let the DBMS catch up before
+# performing dumps which might make it even further behind
+#
+# in the case of MySQL, this is a Seconds_Behind_Master threshold; the value
+# must be at or below this for the dump(s) to proceed
+#
+# * if blank or unset, replication status will not be checked
+#
+###mysql_replstatus=
+
+#
 # dump all databases?
 #
 # "all" to dump everything
@@ -1231,6 +1248,10 @@
 # * if blank or unset, defaults to "postgres"
 #
 ###postgres_connectdb=
+
+#
+# there is no postgres_replstatus setting (yet)
+#
 
 ###postgres_dbmode=
 ###postgres_dblist=()

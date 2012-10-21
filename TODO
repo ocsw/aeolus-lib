@@ -3,10 +3,15 @@ checker script
 
 rdiff
 integrated pg_dumpall -g
-sbm threshold
-  (no -BN)
-  -e 'SHOW SLAVE STATUS\G' | grep Seconds_Behind_Master | sed 's/.*: //'
 
 script, docs re library install and source
 eval funcs - unset vs null, esp. arrays (w/ declare -p)
 set -x for commands?  but remember retvals
+
+
+
+sbm threshold: null?
+
+exitvals
+replstatus filename and status
+blank non-existent?  remove all, let error?
