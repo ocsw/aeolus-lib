@@ -37,7 +37,7 @@
 #
 # lockfile dir is used for the following files:
 #   $lfalertssilenced, $scriptdisabled, $timetemp, $logfifo,
-#   $replstatus${DBMSes}, $alldbs${DBMSes}
+#   ${DBMSes}-$replstatus, ${DBMSes}-$alldbs
 # all files should be in printstatus()
 #
 # any change to the setting variables (additions, deletions, name changes,
