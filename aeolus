@@ -1575,6 +1575,13 @@ checkdbmsrepl () {
                 "$lockfile/${dbms_prefix}-$replstatus" | sed 's/.*: //')
 
       # is it even acting as a replication slave?
+      # -> slave configured but down?
+      if [ "$replval" = "NULL" ]; then
+        sendalert "Warning: $dbms_prefix DBMS is configured as a replication slave but is not${newline}actually replicating, and ${dbms_prefix}_replstatus is set;${newline}continuing with $dbms_prefix dumps" log
+        return 0
+      fi
+
+      # -> not configured as a slave?
       #
       # use extra [0-9] to avoid having to use egrep
       if printf "%s\n" "$replval" | \
@@ -1583,6 +1590,7 @@ checkdbmsrepl () {
         return 0
       fi
 
+      # check against threshold
       if [ "$replval" -gt "$dbms_replstatus" ]; then
         case "$on_dbreplerr" in
           exit)
