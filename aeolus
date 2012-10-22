@@ -10,24 +10,32 @@
 # see usage() and the usage and sample config files for usage notes
 
 # exit values:
-#   0  = no error (e.g., runevery hasn't expired, or backup was completed
-#        without errors)
-#   1  = problem with the script invocation, the config file, or a setting
-#        (also used in command modes like 'disable' as a generic error
-#        value)
-#   2  = previous lockfile still exists (possibly because backups were
-#        manually disabled)
-#   3  = bad variable name or subscript key
-#   4  = error finding a delimiter for a string
-#   5  = error opening SSH tunnel
-#   6  = error getting DBMS replication status
-#   7  = error getting DB list
-#   8  = DB name contains a problematic character
-#   9  = DB dumpfile already exists
-#   10 = error dumping DB
-#   11 = error compressing DB dump
-#   12 = rsync error
-#   99 = internal error; should never happen
+#
+#   0   = no error (e.g., runevery hasn't expired, or backup was completed
+#         without errors)
+#
+#   10  = problem with the script invocation, the config file, or a setting
+#         (also used in command modes like 'disable' as a generic error
+#         value)
+#   11  = previous lockfile still exists (possibly because backups were
+#         manually disabled)
+#
+#   20  = error opening SSH tunnel
+#
+#   30  = error getting DBMS replication status
+#   31  = error getting DB list
+#
+#   40  = DB name contains a problematic character
+#   41  = DB dumpfile already exists
+#   42  = error dumping DB
+#   43  = error compressing DB dump
+#
+#   50  = rsync error
+#
+#   240 = bad variable name or subscript key
+#   241 = error finding a delimiter for a string
+#   250 = internal error; should never happen
+#
 # if there are multiple errors, the first one to occur is used
 
 # modification notes:
@@ -512,21 +520,22 @@ alldbs="alldbs"  # gets [DBMS]- prepended
 dumptmp=".tmp"
 
 # exit values; see top of script for details
-# (and keep numbers in sync when modifying)
+# (when modifying: keep numbers in sync, and take
+# http://tldp.org/LDP/abs/html/exitcodes.html into account)
 no_error_exitval="0"
-startup_exitval="1"
-lockfile_exitval="2"
-badvarname_exitval="3"
-nodelim_exitval="4"
-sshtunnel_exitval="5"
-getdbrepl_exitval="6"
-getdblist_exitval="7"
-dbname_exitval="8"
-dumpexists_exitval="9"
-dbdump_exitval="10"
-dbzip_exitval="11"
-rsync_exitval="12"
-internal_exitval="99"
+startup_exitval="10"
+lockfile_exitval="11"
+sshtunnel_exitval="20"
+getdbrepl_exitval="30"
+getdblist_exitval="31"
+dbname_exitval="40"
+dumpexists_exitval="41"
+dbdump_exitval="42"
+dbzip_exitval="43"
+rsync_exitval="50"
+badvarname_exitval="240"
+nodelim_exitval="241"
+internal_exitval="250"
 
 
 ###########################

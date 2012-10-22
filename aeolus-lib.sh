@@ -88,11 +88,11 @@ aeolus_lib_sourced="yes"
 
 # exit values
 [ "${no_error_exitval+X}" = "" ] && no_error_exitval="0"
-[ "${startup_exitval+X}" = "" ] && startup_exitval="1"
-[ "${lockfile_exitval+X}" = "" ] && lockfile_exitval="2"
-[ "${badvarname_exitval+X}" = "" ] && badvarname_exitval="3"
-[ "${nodelim_exitval+X}" = "" ] && nodelim_exitval="4"
-[ "${sshtunnel_exitval+X}" = "" ] && sshtunnel_exitval="5"
+[ "${startup_exitval+X}" = "" ] && startup_exitval="10"
+[ "${lockfile_exitval+X}" = "" ] && lockfile_exitval="11"
+[ "${sshtunnel_exitval+X}" = "" ] && sshtunnel_exitval="20"
+[ "${badvarname_exitval+X}" = "" ] && badvarname_exitval="240"
+[ "${nodelim_exitval+X}" = "" ] && nodelim_exitval="241"
 
 # on-error flags
 [ "${on_tunerr+X}" = "" ] && on_tunerr="exit"  # see opensshtunnel()
