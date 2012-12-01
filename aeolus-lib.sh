@@ -2371,7 +2371,7 @@ warnbogusconf () {
          && \
          arrayisset "$bogus"; \
        }; then
-      sendalert "warning: variable '$bogus' is set, but there is no such setting;${newline}value will be ignored." log
+      sendalert "warning: variable '$bogus' is set, but there is no such setting;${newline}value will be ignored" log
       setexitval "$startup_exitval"
       unset "$bogus"
     fi
@@ -2379,7 +2379,7 @@ warnbogusconf () {
     if [ "$(configsettingtype "$bogus")" = "function" ] \
        && \
        funcisdefined "$bogus"; then
-      sendalert "warning: function '${bogus}()' is defined, but there is no such hook;${newline}definition will be ignored." log
+      sendalert "warning: function '${bogus}()' is defined, but there is no such hook;${newline}definition will be ignored" log
       setexitval "$startup_exitval"
       unset "$bogus"
     fi
