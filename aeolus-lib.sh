@@ -2343,6 +2343,50 @@ validfunction () {
 }
 
 #
+# warn about non-existent settings that the user might have tried to set
+# by accident
+#
+# the calling script must define configsettingtype(), which takes the name
+# of a bogus setting and prints "scalar", "array", or "function"
+#
+# "local" vars: bogus
+# global vars: bogusconfig, startup_exitval
+# library vars: newline
+# user-defined functions: configsettingtype()
+# library functions: isset(), arrayisset(), funcisdefined(), sendalert(),
+#                    setexitval()
+# utilities: [
+# bashisms: unset
+#
+warnbogusconf () {
+  for bogus in $bogusconfig; do
+    if { \
+         [ "$(configsettingtype "$bogus")" = "scalar" ] \
+         && \
+         isset "$bogus"; \
+       } \
+       || \
+       { \
+         [ "$(configsettingtype "$bogus")" = "array" ] \
+         && \
+         arrayisset "$bogus"; \
+       }; then
+      sendalert "warning: variable '$bogus' is set, but there is no such setting;${newline}value will be ignored." log
+      setexitval "$startup_exitval"
+      unset "$bogus"
+    fi
+
+    if [ "$(configsettingtype "$bogus")" = "function" ] \
+       && \
+       funcisdefined "$bogus"; then
+      sendalert "warning: function '${bogus}()' is defined, but there is no such hook;${newline}definition will be ignored." log
+      setexitval "$startup_exitval"
+      unset "$bogus"
+    fi
+  done
+}
+
+#
 # process command-line settings and the config file
 #
 # the calling script must define applydefaults() and validconf();
@@ -2350,7 +2394,8 @@ validfunction () {
 #
 # global vars: configfile, noconfigfile, defaultconfigfile
 # user-defined functions: applydefaults(), validconf()
-# library functions: saveclset(), restoreclset(), validreadfile()
+# library functions: saveclset(), restoreclset(), validreadfile(),
+#                    warnbogusconf()
 # utilities: printf, grep, [
 #
 do_config () {
@@ -2377,6 +2422,10 @@ do_config () {
 
   # restore variables set on the command line, overriding the config file
   restoreclset
+
+  # warn about and ignore bogus variables that the user might have
+  # accidentally set
+  warnbogusconf
 
   # apply default settings where applicable
   applydefaults

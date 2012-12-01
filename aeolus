@@ -353,13 +353,30 @@ configsettings="
   postgres_aftereach
 "
 
+# names of nonexistent settings which the user might accidentally try to set;
+# in some cases these might cause problems
+# includes arrays and functions; see configsettingtype()
+# see also warnbogusconf() in the library
+bogusconfig="
+  mysql_connectdb
+  mysql_dumponeoptions
+  mysql_dumpmultoptions
+  mysql_dumpalloptions
+  postgres_protocol
+  postgres_socketfile
+  postgres_replstatus
+  postgres_dumpoptions
+  postgres_dumpmultoptions
+"
+
 #
 # which settings are arrays or functions?
 #
 # (this is the only reasonable way I have come up with to handle this,
 # without requiring bash4 for associative arrays)
 #
-# $1 is the name of a config setting
+# $1 is the name of a config setting or bogus setting
+# (see configsettings and bogusconfig)
 #
 # prints "scalar", "array", or "function"
 #
@@ -375,6 +392,9 @@ configsettingtype () {
     mysql_sshoptions|mysql_dblist|mysql_options|mysql_dumpoptions)
       echo "array"
       ;;
+    mysql_dumponeoptions|mysql_dumpmultoptions|mysql_dumpalloptions)
+      echo "array"
+      ;;
     mysql_zipoptions)
       echo "array"
       ;;
@@ -383,10 +403,13 @@ configsettingtype () {
       ;;
 
     # PostgreSQL
-    postgres_sshoptions|postgres_dblist|postgres_options)
+    postgres_sshoptions|postgres_dblist|postgres_options|postgres_dumpoptions)
       echo "array"
       ;;
-    postgres_dumponeoptions|postgres_dumpalloptions|postgres_zipoptions)
+    postgres_dumponeoptions|postgres_dumpmultoptions|postgres_dumpalloptions)
+      echo "array"
+      ;;
+    postgres_zipoptions)
       echo "array"
       ;;
     postgres_altopts|postgres_aftereach)
@@ -1206,19 +1229,16 @@ validconf () {
 
     validlist "${dbms}_dodump" "yes" "no"
     if [ "$dbms_dodump" = "yes" ]; then
-      # account for differences between DBMSs, so we don't need special
-      # cases below
+      # account for differences between DBMSs, e.g.:
+      #   -= settings that aren't available for all DBMSes
+      #   -= settings that work differently for different DBMSes
+      #   -= stuff that would complicate the tests below
       case "$dbms" in
         mysql)
           [ "$mysql_replstatus" != "" ] && validnum "mysql_replstatus"
           ;;
 
         postgres)
-          # make sure socketfile is blank even if the user sets it,
-          # because we compare to it below
-          postgres_socketfile=""
-          dbms_socketfile=""
-
           # this can be blank and still work in _some_ cases, but we're
           # just going to require it
           validnoblank "postgres_connectdb"
