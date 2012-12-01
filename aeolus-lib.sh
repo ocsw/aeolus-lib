@@ -494,10 +494,6 @@ arrayisnotvoid () {
 #
 # $1 = the name of the array to check
 #
-# only needed if the name of the array isn't known until run-time;
-# otherwise, use:
-#   declare -p "arrayname" > /dev/null 2>&1
-#
 # never strictly necessary; use:
 #   declare -p "arrayname" > /dev/null 2>&1
 # or if the name of the array isn't known until run-time:

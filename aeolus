@@ -220,7 +220,7 @@ defaultconfigfile="/etc/aeolus/aeolus.conf"
 sampleconfigfile="/etc/aeolus/CONFIG.SAMPLE"
 
 # names of all config file settings, in logical order
-# includes optional functions; see configsettingtype()
+# includes arrays and functions; see configsettingtype()
 configsettings="
   usepath
   useumask
@@ -364,7 +364,7 @@ configsettings="
 # prints "scalar", "array", or "function"
 #
 configsettingtype () {
-  # arrays broken up for readability
+  # broken up for readability
   case "$1" in
     # rsync
     rsync_sshoptions|rsync_source|rsync_options|rsync_add)
@@ -2128,7 +2128,7 @@ do_dbdump_wrapper () {
 # library functions: copyarray(), dbunescape()
 # utilities: [
 # files: $lockfile/${dbms_prefix}-$alldbs
-# bashisms: array+=() [v3.1]
+# bashisms: arrays, array+=() [v3.1]
 #
 do_dbdumploop () {
   OLDIFS="$IFS"
