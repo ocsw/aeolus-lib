@@ -562,10 +562,10 @@ internal_exitval="250"
 #
 # global vars: altopts
 # config settings: mysql_dumpoptions
-# library functions: copyarray()
-# bashisms: !, declare -F, array+=() [v3.1]
+# library functions: funcisnotdefined(), copyarray()
+# bashisms: array+=() [v3.1]
 #
-if ! declare -F mysql_altopts > /dev/null 2>&1; then
+if funcisnotdefined "mysql_altopts"; then
   mysql_altopts () {
     case "$1" in
       information_schema|performance_schema)

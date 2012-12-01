@@ -112,9 +112,9 @@ aeolus_lib_sourced="yes"
 #                                FUNCTIONS
 ############################################################################
 
-####################
-# variable handling
-####################
+#################################
+# variable and function handling
+#################################
 
 #
 # check if a string is a legal variable name
@@ -825,6 +825,34 @@ unsparsearray () {
   # replace original array
   copyarray unsparsetmp "$1"
   unset unsparsetemp
+}
+
+#
+# check if a function specified by name is not defined
+#
+# $1 = the name of the function to check
+#
+# (just here to make code cleaner, and to help centralize the use of bashisms
+# to make porting easier)
+#
+# bashisms: !, declare -F
+#
+funcisnotdefined () {
+  ! declare -F "$1" > /dev/null 2>&1
+}
+
+#
+# check if a function specified by name is defined
+#
+# $1 = the name of the function to check
+#
+# (just here to make code cleaner, and to help centralize the use of bashisms
+# to make porting easier)
+#
+# bashisms: declare -F
+#
+funcisdefined () {
+  declare -F "$1" > /dev/null 2>&1
 }
 
 
@@ -2309,16 +2337,12 @@ validrwfile () {
 #
 # $1 = variable name
 #
-# "local" vars: vname
 # config functions: (contents of $1)
-# library functions: throwstartuperr()
-# bashisms: !, declare -F
+# library functions: funcisnotdefined(), throwstartuperr()
 #
 validfunction () {
-  vname="$1"
-
-  if ! declare -F "$vname" > /dev/null 2>&1; then
-    throwstartuperr "Error: $vname function is not defined; exiting."
+  if funcisnotdefined "$1"; then
+    throwstartuperr "Error: $1 function is not defined; exiting."
   fi
 }
 

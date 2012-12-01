@@ -832,8 +832,9 @@
 # # if the function already exists, don't redefine it;
 # # use this technique with your functions if you want to be able to
 # # override them from the command line
+# # (funcisnotdefined() is a useful library function included by the script)
 # #
-# if ! declare -F mysql_altopts > /dev/null 2>&1; then
+# if funcisnotdefined "mysql_altopts"; then
 #   mysql_altopts () {
 #     case "$1" in
 #       information_schema|performance_schema)
@@ -1121,8 +1122,9 @@
 # # if the function already exists, don't redefine it;
 # # use this technique with your functions if you want to be able to
 # # override them from the command line
+# # (funcisnotdefined() is a useful library function included by the script)
 # #
-# if ! declare -F mysql_aftereach > /dev/null 2>&1; then
+# if funcisnotdefined "mysql_aftereach"; then
 #   # dump locally for speed, but then offload the files to an NFS mount to
 #   # save space; move everything, even if the dump failed
 #   mysql_aftereach () {
