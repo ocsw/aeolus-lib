@@ -569,12 +569,12 @@ if ! declare -F mysql_altopts > /dev/null 2>&1; then
   mysql_altopts () {
     case "$1" in
       information_schema|performance_schema)
-        copyarray "mysql_dumpoptions" "altopts"  # include regular options
+        copyarray "mysql_dumpoptions" "altopts" exact  # incl regular opts
         altopts+=(--skip-lock-tables)
         return 0
         ;;
       mysql)
-        copyarray "mysql_dumpoptions" "altopts"  # include regular options
+        copyarray "mysql_dumpoptions" "altopts" exact  # incl regular opts
         altopts+=(--skip-extended-insert)
         return 0
         ;;
@@ -679,16 +679,16 @@ sendalert_body () {
 switchtunnel () {
   tun_prefix="$1"
   tun_descr="$2"
-  copyvar "${1}_sshuser" "tun_sshuser"
-  copyvar "${1}_sshhost" "tun_sshhost"
-  copyvar "${1}_sshkeyfile" "tun_sshkeyfile"
-  copyvar "${1}_sshport" "tun_sshport"
-  copyvar "${1}_localhost" "tun_localhost"
-  copyvar "${1}_localport" "tun_localport"
-  copyvar "${1}_remotehost" "tun_remotehost"
-  copyvar "${1}_remoteport" "tun_remoteport"
-  copyarray "${1}_sshoptions" "tun_sshoptions"
-  copyvar "${1}_sshtimeout" "tun_sshtimeout"
+  copyvar "${1}_sshuser" "tun_sshuser" exact
+  copyvar "${1}_sshhost" "tun_sshhost" exact
+  copyvar "${1}_sshkeyfile" "tun_sshkeyfile" exact
+  copyvar "${1}_sshport" "tun_sshport" exact
+  copyvar "${1}_localhost" "tun_localhost" exact
+  copyvar "${1}_localport" "tun_localport" exact
+  copyvar "${1}_remotehost" "tun_remotehost" exact
+  copyvar "${1}_remoteport" "tun_remoteport" exact
+  copyarray "${1}_sshoptions" "tun_sshoptions" exact
+  copyvar "${1}_sshtimeout" "tun_sshtimeout" exact
 }
 
 #
@@ -732,38 +732,38 @@ switchtunnel () {
 #
 switchdbms () {
   dbms_prefix="$1"
-  copyvar "${1}_dodump" "dbms_dodump"
-  copyvar "${1}_usetunnel" "dbms_usetunnel"
-  copyvar "${1}_user" "dbms_user"
-  copyvar "${1}_pwfile" "dbms_pwfile"
-  copyvar "${1}_protocol" "dbms_protocol"
-  copyvar "${1}_host" "dbms_host"
-  copyvar "${1}_port" "dbms_port"
-  copyvar "${1}_socketfile" "dbms_socketfile"
-  copyvar "${1}_connectdb" "dbms_connectdb"
-  copyvar "${1}_replstatus" "dbms_replstatus"
-  copyvar "${1}_dbmode" "dbms_dbmode"
-  copyarray "${1}_dblist" "dbms_dblist"
-  copyvar "${1}_splitdbs" "dbms_splitdbs"
-  copyarray "${1}_options" "dbms_options"
-  copyarray "${1}_dumpoptions" "dbms_dumpoptions"
-  copyarray "${1}_dumponeoptions" "dbms_dumponeoptions"
-  copyarray "${1}_dumpmultoptions" "dbms_dumpmultoptions"
-  copyarray "${1}_dumpalloptions" "dbms_dumpalloptions"
-  copyvar "${1}_usealtopts" "dbms_usealtopts"
-  copyvar "${1}_dumpdir" "dbms_dumpdir"
-  copyvar "${1}_layout" "dbms_layout"
-  copyvar "${1}_fileprefix" "dbms_fileprefix"
-  copyvar "${1}_filesuffix" "dbms_filesuffix"
-  copyvar "${1}_subdirprefix" "dbms_subdirprefix"
-  copyvar "${1}_filedirsep" "dbms_filedirsep"
-  copyvar "${1}_filedirdate" "dbms_filedirdate"
-  copyvar "${1}_numfiles" "dbms_numfiles"
-  copyvar "${1}_daysfiles" "dbms_daysfiles"
-  copyvar "${1}_zipmode" "dbms_zipmode"
-  copyarray "${1}_zipoptions" "dbms_zipoptions"
-  copyvar "${1}_preserve" "dbms_preserve"
-  copyvar "${1}_useaftereach" "dbms_useaftereach"
+  copyvar "${1}_dodump" "dbms_dodump" exact
+  copyvar "${1}_usetunnel" "dbms_usetunnel" exact
+  copyvar "${1}_user" "dbms_user" exact
+  copyvar "${1}_pwfile" "dbms_pwfile" exact
+  copyvar "${1}_protocol" "dbms_protocol" exact
+  copyvar "${1}_host" "dbms_host" exact
+  copyvar "${1}_port" "dbms_port" exact
+  copyvar "${1}_socketfile" "dbms_socketfile" exact
+  copyvar "${1}_connectdb" "dbms_connectdb" exact
+  copyvar "${1}_replstatus" "dbms_replstatus" exact
+  copyvar "${1}_dbmode" "dbms_dbmode" exact
+  copyarray "${1}_dblist" "dbms_dblist" exact
+  copyvar "${1}_splitdbs" "dbms_splitdbs" exact
+  copyarray "${1}_options" "dbms_options" exact
+  copyarray "${1}_dumpoptions" "dbms_dumpoptions" exact
+  copyarray "${1}_dumponeoptions" "dbms_dumponeoptions" exact
+  copyarray "${1}_dumpmultoptions" "dbms_dumpmultoptions" exact
+  copyarray "${1}_dumpalloptions" "dbms_dumpalloptions" exact
+  copyvar "${1}_usealtopts" "dbms_usealtopts" exact
+  copyvar "${1}_dumpdir" "dbms_dumpdir" exact
+  copyvar "${1}_layout" "dbms_layout" exact
+  copyvar "${1}_fileprefix" "dbms_fileprefix" exact
+  copyvar "${1}_filesuffix" "dbms_filesuffix" exact
+  copyvar "${1}_subdirprefix" "dbms_subdirprefix" exact
+  copyvar "${1}_filedirsep" "dbms_filedirsep" exact
+  copyvar "${1}_filedirdate" "dbms_filedirdate" exact
+  copyvar "${1}_numfiles" "dbms_numfiles" exact
+  copyvar "${1}_daysfiles" "dbms_daysfiles" exact
+  copyvar "${1}_zipmode" "dbms_zipmode" exact
+  copyarray "${1}_zipoptions" "dbms_zipoptions" exact
+  copyvar "${1}_preserve" "dbms_preserve" exact
+  copyvar "${1}_useaftereach" "dbms_useaftereach" exact
   # internal, not from config
   copyvar "${1}_datestring" "dbms_datestring"
 }
@@ -1072,7 +1072,7 @@ applydefaults () {
   [ "$mysql_dbmode" = "" ] && mysql_dbmode="$mysql_dbmode_default"
   [ "$mysql_splitdbs" = "" ] && mysql_splitdbs="$mysql_splitdbs_default"
   declare -p "mysql_dumpoptions" > /dev/null 2>&1 || \
-      copyarray "mysql_dumpoptions_default" "mysql_dumpoptions"
+      copyarray "mysql_dumpoptions_default" "mysql_dumpoptions" exact
   [ "$mysql_usealtopts" = "" ] && mysql_usealtopts="$mysql_usealtopts_default"
   [ "${mysql_fileprefix+X}" = "" ] && mysql_fileprefix="$mysql_fileprefix_default"
   [ "${mysql_subdirprefix+X}" = "" ] && mysql_subdirprefix="$mysql_subdirprefix_default"
@@ -1082,9 +1082,9 @@ applydefaults () {
   [ "$postgres_dbmode" = "" ] && postgres_dbmode="$postgres_dbmode_default"
   [ "$postgres_splitdbs" = "" ] && postgres_splitdbs="$postgres_splitdbs_default"
   declare -p "postgres_dumponeoptions" > /dev/null 2>&1 || \
-      copyarray "postgres_dumponeoptions_default" "postgres_dumponeoptions"
+      copyarray "postgres_dumponeoptions_default" "postgres_dumponeoptions" exact
   declare -p "postgres_dumpalloptions" > /dev/null 2>&1 || \
-      copyarray "postgres_dumpalloptions_default" "postgres_dumpalloptions"
+      copyarray "postgres_dumpalloptions_default" "postgres_dumpalloptions" exact
   [ "$postgres_usealtopts" = "" ] && postgres_usealtopts="$postgres_usealtopts_default"
   [ "${postgres_fileprefix+X}" = "" ] && postgres_fileprefix="$postgres_fileprefix_default"
   [ "${postgres_subdirprefix+X}" = "" ] && postgres_subdirprefix="$postgres_subdirprefix_default"
@@ -1357,9 +1357,9 @@ dbdumponecmd () {
     mysql)
       if [ "$mysql_splitdbs" = "yes" ] && \
          [ "$mysql_usealtopts" = "yes" ] && mysql_altopts "$1"; then
-        copyarray "altopts" "opts_l"
+        copyarray "altopts" "opts_l" exact
       else
-        copyarray "mysql_dumpoptions" "opts_l"
+        copyarray "mysql_dumpoptions" "opts_l" exact
       fi
 
       # --defaults-extra-file must be the first option if present
@@ -1376,9 +1376,9 @@ dbdumponecmd () {
     postgres)
       if [ "$postgres_splitdbs" = "yes" ] && \
          [ "$postgres_usealtopts" = "yes" ] && postgres_altopts "$1"; then
-        copyarray "altopts" "opts_l"
+        copyarray "altopts" "opts_l" exact
       else
-        copyarray "postgres_dumponeoptions" "opts_l"
+        copyarray "postgres_dumponeoptions" "opts_l" exact
       fi
 
       PGPASSFILE=${postgres_pwfile:+"$postgres_pwfile"} \
@@ -2142,7 +2142,7 @@ do_dbdumploop () {
         [ "$?" = "1" ] && return 1  # skip to the next phase
         ;;
       include)
-        copyarray "dbms_dblist" "dbnames"
+        copyarray "dbms_dblist" "dbnames" exact
 
         do_dbdump_wrapper "mult"
         [ "$?" = "1" ] && return 1  # skip to the next phase

@@ -166,48 +166,37 @@ issafesubscript () {
 }
 
 #
-# check if a non-array variable specified by name is set
-# (whether it's blank or not)
+# possible states of a non-array variable (see below for arrays):
 #
-# for arrays, use arrayisset() instead
+#   unset  {  completely unset                   }
+#                                                }  void
+#          {  set, but null (blank); var=""      }
+#   set    {
+#          {  set and not null; var="somevalue"  }  not void
 #
-# only needed if the variable name isn't known until run-time;
-# otherwise, use:
-#   [ "${varname+X}" = "X" ]
+# note:
+#   * "void" is non-standard; the man page just says "unset or null"
+#   * what is called "not void" here would usually just be called "not null",
+#     but in this context, that could mean "unset or (set and not null)";
+#     this usage has greater precision
+#
+
+#
+# check if a non-array variable specified by name is unset
+# (which is not the same thing as null (blank))
+#
+# for arrays, use arrayisunset() instead
 #
 # $1 = the name of the variable to check
 #
 # IMPORTANT: only pass variables whose names are under your control!
-#
-# library vars: badvarname_exitval
-# library functions: islegalvarname()
-# utilities: printf, [
-#
-isset () {
-  if islegalvarname "$1"; then
-    eval "[ \"\${${1}+X}\" = \"X\" ]"
-  else
-    printf "%s\n" "Internal Error: illegal variable name ('$1') in isset(); exiting."
-    do_exit "$badvarname_exitval"
-  fi
-}
-
-#
-# check if a non-array variable specified by name is unset
-# (which is not the same thing as blank)
-#
-# for arrays, use arrayisunset() instead
 #
 # only needed if the variable name isn't known until run-time;
 # otherwise, use:
 #   [ "${varname+X}" = "" ]
 #
-# $1 = the name of the variable to check
-#
-# IMPORTANT: only pass variables whose names are under your control!
-#
 # library vars: badvarname_exitval
-# library functions: islegalvarname()
+# library functions: islegalvarname(), do_exit()
 # utilities: printf, [
 #
 isunset () {
@@ -220,55 +209,155 @@ isunset () {
 }
 
 #
-# check if an array specified by name is set
+# check if a non-array variable specified by name is set but null (blank)
 #
-# an array is considered set if it has any set elements, even if those
-# elements are blank
+# for arrays, use arrayisempty() instead
 #
-# only needed if the name of the array isn't known until run-time;
+# $1 = the name of the variable to check
+#
+# IMPORTANT: only pass variables whose names are under your control!
+#
+# only needed if the variable name isn't known until run-time;
 # otherwise, use:
-#   [ "${#arrayname[@]}" != "0" ]
-#
-# $1 = the name of the array to check
-#
-# IMPORTANT: only pass arrays whose names are under your control!
+#   [ "${varname+X}" = "X" ] && [ -z "$varname" ]
+# or
+#   [ "${varname+X}" = "X" ] && [ "$varname" = "" ]
 #
 # library vars: badvarname_exitval
-# library functions: islegalvarname()
+# library functions: islegalvarname(), do_exit()
 # utilities: printf, [
-# bashisms: arrays
 #
-arrayisset () {
+isnull () {
   if islegalvarname "$1"; then
-    eval "[ \"\${#${1}[@]}\" != \"0\" ]"
+    eval "[ \"\${${1}+X}\" = \"X\" ] && [ \"\$$1\" = \"\" ]"
   else
-    printf "%s\n" "Internal Error: illegal variable name ('$1') in arrayisset(); exiting."
+    printf "%s\n" "Internal Error: illegal variable name ('$1') in isnull(); exiting."
     do_exit "$badvarname_exitval"
   fi
 }
 
 #
-# check if an array specified by name is unset
+# check if a non-array variable specified by name is unset or null (blank)
+# (we'll call this "void", for convenience)
 #
-# an array is considered unset if it has no set elements
-# (blank still counts as set)
+# for arrays, use arrayisvoid() instead
+#
+# $1 = the name of the variable to check
+#
+# IMPORTANT: only pass variables whose names are under your control!
+#
+# only needed if the variable name isn't known until run-time;
+# otherwise, use:
+#   [ "${varname:+X}" = "" ]
+#
+# library vars: badvarname_exitval
+# library functions: islegalvarname(), do_exit()
+# utilities: printf, [
+#
+isvoid () {
+  if islegalvarname "$1"; then
+    eval "[ \"\${${1}:+X}\" = \"\" ]"
+  else
+    printf "%s\n" "Internal Error: illegal variable name ('$1') in isvoid(); exiting."
+    do_exit "$badvarname_exitval"
+  fi
+}
+
+#
+# check if a non-array variable specified by name is set and not null (blank)
+# (that is, the variable is not "void", in the terminology we're using here)
+#
+# for arrays, use arrayisnotvoid() instead
+#
+# $1 = the name of the variable to check
+#
+# IMPORTANT: only pass variables whose names are under your control!
+#
+# only needed if the variable name isn't known until run-time;
+# otherwise, use:
+#   [ "${varname:+X}" = "X" ]
+#
+# library vars: badvarname_exitval
+# library functions: islegalvarname(), do_exit()
+# utilities: printf, [
+#
+isnotvoid () {
+  if islegalvarname "$1"; then
+    eval "[ \"\${${1}:+X}\" = \"X\" ]"
+  else
+    printf "%s\n" "Internal Error: illegal variable name ('$1') in isnotvoid(); exiting."
+    do_exit "$badvarname_exitval"
+  fi
+}
+
+#
+# check if a non-array variable specified by name is set
+# (whether it's null (blank) or not)
+#
+# for arrays, use arrayisset() instead
+#
+# $1 = the name of the variable to check
+#
+# IMPORTANT: only pass variables whose names are under your control!
+#
+# only needed if the variable name isn't known until run-time;
+# otherwise, use:
+#   [ "${varname+X}" = "X" ]
+#
+# library vars: badvarname_exitval
+# library functions: islegalvarname(), do_exit()
+# utilities: printf, [
+#
+isset () {
+  if islegalvarname "$1"; then
+    eval "[ \"\${${1}+X}\" = \"X\" ]"
+  else
+    printf "%s\n" "Internal Error: illegal variable name ('$1') in isset(); exiting."
+    do_exit "$badvarname_exitval"
+  fi
+}
+
+#
+# possible states of an array variable (see above for non-arrays):
+#
+#   unset  {  completely unset                      }
+#                                                   }  void
+#          {  set, but empty (no elements); arr=()  }
+#   set    {
+#          {  set and not empty                     }  not void
+#
+# note:
+#   * "void" is non-standard
+#   * an array with only null elements is still non-empty
+#   * what is called "not void" here would usually just be called
+#     "not empty", but in this context, that could mean
+#     "unset or (set and not empty)"; this usage has greater precision
+#
+
+#
+# check if an array specified by name is unset
+# (which is not the same thing as empty)
+#
+# for non-array variables, use isunset() instead
 #
 # only needed if the name of the array isn't known until run-time;
 # otherwise, use:
-#   [ "${#arrayname[@]}" = "0" ]
+#   declare -p "arrayname" > /dev/null 2>&1
+#   [ "$?" = "1" ]
 #
 # $1 = the name of the array to check
 #
-# IMPORTANT: only pass arrays whose names are under your control!
-#
 # library vars: badvarname_exitval
-# library functions: islegalvarname()
+# library functions: islegalvarname(), do_exit()
 # utilities: printf, [
-# bashisms: arrays
+# bashisms: declare -p
 #
 arrayisunset () {
+  # not strictly necessary since bash will throw an error itself,
+  # but this standardizes the errors and the exit values
   if islegalvarname "$1"; then
-    eval "[ \"\${#${1}[@]}\" = \"0\" ]"
+    declare -p "$1" > /dev/null 2>&1
+    [ "$?" = "1" ]
   else
     printf "%s\n" "Internal Error: illegal variable name ('$1') in arrayisunset(); exiting."
     do_exit "$badvarname_exitval"
@@ -276,10 +365,141 @@ arrayisunset () {
 }
 
 #
+# check if an array specified by name is set but empty
+# (has no set elements; null (blank) elements still count as set)
+#
+# for non-array variables, use isnull() instead
+#
+# $1 = the name of the array to check
+#
+# IMPORTANT: only pass arrays whose names are under your control!
+#
+# only needed if the name of the array isn't known until run-time;
+# otherwise, use:
+#   declare -p "arrayname" > /dev/null 2>&1
+#   [ "$?" = "0" ] && [ "${#arrayname[@]}" = "0" ]
+#
+# library vars: badvarname_exitval
+# library functions: islegalvarname(), do_exit()
+# utilities: printf, [
+# bashisms: declare -p, arrays
+#
+arrayisempty () {
+  if islegalvarname "$1"; then
+    declare -p "$1" > /dev/null 2>&1
+    [ "$?" = "0" ] && eval "[ \"\${#${1}[@]}\" = \"0\" ]"
+  else
+    printf "%s\n" "Internal Error: illegal variable name ('$1') in arrayisempty(); exiting."
+    do_exit "$badvarname_exitval"
+  fi
+}
+
+#
+# check if an array specified by name is unset or empty
+# (we'll call this "void", for convenience)
+#
+# for non-array variables, use isvoid() instead
+#
+# $1 = the name of the array to check
+#
+# IMPORTANT: only pass arrays whose names are under your control!
+#
+# only needed if the name of the array isn't known until run-time;
+# otherwise, use:
+#   [ "${#arrayname[@]}" = "0" ]
+#
+# library vars: badvarname_exitval
+# library functions: islegalvarname(), do_exit()
+# utilities: printf, [
+# bashisms: arrays
+#
+arrayisvoid () {
+  if islegalvarname "$1"; then
+    eval "[ \"\${#${1}[@]}\" = \"0\" ]"
+  else
+    printf "%s\n" "Internal Error: illegal variable name ('$1') in arrayisvoid(); exiting."
+    do_exit "$badvarname_exitval"
+  fi
+}
+
+#
+# check if an array specified by name is set and not empty
+# (that is, the array is not "void", in the terminology we're using here;
+# it has at least one set element, which may or may not be null (blank))
+#
+# for non-array variables, use isnotvoid() instead
+#
+# $1 = the name of the array to check
+#
+# IMPORTANT: only pass arrays whose names are under your control!
+#
+# only needed if the name of the array isn't known until run-time;
+# otherwise, use:
+#   [ "${#arrayname[@]}" != "0" ]
+#
+# library vars: badvarname_exitval
+# library functions: islegalvarname(), do_exit()
+# utilities: printf, [
+# bashisms: arrays
+#
+arrayisnotvoid () {
+  if islegalvarname "$1"; then
+    eval "[ \"\${#${1}[@]}\" != \"0\" ]"
+  else
+    printf "%s\n" "Internal Error: illegal variable name ('$1') in arrayisnotvoid(); exiting."
+    do_exit "$badvarname_exitval"
+  fi
+}
+
+#
+# check if an array specified by name is set
+# (whether it's empty or not)
+#
+# for non-array variables, use isset() instead
+#
+# only needed if the name of the array isn't known until run-time;
+# otherwise, use:
+#   declare -p "arrayname" > /dev/null 2>&1
+#   [ "$?" = "0" ]
+#
+# $1 = the name of the array to check
+#
+# library vars: badvarname_exitval
+# library functions: islegalvarname(), do_exit()
+# utilities: printf, [
+# bashisms: declare -p
+#
+arrayisset () {
+  # not strictly necessary since bash will throw an error itself,
+  # but this standardizes the errors and the exit values
+  if islegalvarname "$1"; then
+    declare -p "$1" > /dev/null 2>&1
+    [ "$?" = "0" ]
+  else
+    printf "%s\n" "Internal Error: illegal variable name ('$1') in arrayisset(); exiting."
+    do_exit "$badvarname_exitval"
+  fi
+}
+
+#
 # copy between non-array variables specified by name
 #
+# for arrays, use copyarray() instead
+#
 # $1 = the name of the source variable
-# $2 = the name of the destination variable
+# $2 = the name of the destination variable (must not currently be declared or
+#      used as an array)
+# $3 = (see below)
+#
+# if the source variable is unset (not just null), the value of the
+# destination variable will depend on $3:
+#   * if $3 is non-null, the destination variable will be unset (suggested
+#     value for $3: "exact")
+#   * if $3 is unset or null, the destination variable will be set but null
+#     (standard shell assignment semantics for, e.g., foo="$bar")
+#
+# note: does not change attributes (such as 'exported') of the destination
+# variable
 #
 # this function is usually unnecessary; use one of these instead:
 #   foo="$bar"
@@ -301,13 +521,13 @@ arrayisunset () {
 # the extra evaluation during the function call makes the first example
 # work; alternatively, you can set a temp variable to "q_$foo" and then do
 #   printf -v "bar" "%s" "${!temp}"  [bash v3.1]
-# but using this function is neater, especially if you have many assignments
-# to do
+# but using this function is neater, especially if you have many variables
+# to copy
 #
 # library vars: badvarname_exitval
-# library functions: islegalvarname()
-# utilities: printf
-# bashisms: if !, ${!var}, printf -v [v3.1]
+# library functions: islegalvarname(), isunset(), do_exit()
+# utilities: printf, [
+# bashisms: if !, unset, ${!var}, printf -v [v3.1]
 #
 copyvar () {
   # not strictly necessary since bash will throw an error itself,
@@ -321,20 +541,44 @@ copyvar () {
     do_exit "$badvarname_exitval"
   fi
 
-  printf -v "$2" "%s" "${!1}"
+  # unset first, in case destination was previously declared as an array
+  # -> no - will also remove other attributes, such as exported
+  #unset "$2"
+
+  if [ "$3" != "" ] && isunset "$1"; then
+    unset "$2"
+  else
+    printf -v "$2" "%s" "${!1}"
+  fi
 }
 
 #
 # copy between arrays specified by name
 #
+# for non-array variables, use copyvar() instead
+#
 # $1 = the name of the source array
 # $2 = the name of the destination array
+# $3 = (see below)
+#
+# if the source array is unset (not just empty), the value of the
+# destination array will depend on $3:
+#   * if $3 is non-null, the destination array will be unset (suggested
+#     value for $3: "exact")
+#   * if $3 is unset or null, the destination array will be set but empty
+#     (similar to the standard shell assignment semantics for, e.g.,
+#     foo="$bar")
 #
 # if the source array is associative, the destination array must be
 # declared associative before calling (declare -A)
 #
+# note: does not change attributes (such as 'exported') of the destination
+# variable
+#
+# IMPORTANT: only pass arrays whose names are under your control!
+#
 # this function is only needed if one or both of the arrays' names are't
-# known until run-time; otherwise, use:
+# known until run-time; otherwise, use (in bash v3.0+):
 #   skeys=("${!sourcename[@]}")
 #
 #   unset "destname"
@@ -346,16 +590,16 @@ copyvar () {
 # make this function unnecessary if the source name is known but the
 # destination name isn't; replace the line starting with destname, above,
 # with:
-#     printf -v "$dest[$skey]" "%s" "${sourcename["$skey"]}"
-# where dest contains the name of the destination array
-#
-# IMPORTANT: only pass arrays whose names are under your control!
+#     printf -v "${dest}[$skey]" "%s" "${sourcename["$skey"]}"
+# where dest contains the name of the destination array,
+# and replace 'unset "destname"' with 'unset "$dest"'
 #
 # "local" vars: skey, skeys
 # library vars: badvarname_exitval
-# library functions: islegalvarname(), issafesubscript()
-# utilities: printf
-# bashisms: if !, unset, ${!array[@]} [v3.0]
+# library functions: islegalvarname(), issafesubscript(), arrayisunset(),
+#                    do_exit()
+# utilities: printf, [
+# bashisms: if !, unset, arrays, ${!array[@]} [v3.0]
 #
 copyarray () {
   if ! islegalvarname "$1"; then
@@ -367,17 +611,25 @@ copyarray () {
     do_exit "$badvarname_exitval"
   fi
 
+  if [ "$3" != "" ] && arrayisunset "$1"; then
+    unset "$2"
+    return
+  fi
+
   eval "skeys=(\"\${!${1}[@]}\")"
 
   # unset will also remove associative array status,
+  # (and other attributes, such as exported),
   # and we can't just redeclare it because that will make it local
   # unless we use -g, which requires bash 4.2
   #unset "$2"
   eval "${2}=()"
 
   for skey in "${skeys[@]}"; do
+    # $skey has already been used as a subscript, but we're going to be
+    # extra-cautious (paranoid), since we're using eval
     if ! issafesubscript "$skey"; then
-      printf "%s\n" "Internal Error: illegal subscript name ('$skey') in copyarray(); exiting."
+      printf "%s\n" "Internal Error: illegal subscript name ('$skey'; \$1='$1') in copyarray(); exiting."
       do_exit "$badvarname_exitval"
     fi
     eval "${2}[\"$skey\"]=\"\${${1}[\"$skey\"]}\""
@@ -387,7 +639,15 @@ copyarray () {
 #
 # print the contents of a non-array variable specified by name
 #
-# $1 = the name of the variable to print
+# for arrays, use printarray() instead
+#
+# $1 = the name of the variable to print (must not currently be declared or
+# used as an array)
+#
+# unset and null variables will both be printed as empty strings
+#
+# note: when capturing output, you MUST use $(), NOT ``; `` does strange
+# things with \ escapes
 #
 # this function is usually unnecessary; use one of these instead:
 #   printf "%s" "$foo"
@@ -406,11 +666,8 @@ copyarray () {
 # but using this function is neater, especially if you have many variables
 # to print
 #
-# note: when capturing output, you MUST use $(), NOT ``; `` does strange
-# things with \ escapes
-#
 # library vars: badvarname_exitval
-# library functions: islegalvarname()
+# library functions: islegalvarname(), do_exit()
 # utilities: printf
 # bashisms: if !, ${!var}
 #
@@ -428,18 +685,18 @@ printvar () {
 #
 # print the contents of an array specified by name
 #
+# for non-array variables, use printvar() instead
+#
 # $1 = the name of the array to print
 # $2 = if not null, print the keys as well as the values (suggested
 #      value: "keys")
 #
-# output format, $2 null:
+# output format, $2 unset or null:
 #    ( 'value1' 'value2' ... )
 # output format, $2 not null:
 #    ( ['key1']='value1' ['key2']='value2' ... )
 #
-# (there is no way in bash to tell the difference between a completely
-# undeclared variable and an array with no elements; both produce '( )'
-# here)
+# unset and empty arrays will both be printed as '( )'
 #
 # note: when capturing output, you MUST use $(), NOT ``; `` does strange
 # things with \ escapes
@@ -448,9 +705,9 @@ printvar () {
 #
 # "local" vars: akey, akeys
 # library vars: badvarname_exitval
-# library functions: islegalvarname(), issafesubscript()
+# library functions: islegalvarname(), issafesubscript(), do_exit()
 # utilities: printf, [
-# bashisms: if !, ${!array[@]} [v3.0]
+# bashisms: if !, arrays, ${!array[@]} [v3.0]
 #
 printarray () {
   if ! islegalvarname "$1"; then
@@ -461,29 +718,21 @@ printarray () {
   eval "akeys=(\"\${!${1}[@]}\")"
 
   printf "%s" "( "
-  if [ "$2" = "" ]; then  # just print values
-    for akey in "${akeys[@]}"; do
-      # probably don't need to test $akey, because it's already been set,
-      # implying that it's legal; but just in case...
-      if ! issafesubscript "$akey"; then
-        printf "%s\n" "Internal Error: illegal subscript name ('$akey') in printarray(); exiting."
-        do_exit "$badvarname_exitval"
-      fi
+  for akey in "${akeys[@]}"; do
+    # $akey has already been used as a subscript, but we're going to be
+    # extra-cautious (paranoid), since we're using eval
+    if ! issafesubscript "$akey"; then
+      printf "%s\n" "Internal Error: illegal subscript name ('$akey'; \$1='$1') in printarray(); exiting."
+      do_exit "$badvarname_exitval"
+    fi
+
+    if [ "$2" = "" ]; then  # just print values
       eval "printf \"%s\" \"'\${${1}[\"$akey\"]}' \""
-    done
-  else  # include keys
-    for akey in "${akeys[@]}"; do
-      # in theory we don't need to test $akey, because it's already been set,
-      # implying that it's legal; but we're going to be more restrictive
-      # (paranoid) than that anyway
-      if ! issafesubscript "$akey"; then
-        printf "%s\n" "Internal Error: illegal subscript name ('$akey') in printarray(); exiting."
-        do_exit "$badvarname_exitval"
-      fi
+    else  # include keys
       eval "printf \"%s\" \"['$akey']='\${${1}[\"$akey\"]}' \""
-    done
-  fi
-  printf "%s\n" ")"
+    fi
+  done
+  printf "%s" ")"
 }
 
 #
@@ -491,13 +740,16 @@ printarray () {
 #
 # $1 = the name of the array to un-sparse
 #
+# note: does not change attributes (such as 'exported') of the array
+#
 # IMPORTANT: only pass arrays whose names are under your control!
 #
 # "local" vars: akey, akeys, unsparsetmp
 # library vars: badvarname_exitval
-# library functions: islegalvarname(), issafesubscript(), copyarray()
+# library functions: islegalvarname(), issafesubscript(), arrayisvoid(),
+#                    copyarray(), do_exit()
 # utilities: printf
-# bashisms: if !, unset, ${!array[@]} [v3.0], array+=() [v3.1]
+# bashisms: if !, unset, arrays, ${!array[@]} [v3.0], array+=() [v3.1]
 #
 unsparsearray () {
   if ! islegalvarname "$1"; then
@@ -505,16 +757,19 @@ unsparsearray () {
     do_exit "$badvarname_exitval"
   fi
 
+  if arrayisvoid "$1"; then
+    return
+  fi
+
   eval "akeys=(\"\${!${1}[@]}\")"
 
   # copy to unsparsetmp array, un-sparsing
   unset unsparsetmp
   for akey in "${akeys[@]}"; do
-    # in theory we don't need to test $akey, because it's already been set,
-    # implying that it's legal; but we're going to be more restrictive
-    # (paranoid) than that anyway
+    # $akey has already been used as a subscript, but we're going to be
+    # extra-cautious (paranoid), since we're using eval
     if ! issafesubscript "$akey"; then
-      printf "%s\n" "Internal Error: illegal subscript name ('$akey') in unsparsearray(); exiting."
+      printf "%s\n" "Internal Error: illegal subscript name ('$akey'; \$1='$1') in unsparsearray(); exiting."
       do_exit "$badvarname_exitval"
     fi
     eval "unsparsetmp+=(\"\${${1}[\"$akey\"]}\")"
@@ -522,6 +777,7 @@ unsparsearray () {
 
   # replace original array
   copyarray unsparsetmp "$1"
+  unset unsparsetemp
 }
 
 

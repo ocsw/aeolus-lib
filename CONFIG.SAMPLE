@@ -838,12 +838,12 @@
 #     case "$1" in
 #       information_schema|performance_schema)
 #         # copyarray() is a useful library function included by the script
-#         copyarray "mysql_dumpoptions" "altopts"  # include regular opts
+#         copyarray "mysql_dumpoptions" "altopts" exact  # incl regular opts
 #         altopts+=(--skip-lock-tables)
 #         return 0
 #         ;;
 #       mysql)
-#         copyarray "mysql_dumpoptions" "altopts"  # include regular opts
+#         copyarray "mysql_dumpoptions" "altopts" exact  # incl regular opts
 #         altopts+=(--skip-extended-insert)
 #         return 0
 #         ;;
