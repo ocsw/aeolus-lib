@@ -563,7 +563,7 @@ internal_exitval="250"
 # global vars: altopts
 # config settings: mysql_dumpoptions
 # library functions: copyarray()
-# bashisms: if !, declare -F, array+=() [v3.1]
+# bashisms: !, declare -F, array+=() [v3.1]
 #
 if ! declare -F mysql_altopts > /dev/null 2>&1; then
   mysql_altopts () {

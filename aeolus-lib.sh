@@ -388,7 +388,7 @@ isset () {
 # library vars: badvarname_exitval
 # library functions: islegalvarname(), do_exit()
 # utilities: printf, [
-# bashisms: declare -p
+# bashisms: !, declare -p
 #
 arrayisunset () {
   # not strictly necessary since bash will throw an error itself,
@@ -569,7 +569,7 @@ arrayisset () {
 # library vars: badvarname_exitval
 # library functions: islegalvarname(), isunset(), do_exit()
 # utilities: printf, [
-# bashisms: if !, unset, ${!var}, printf -v [v3.1]
+# bashisms: !, unset, ${!var}, printf -v [v3.1]
 #
 copyvar () {
   # not strictly necessary since bash will throw an error itself,
@@ -645,7 +645,7 @@ copyvar () {
 # library functions: islegalvarname(), issafesubscript(), arrayisunset(),
 #                    do_exit()
 # utilities: printf, [
-# bashisms: if !, unset, arrays, ${!array[@]} [v3.0]
+# bashisms: !, unset, arrays, ${!array[@]} [v3.0]
 #
 copyarray () {
   if ! islegalvarname "$1"; then
@@ -716,7 +716,7 @@ copyarray () {
 # library vars: badvarname_exitval
 # library functions: islegalvarname(), do_exit()
 # utilities: printf
-# bashisms: if !, ${!var}
+# bashisms: !, ${!var}
 #
 printvar () {
   # not strictly necessary since bash will throw an error itself,
@@ -754,7 +754,7 @@ printvar () {
 # library vars: badvarname_exitval
 # library functions: islegalvarname(), issafesubscript(), do_exit()
 # utilities: printf, [
-# bashisms: if !, arrays, ${!array[@]} [v3.0]
+# bashisms: !, arrays, ${!array[@]} [v3.0]
 #
 printarray () {
   if ! islegalvarname "$1"; then
@@ -796,7 +796,7 @@ printarray () {
 # library functions: islegalvarname(), issafesubscript(), arrayisvoid(),
 #                    copyarray(), do_exit()
 # utilities: printf
-# bashisms: if !, unset, arrays, ${!array[@]} [v3.0], array+=() [v3.1]
+# bashisms: !, unset, arrays, ${!array[@]} [v3.0], array+=() [v3.1]
 #
 unsparsearray () {
   if ! islegalvarname "$1"; then
@@ -2312,7 +2312,7 @@ validrwfile () {
 # "local" vars: vname
 # config functions: (contents of $1)
 # library functions: throwstartuperr()
-# bashisms: if !, declare -F
+# bashisms: !, declare -F
 #
 validfunction () {
   vname="$1"
