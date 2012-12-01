@@ -11,6 +11,3 @@ set -x for commands?  but remember retvals
 warn, blank non-existent
 
 arrayisnotallnull
-
-copyvar uses
-copyarray uses

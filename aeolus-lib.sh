@@ -195,6 +195,13 @@ issafesubscript () {
 # otherwise, use:
 #   [ "${varname+X}" = "" ]
 #
+# never strictly necessary if you're willing to be bash-specific;
+# if the variable name isn't known until run-time, use:
+#   ! declare -p "$name" > /dev/null 2>&1
+# where $name contains the name of the variable to check
+# (but still, use of this function will make your code cleaner and more
+# portable)
+#
 # library vars: badvarname_exitval
 # library functions: islegalvarname(), do_exit()
 # utilities: printf, [
@@ -223,6 +230,13 @@ isunset () {
 # or
 #   [ "${varname+X}" = "X" ] && [ "$varname" = "" ]
 #
+# never strictly necessary if you're willing to be bash-specific;
+# if the variable name isn't known until run-time, use:
+#   declare -p "$name" > /dev/null 2>&1 && [ -z "$!name" ]
+# where $name contains the name of the variable to check
+# (but still, use of this function will make your code cleaner and more
+# portable)
+#
 # library vars: badvarname_exitval
 # library functions: islegalvarname(), do_exit()
 # utilities: printf, [
@@ -249,6 +263,13 @@ isnull () {
 # only needed if the variable name isn't known until run-time;
 # otherwise, use:
 #   [ "${varname:+X}" = "" ]
+#
+# never strictly necessary if you're willing to be bash-specific;
+# if the variable name isn't known until run-time, use:
+#   [ -z "$!name" ]
+# where $name contains the name of the variable to check
+# (but still, use of this function will make your code clearer and more
+# portable)
 #
 # library vars: badvarname_exitval
 # library functions: islegalvarname(), do_exit()
@@ -277,6 +298,13 @@ isvoid () {
 # otherwise, use:
 #   [ "${varname:+X}" = "X" ]
 #
+# never strictly necessary if you're willing to be bash-specific;
+# if the variable name isn't known until run-time, use:
+#   [ -n "$!name" ]
+# where $name contains the name of the variable to check
+# (but still, use of this function will make your code clearer and more
+# portable)
+#
 # library vars: badvarname_exitval
 # library functions: islegalvarname(), do_exit()
 # utilities: printf, [
@@ -303,6 +331,13 @@ isnotvoid () {
 # only needed if the variable name isn't known until run-time;
 # otherwise, use:
 #   [ "${varname+X}" = "X" ]
+#
+# never strictly necessary if you're willing to be bash-specific;
+# if the variable name isn't known until run-time, use:
+#   declare -p "$name" > /dev/null 2>&1
+# where $name contains the name of the variable to check
+# (but still, use of this function will make your code cleaner and more
+# portable)
 #
 # library vars: badvarname_exitval
 # library functions: islegalvarname(), do_exit()
@@ -340,12 +375,15 @@ isset () {
 #
 # for non-array variables, use isunset() instead
 #
-# only needed if the name of the array isn't known until run-time;
-# otherwise, use:
-#   declare -p "arrayname" > /dev/null 2>&1
-#   [ "$?" = "1" ]
-#
 # $1 = the name of the array to check
+#
+# never strictly necessary; use:
+#   ! declare -p "arrayname" > /dev/null 2>&1
+# or if the name of the array isn't known until run-time:
+#   ! declare -p "$name" > /dev/null 2>&1
+# where $name contains the name of the variable to check
+# (but still, use of this function will make your code cleaner, and will
+# help centralize the use of bashisms to make porting easier)
 #
 # library vars: badvarname_exitval
 # library functions: islegalvarname(), do_exit()
@@ -356,8 +394,7 @@ arrayisunset () {
   # not strictly necessary since bash will throw an error itself,
   # but this standardizes the errors and the exit values
   if islegalvarname "$1"; then
-    declare -p "$1" > /dev/null 2>&1
-    [ "$?" = "1" ]
+    ! declare -p "$1" > /dev/null 2>&1
   else
     printf "%s\n" "Internal Error: illegal variable name ('$1') in arrayisunset(); exiting."
     do_exit "$badvarname_exitval"
@@ -376,8 +413,7 @@ arrayisunset () {
 #
 # only needed if the name of the array isn't known until run-time;
 # otherwise, use:
-#   declare -p "arrayname" > /dev/null 2>&1
-#   [ "$?" = "0" ] && [ "${#arrayname[@]}" = "0" ]
+#   declare -p "arrayname" > /dev/null 2>&1 && [ "${#arrayname[@]}" = "0" ]
 #
 # library vars: badvarname_exitval
 # library functions: islegalvarname(), do_exit()
@@ -386,8 +422,7 @@ arrayisunset () {
 #
 arrayisempty () {
   if islegalvarname "$1"; then
-    declare -p "$1" > /dev/null 2>&1
-    [ "$?" = "0" ] && eval "[ \"\${#${1}[@]}\" = \"0\" ]"
+    declare -p "$1" > /dev/null 2>&1 && eval "[ \"\${#${1}[@]}\" = \"0\" ]"
   else
     printf "%s\n" "Internal Error: illegal variable name ('$1') in arrayisempty(); exiting."
     do_exit "$badvarname_exitval"
@@ -457,12 +492,19 @@ arrayisnotvoid () {
 #
 # for non-array variables, use isset() instead
 #
+# $1 = the name of the array to check
+#
 # only needed if the name of the array isn't known until run-time;
 # otherwise, use:
 #   declare -p "arrayname" > /dev/null 2>&1
-#   [ "$?" = "0" ]
 #
-# $1 = the name of the array to check
+# never strictly necessary; use:
+#   declare -p "arrayname" > /dev/null 2>&1
+# or if the name of the array isn't known until run-time:
+#   declare -p "$name" > /dev/null 2>&1
+# where $name contains the name of the variable to check
+# (but still, use of this function will make your code cleaner, and will
+# help centralize the use of bashisms to make porting easier)
 #
 # library vars: badvarname_exitval
 # library functions: islegalvarname(), do_exit()
@@ -474,7 +516,6 @@ arrayisset () {
   # but this standardizes the errors and the exit values
   if islegalvarname "$1"; then
     declare -p "$1" > /dev/null 2>&1
-    [ "$?" = "0" ]
   else
     printf "%s\n" "Internal Error: illegal variable name ('$1') in arrayisset(); exiting."
     do_exit "$badvarname_exitval"
@@ -521,8 +562,9 @@ arrayisset () {
 # the extra evaluation during the function call makes the first example
 # work; alternatively, you can set a temp variable to "q_$foo" and then do
 #   printf -v "bar" "%s" "${!temp}"  [bash v3.1]
-# but using this function is neater, especially if you have many variables
-# to copy
+# but using this function is cleaner, especially if you have many variables
+# to copy; it also has the $3 option, and helps centralize the use of
+# bashisms to make porting easier
 #
 # library vars: badvarname_exitval
 # library functions: islegalvarname(), isunset(), do_exit()
@@ -594,6 +636,10 @@ copyvar () {
 # where dest contains the name of the destination array,
 # and replace 'unset "destname"' with 'unset "$dest"'
 #
+# but still, using this function is cleaner, especially if you have many
+# arrays to copy; it also has the $3 option, and helps centralize the use of
+# bashisms to make porting easier
+#
 # "local" vars: skey, skeys
 # library vars: badvarname_exitval
 # library functions: islegalvarname(), issafesubscript(), arrayisunset(),
@@ -663,8 +709,9 @@ copyarray () {
 # the extra evaluation during the function call makes the first example
 # work; alternatively, you can set a temp variable to "q_$foo" and then do
 #   printf "%s" "${!temp}"  [bash only]
-# but using this function is neater, especially if you have many variables
-# to print
+# but using this function is cleaner, especially if you have many variables
+# to print; it also helps centralize the use of bashisms to make porting
+# easier
 #
 # library vars: badvarname_exitval
 # library functions: islegalvarname(), do_exit()

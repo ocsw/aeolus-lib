@@ -982,9 +982,8 @@ printstatus () {
 #
 # global vars: (setting _defaults)
 # config settings: (most of them)
-# library functions: copyarray()
+# library functions: arrayisunset(), copyarray()
 # utilities: [
-# bashisms: declare -p
 #
 applydefaults () {
   # housekeeping
@@ -1071,8 +1070,8 @@ applydefaults () {
   [ "${mysql_pwfile+X}" = "" ] && mysql_pwfile="$mysql_pwfile_default"
   [ "$mysql_dbmode" = "" ] && mysql_dbmode="$mysql_dbmode_default"
   [ "$mysql_splitdbs" = "" ] && mysql_splitdbs="$mysql_splitdbs_default"
-  declare -p "mysql_dumpoptions" > /dev/null 2>&1 || \
-      copyarray "mysql_dumpoptions_default" "mysql_dumpoptions" exact
+  arrayisunset "mysql_dumpoptions" && \
+      copyarray "mysql_dumpoptions_default" "mysql_dumpoptions"
   [ "$mysql_usealtopts" = "" ] && mysql_usealtopts="$mysql_usealtopts_default"
   [ "${mysql_fileprefix+X}" = "" ] && mysql_fileprefix="$mysql_fileprefix_default"
   [ "${mysql_subdirprefix+X}" = "" ] && mysql_subdirprefix="$mysql_subdirprefix_default"
@@ -1081,10 +1080,10 @@ applydefaults () {
   [ "$postgres_connectdb" = "" ] && postgres_connectdb="$postgres_connectdb_default"
   [ "$postgres_dbmode" = "" ] && postgres_dbmode="$postgres_dbmode_default"
   [ "$postgres_splitdbs" = "" ] && postgres_splitdbs="$postgres_splitdbs_default"
-  declare -p "postgres_dumponeoptions" > /dev/null 2>&1 || \
-      copyarray "postgres_dumponeoptions_default" "postgres_dumponeoptions" exact
-  declare -p "postgres_dumpalloptions" > /dev/null 2>&1 || \
-      copyarray "postgres_dumpalloptions_default" "postgres_dumpalloptions" exact
+  arrayisunset "postgres_dumponeoptions" && \
+      copyarray "postgres_dumponeoptions_default" "postgres_dumponeoptions"
+  arrayisunset "postgres_dumpalloptions" && \
+      copyarray "postgres_dumpalloptions_default" "postgres_dumpalloptions"
   [ "$postgres_usealtopts" = "" ] && postgres_usealtopts="$postgres_usealtopts_default"
   [ "${postgres_fileprefix+X}" = "" ] && postgres_fileprefix="$postgres_fileprefix_default"
   [ "${postgres_subdirprefix+X}" = "" ] && postgres_subdirprefix="$postgres_subdirprefix_default"
