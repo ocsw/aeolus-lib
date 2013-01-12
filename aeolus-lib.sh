@@ -6,6 +6,10 @@
 # see ae_license() for license info
 #######################################################################
 
+# all variables and functions can be skipped by setting the corresponding
+# skip_* variable; this allows the library to be overridden easily,
+# even with definitions made before it's sourced
+
 # TODO:
 # prune dated files by number
 #
@@ -63,11 +67,14 @@ esac
 
 # a newline character
 # see section 8 of http://www.dwheeler.com/essays/filenames-in-shell.html
-newline=$(printf "\nX")
-newline="${newline%X}"
+[ "${skip_newline+X}" = "" ] && {
+     newline=$(printf "\nX")
+     newline="${newline%X}"
+}
 
 # a tab character
-tab='	'
+[ "${skip_tab+X}" = "" ] && \
+     tab='	'
 
 
 #####################
@@ -79,7 +86,8 @@ tab='	'
 #
 
 # test for this if you need to know if the library has been sourced yet
-aeolus_lib_sourced="yes"
+[ "${skip_aeolus_lib_sourced+X}" = "" ] && \
+     aeolus_lib_sourced="yes"
 
 
 #
@@ -87,25 +95,36 @@ aeolus_lib_sourced="yes"
 #
 
 # exit values
-[ "${no_error_exitval+X}" = "" ] && no_error_exitval="0"
-[ "${startup_exitval+X}" = "" ] && startup_exitval="10"
-[ "${lockfile_exitval+X}" = "" ] && lockfile_exitval="11"
-[ "${sshtunnel_exitval+X}" = "" ] && sshtunnel_exitval="20"
-[ "${badvarname_exitval+X}" = "" ] && badvarname_exitval="240"
-[ "${nodelim_exitval+X}" = "" ] && nodelim_exitval="241"
+[ "${skip_no_error_exitval+X}" = "" ] && \
+     [ "${no_error_exitval+X}" = "" ] && no_error_exitval="0"
+[ "${skip_startup_exitval+X}" = "" ] && \
+     [ "${startup_exitval+X}" = "" ] && startup_exitval="10"
+[ "${skip_lockfile_exitval+X}" = "" ] && \
+     [ "${lockfile_exitval+X}" = "" ] && lockfile_exitval="11"
+[ "${skip_sshtunnel_exitval+X}" = "" ] && \
+     [ "${sshtunnel_exitval+X}" = "" ] && sshtunnel_exitval="20"
+[ "${skip_badvarname_exitval+X}" = "" ] && \
+     [ "${badvarname_exitval+X}" = "" ] && badvarname_exitval="240"
+[ "${skip_nodelim_exitval+X}" = "" ] && \
+     [ "${nodelim_exitval+X}" = "" ] && nodelim_exitval="241"
 
 # on-error flags
-[ "${on_tunerr+X}" = "" ] && on_tunerr="exit"  # see opensshtunnel()
+[ "${skip_on_tunerr+X}" = "" ] && \
+     [ "${on_tunerr+X}" = "" ] && on_tunerr="exit"  # see opensshtunnel()
 
 # names of tempfiles stored in the lockfile directory
 #
 # (note: names are in past tense partly because some shells have issues
 # with functions having the same names as variables)
 #
-[ "${lfalertssilenced+X}" = "" ] && lfalertssilenced="lfalertssilenced"
-[ "${scriptdisabled+X}" = "" ] && scriptdisabled="scriptdisabled"
-[ "${timetemp+X}" = "" ] && timetemp="timetemp"
-[ "${logfifo+X}" = "" ] && logfifo="logfifo"
+[ "${skip_lfalertssilenced+X}" = "" ] && \
+     [ "${lfalertssilenced+X}" = "" ] && lfalertssilenced="lfalertssilenced"
+[ "${skip_scriptdisabled+X}" = "" ] && \
+     [ "${scriptdisabled+X}" = "" ] && scriptdisabled="scriptdisabled"
+[ "${skip_timetemp+X}" = "" ] && \
+     [ "${timetemp+X}" = "" ] && timetemp="timetemp"
+[ "${skip_logfifo+X}" = "" ] && \
+     [ "${logfifo+X}" = "" ] && logfifo="logfifo"
 
 
 ############################################################################
@@ -127,6 +146,7 @@ aeolus_lib_sourced="yes"
 #
 # utilities: [
 #
+[ "${skip_islegalvarname+X}" = "" ] && \
 islegalvarname () {
   if [ "$1" = "" ]; then
     return 1  # false
@@ -151,6 +171,7 @@ islegalvarname () {
 #
 # returns 0/1 (true/false)
 #
+[ "${skip_issafesubscript+X}" = "" ] && \
 issafesubscript () {
   if [ "$1" = "" ]; then
     return 1  # false
@@ -206,6 +227,7 @@ issafesubscript () {
 # library functions: islegalvarname(), do_exit()
 # utilities: printf, [
 #
+[ "${skip_isunset+X}" = "" ] && \
 isunset () {
   if islegalvarname "$1"; then
     eval "[ \"\${${1}+X}\" = \"\" ]"
@@ -241,6 +263,7 @@ isunset () {
 # library functions: islegalvarname(), do_exit()
 # utilities: printf, [
 #
+[ "${skip_isnull+X}" = "" ] && \
 isnull () {
   if islegalvarname "$1"; then
     eval "[ \"\${${1}+X}\" = \"X\" ] && [ \"\$$1\" = \"\" ]"
@@ -275,6 +298,7 @@ isnull () {
 # library functions: islegalvarname(), do_exit()
 # utilities: printf, [
 #
+[ "${skip_isvoid+X}" = "" ] && \
 isvoid () {
   if islegalvarname "$1"; then
     eval "[ \"\${${1}:+X}\" = \"\" ]"
@@ -309,6 +333,7 @@ isvoid () {
 # library functions: islegalvarname(), do_exit()
 # utilities: printf, [
 #
+[ "${skip_isnotvoid+X}" = "" ] && \
 isnotvoid () {
   if islegalvarname "$1"; then
     eval "[ \"\${${1}:+X}\" = \"X\" ]"
@@ -343,6 +368,7 @@ isnotvoid () {
 # library functions: islegalvarname(), do_exit()
 # utilities: printf, [
 #
+[ "${skip_isset+X}" = "" ] && \
 isset () {
   if islegalvarname "$1"; then
     eval "[ \"\${${1}+X}\" = \"X\" ]"
@@ -390,6 +416,7 @@ isset () {
 # utilities: printf, [
 # bashisms: !, declare -p
 #
+[ "${skip_arrayisunset+X}" = "" ] && \
 arrayisunset () {
   # not strictly necessary since bash will throw an error itself,
   # but this standardizes the errors and the exit values
@@ -420,6 +447,7 @@ arrayisunset () {
 # utilities: printf, [
 # bashisms: declare -p, arrays
 #
+[ "${skip_arrayisempty+X}" = "" ] && \
 arrayisempty () {
   if islegalvarname "$1"; then
     declare -p "$1" > /dev/null 2>&1 && eval "[ \"\${#${1}[@]}\" = \"0\" ]"
@@ -448,6 +476,7 @@ arrayisempty () {
 # utilities: printf, [
 # bashisms: arrays
 #
+[ "${skip_arrayisvoid+X}" = "" ] && \
 arrayisvoid () {
   if islegalvarname "$1"; then
     eval "[ \"\${#${1}[@]}\" = \"0\" ]"
@@ -477,6 +506,7 @@ arrayisvoid () {
 # utilities: printf, [
 # bashisms: arrays
 #
+[ "${skip_arrayisnotvoid+X}" = "" ] && \
 arrayisnotvoid () {
   if islegalvarname "$1"; then
     eval "[ \"\${#${1}[@]}\" != \"0\" ]"
@@ -507,6 +537,7 @@ arrayisnotvoid () {
 # utilities: printf, [
 # bashisms: declare -p
 #
+[ "${skip_arrayisset+X}" = "" ] && \
 arrayisset () {
   # not strictly necessary since bash will throw an error itself,
   # but this standardizes the errors and the exit values
@@ -567,6 +598,7 @@ arrayisset () {
 # utilities: printf, [
 # bashisms: !, unset, ${!var}, printf -v [v3.1]
 #
+[ "${skip_copyvar+X}" = "" ] && \
 copyvar () {
   # not strictly necessary since bash will throw an error itself,
   # but this standardizes the errors and the exit values
@@ -643,6 +675,7 @@ copyvar () {
 # utilities: printf, [
 # bashisms: !, unset, arrays, ${!array[@]} [v3.0]
 #
+[ "${skip_copyarray+X}" = "" ] && \
 copyarray () {
   if ! islegalvarname "$1"; then
     printf "%s\n" "Internal Error: illegal variable name ('$1') in copyarray(); exiting."
@@ -714,6 +747,7 @@ copyarray () {
 # utilities: printf
 # bashisms: !, ${!var}
 #
+[ "${skip_printvar+X}" = "" ] && \
 printvar () {
   # not strictly necessary since bash will throw an error itself,
   # but this standardizes the errors and the exit values
@@ -752,6 +786,7 @@ printvar () {
 # utilities: printf, [
 # bashisms: !, arrays, ${!array[@]} [v3.0]
 #
+[ "${skip_printarray+X}" = "" ] && \
 printarray () {
   if ! islegalvarname "$1"; then
     printf "%s\n" "Internal Error: illegal variable name ('$1') in printarray(); exiting."
@@ -794,6 +829,7 @@ printarray () {
 # utilities: printf
 # bashisms: !, unset, arrays, ${!array[@]} [v3.0], array+=() [v3.1]
 #
+[ "${skip_unsparsearray+X}" = "" ] && \
 unsparsearray () {
   if ! islegalvarname "$1"; then
     printf "%s\n" "Internal Error: illegal variable name ('$1') in unsparsearray(); exiting."
@@ -833,6 +869,7 @@ unsparsearray () {
 #
 # bashisms: !, declare -F
 #
+[ "${skip_funcisnotdefined+X}" = "" ] && \
 funcisnotdefined () {
   ! declare -F "$1" > /dev/null 2>&1
 }
@@ -847,6 +884,7 @@ funcisnotdefined () {
 #
 # bashisms: declare -F
 #
+[ "${skip_funcisdefined+X}" = "" ] && \
 funcisdefined () {
   declare -F "$1" > /dev/null 2>&1
 }
@@ -863,6 +901,7 @@ funcisdefined () {
 #
 # utilities: printf
 #
+[ "${skip_clarifyargs+X}" = "" ] && \
 clarifyargs () {
   printf "%s:" "$#"
   for arg in ${1+"$@"}; do
@@ -878,6 +917,7 @@ clarifyargs () {
 # global vars: externalcmds
 # utilities: printf, echo
 #
+[ "${skip_checkextcmds+X}" = "" ] && \
 checkextcmds () {
   # get column width
   cmdlen=0
@@ -922,6 +962,7 @@ checkextcmds () {
 # global vars: exitval
 # utilities: [
 #
+[ "${skip_setexitval+X}" = "" ] && \
 setexitval () {
   if [ "${exitval:+X}" = "" ]; then
     exitval="$1"
@@ -943,6 +984,7 @@ setexitval () {
 # library functions: setexitval()
 # utilities: [
 #
+[ "${skip_do_exit+X}" = "" ] && \
 do_exit () {
   if [ "$cleanup_on_exit" != "" ]; then
     do_exit_cleanup
@@ -961,6 +1003,7 @@ do_exit () {
 # library functions: do_exit()
 # utilities: cat
 #
+[ "${skip_throwerr+X}" = "" ] && \
 throwerr () {
   cat <<-EOF 1>&2
 
@@ -985,6 +1028,7 @@ throwerr () {
 # utilities: printf, date, [
 # files: $statuslog
 #
+[ "${skip_logstatlog+X}" = "" ] && \
 logstatlog () {
   if [ "$statuslog" != "" ]; then
     # note: use quotes to preserve spacing, including in the output of date
@@ -1000,6 +1044,7 @@ logstatlog () {
 # library functions: logstatlog()
 # utilities: printf, [
 #
+[ "${skip_logprint+X}" = "" ] && \
 logprint () {
   # use "$1" to preserve spacing
 
@@ -1018,6 +1063,7 @@ logprint () {
 # library functions: logstatlog()
 # utilities: printf, [
 #
+[ "${skip_logprinterr+X}" = "" ] && \
 logprinterr () {
   # use "$1" to preserve spacing
 
@@ -1042,6 +1088,7 @@ logprinterr () {
 #
 # utilities: logger
 #
+[ "${skip_do_syslog+X}" = "" ] && \
 do_syslog () {
   logger -i ${2:+-p "$2"} ${3:+-t "$3"} "$1"
 }
@@ -1057,6 +1104,7 @@ do_syslog () {
 # library functions: do_syslog(), logprint()
 # utilities: [
 #
+[ "${skip_logstatus+X}" = "" ] && \
 logstatus () {
   # use "$1" to preserve spacing
 
@@ -1080,6 +1128,7 @@ logstatus () {
 # library functions: do_syslog(), logprint()
 # utilities: [
 #
+[ "${skip_logalert+X}" = "" ] && \
 logalert () {
   # use "$1" to preserve spacing
 
@@ -1106,6 +1155,7 @@ logalert () {
 # config settings: quiet
 # library functions: logstatus()
 #
+[ "${skip_logstatusquiet+X}" = "" ] && \
 logstatusquiet () {
   savequiet="$quiet"
   quiet="yes"
@@ -1127,6 +1177,7 @@ logstatusquiet () {
 # config settings: quiet
 # library functions: logstatus()
 #
+[ "${skip_logalertquiet+X}" = "" ] && \
 logalertquiet () {
   savequiet="$quiet"
   quiet="yes"
@@ -1150,6 +1201,7 @@ logalertquiet () {
 # library functions: logalert()
 # utilities: mailx, [
 #
+[ "${skip_sendalert+X}" = "" ] && \
 sendalert () {
   if [ "$suppressemail" != "yes" ]; then
     mailx -s "$subject" $mailto <<-EOF
@@ -1188,6 +1240,7 @@ sendalert () {
 # files: $lockfile/$logfifo, $outputlog, (previous outputlogs)
 # FDs: 3
 #
+[ "${skip_startoutputlog+X}" = "" ] && \
 startoutputlog () {
   # get the full filename, including datestring if applicable
   outputlog_filename="$outputlog"
@@ -1250,6 +1303,7 @@ startoutputlog () {
 # files: $lockfile/$logfifo
 # FDs: 3
 #
+[ "${skip_stopoutputlog+X}" = "" ] && \
 stopoutputlog () {
   exec 3>&-  # close the fd, this should kill the reader
   rm -f "$lockfile/$logfifo"
@@ -1284,6 +1338,7 @@ stopoutputlog () {
 # library functions: escregex()
 # utilities: find, grep, date, expr, echo, awk, gawk, touch, [
 #
+[ "${skip_newerthan+X}" = "" ] && \
 newerthan () {
   case "$timecomptype" in
     find)
@@ -1334,6 +1389,7 @@ newerthan () {
 # config settings: filecomptype
 # utilities: cmp, diff
 #
+[ "${skip_filecomp+X}" = "" ] && \
 filecomp () {
   # don't redirect stderr, so we can see any actual errors
   case "$filecomptype" in
@@ -1355,6 +1411,7 @@ filecomp () {
 #
 # utilities: ls, echo, [
 #
+[ "${skip_getfilemetadata+X}" = "" ] && \
 getfilemetadata () {
   # -e isn't portable, and we're really only dealing with files and dirs
   # (or links to them, which [ handles for us)
@@ -1380,6 +1437,7 @@ getfilemetadata () {
 # "local" vars: parentdir
 # utilities: printf, echo, sed, grep, [
 #
+[ "${skip_getparentdir+X}" = "" ] && \
 getparentdir () {
   # remove trailing /'s
   parentdir=$(printf "%s\n" "$1" | sed 's|/*$||')
@@ -1468,6 +1526,7 @@ getparentdir () {
 #
 # utilities: printf, sed
 #
+[ "${skip_escglob+X}" = "" ] && \
 escglob () {
   # note: \ must be first
   printf "%s\n" "$1" | sed \
@@ -1497,6 +1556,7 @@ escglob () {
 #
 # utilities: printf, sed
 #
+[ "${skip_escregex+X}" = "" ] && \
 escregex () {
   # note: \ must be first
   printf "%s\n" "$1" | sed \
@@ -1525,6 +1585,7 @@ escregex () {
 #
 # utilities: printf, sed
 #
+[ "${skip_escereg+X}" = "" ] && \
 escereg () {
   # note: \ must be first
   printf "%s\n" "$1" | sed \
@@ -1555,6 +1616,7 @@ escereg () {
 #
 # utilities: printf, sed
 #
+[ "${skip_escsedrepl+X}" = "" ] && \
 escsedrepl () {
   # note: \ must be first
   printf "%s\n" "$1" | sed \
@@ -1585,6 +1647,7 @@ escsedrepl () {
 # library vars: tab
 # utilities: printf, tr, [
 #
+[ "${skip_getseddelim+X}" = "" ] && \
 getseddelim () {
   seddelim=""
 
@@ -1625,6 +1688,7 @@ getseddelim () {
 # library functions: getseddelim(), escregex(), escsedrepl()
 # utilities: echo, printf, [
 #
+[ "${skip_escsedsubst+X}" = "" ] && \
 escsedsubst () {
   seddelim=$(getseddelim "$1$2")
   if [ "$seddelim" = "" ]; then
@@ -1648,6 +1712,7 @@ escsedsubst () {
 #
 # utilities: cat
 #
+[ "${skip_ae_license+X}" = "" ] && \
 ae_license () {
   cat <<EOF 1>&2
 
@@ -1693,6 +1758,7 @@ EOF
 # library functions: arrayisset(), copyarray(), isset()
 # bashisms: ${!var}, printf -v [v3.1]
 #
+[ "${skip_saveclset+X}" = "" ] && \
 saveclset () {
   # so we know if anything was saved, when we want to use logclconfig()
   clsetsaved="no"
@@ -1731,6 +1797,7 @@ saveclset () {
 # user-defined functions: configsettingtype()
 # library functions: arrayisset(), copyarray(), isset(), copyvar()
 #
+[ "${skip_restoreclset+X}" = "" ] && \
 restoreclset () {
   for setting in $configsettings; do
     case "$(configsettingtype "$setting")" in
@@ -1768,6 +1835,7 @@ restoreclset () {
 #                    printvar()
 # utilities: pwd, [
 #
+[ "${skip_logclconfig+X}" = "" ] && \
 logclconfig () {
   # $(pwd) is more portable than $PWD
   if [ "$noconfigfile" = "yes" ]; then
@@ -1817,6 +1885,7 @@ logclconfig () {
 # utilities: printf
 # bashisms: ${!var}
 #
+[ "${skip_printsettings+X}" = "" ] && \
 printsettings () {
   for setting in $configsettings; do
     case "$(configsettingtype "$setting")" in
@@ -1845,6 +1914,7 @@ printsettings () {
 # library functions: printsettings()
 # utilities: cat, pwd, [
 #
+[ "${skip_printconfig+X}" = "" ] && \
 printconfig () {
   if [ "$noconfigfile" = "yes" ]; then
     cfgfilestring="(none)"
@@ -1887,6 +1957,7 @@ printconfig () {
 # utilities: printf, [
 # FDs: 4
 #
+[ "${skip_createblankconfig+X}" = "" ] && \
 createblankconfig () {
   if [ "$noconfigfile" = "no" ] && [ "$configfile" != "" ]; then
     if [ -f "$configfile" ]; then
@@ -1933,6 +2004,7 @@ createblankconfig () {
 # library vars: startup_exitval
 # library functions: throwerr()
 #
+[ "${skip_throwstartuperr+X}" = "" ] && \
 throwstartuperr () {
   throwerr "$1" "$startup_exitval"
 }
@@ -1948,6 +2020,7 @@ throwstartuperr () {
 # library vars: newline
 # library functions: throwstartuperr()
 #
+[ "${skip_throwusageerr+X}" = "" ] && \
 throwusageerr () {
   throwstartuperr "$1${newline}${newline}Run '$scriptname --help' for more information."
 }
@@ -1962,6 +2035,7 @@ throwusageerr () {
 # library functions: throwstartuperr()
 # bashisms: ${!var}
 #
+[ "${skip_throwsettingerr+X}" = "" ] && \
 throwsettingerr () {
   vname="$1"
   vval="${!vname}"
@@ -1980,6 +2054,7 @@ throwsettingerr () {
 # utilities: [
 # bashisms: ${!var}
 #
+[ "${skip_validnoblank+X}" = "" ] && \
 validnoblank () {
   vname="$1"
   vval="${!vname}"
@@ -2001,6 +2076,7 @@ validnoblank () {
 # utilities: [
 # bashisms: arrays
 #
+[ "${skip_validnoblankarr+X}" = "" ] && \
 validnoblankarr () {
   aname="$1"
   copyarray "$aname" "arrcopy"
@@ -2028,6 +2104,7 @@ validnoblankarr () {
 # utilities: [
 # bashisms: ${!var}
 #
+[ "${skip_validnotbothblank+X}" = "" ] && \
 validnotbothblank () {
   vname1="$1"
   vname2="$2"
@@ -2052,6 +2129,7 @@ validnotbothblank () {
 # utilities: printf, grep, [
 # bashisms: ${!var}
 #
+[ "${skip_validnum+X}" = "" ] && \
 validnum () {
   vname="$1"
   vval="${!vname}"
@@ -2082,6 +2160,7 @@ validnum () {
 # utilities: printf, tr, [
 # bashisms: ${!var}
 #
+[ "${skip_validnochar+X}" = "" ] && \
 validnochar () {
   vname="$1"
   vval="${!vname}"
@@ -2123,6 +2202,7 @@ validnochar () {
 # utilities: [
 # bashisms: ${!var}
 #
+[ "${skip_validlist+X}" = "" ] && \
 validlist () {
   vname="$1"
   vval="${!vname}"
@@ -2157,6 +2237,7 @@ validlist () {
 # utilities: [
 # bashisms: ${!var}
 #
+[ "${skip_validrwxdir+X}" = "" ] && \
 validrwxdir () {
   vname="$1"
   vval="${!vname}"
@@ -2205,6 +2286,7 @@ validrwxdir () {
 # utilities: ls, [
 # bashisms: ${!var}
 #
+[ "${skip_validcreate+X}" = "" ] && \
 validcreate () {
   vname="$1"
   vval="${!vname}"
@@ -2277,6 +2359,7 @@ validcreate () {
 # utilities: [
 # bashisms: ${!var}
 #
+[ "${skip_validreadfile+X}" = "" ] && \
 validreadfile () {
   vname="$1"
   vval="${!vname}"
@@ -2316,6 +2399,7 @@ validreadfile () {
 # utilities: [
 # bashisms: ${!var}
 #
+[ "${skip_validrwfile+X}" = "" ] && \
 validrwfile () {
   vname="$1"
   vval="${!vname}"
@@ -2336,6 +2420,7 @@ validrwfile () {
 # config functions: (contents of $1)
 # library functions: funcisnotdefined(), throwstartuperr()
 #
+[ "${skip_validfunction+X}" = "" ] && \
 validfunction () {
   if funcisnotdefined "$1"; then
     throwstartuperr "Error: $1 function is not defined; exiting."
@@ -2358,6 +2443,7 @@ validfunction () {
 # utilities: [
 # bashisms: unset
 #
+[ "${skip_warnbogusconf+X}" = "" ] && \
 warnbogusconf () {
   for bogus in $bogusconfig; do
     if { \
@@ -2398,6 +2484,7 @@ warnbogusconf () {
 #                    warnbogusconf()
 # utilities: printf, grep, [
 #
+[ "${skip_do_config+X}" = "" ] && \
 do_config () {
   # save variables set on the command line
   saveclset
@@ -2461,6 +2548,7 @@ do_config () {
 # files: $startedfile, $lockfile, $alertfile, $lockfile/$lfalertssilenced,
 #        $lockfile/$scriptdisabled, $lockfile/timetemp
 #
+[ "${skip_checkstatus+X}" = "" ] && \
 checkstatus () {
   if [ "$runevery" != "0" ]; then
     # has it been long enough since the script was last started
@@ -2563,6 +2651,7 @@ checkstatus () {
 # files: $startedfile
 # FDs: 3
 #
+[ "${skip_do_start+X}" = "" ] && \
 do_start () {
   logstatus "starting $1"
   touch "$startedfile"
@@ -2581,6 +2670,7 @@ do_start () {
 # utilities: printf, date
 # FDs: 3
 #
+[ "${skip_do_finish+X}" = "" ] && \
 do_finish () {
   logstatus "$1 finished"
   printf "%s\n" "$1 finished $(date)" >&3
@@ -2602,6 +2692,7 @@ do_finish () {
 # utilities: touch, echo, [
 # files: $lockfile, $lockfile/$lfalertssilenced
 #
+[ "${skip_silencelfalerts+X}" = "" ] && \
 silencelfalerts () {
   echo
   if [ ! -d "$lockfile" ]; then  # -e isn't portable
@@ -2635,6 +2726,7 @@ silencelfalerts () {
 # utilities: rm, echo, [
 # files: $lockfile/$lfalertssilenced
 #
+[ "${skip_unsilencelfalerts+X}" = "" ] && \
 unsilencelfalerts () {
   echo
   if [ ! -f "$lockfile/$lfalertssilenced" ]; then  # -e isn't portable
@@ -2667,6 +2759,7 @@ unsilencelfalerts () {
 # utilities: mkdir, touch, echo, printf, [
 # files: $lockfile, $lockfile/scriptdisabled
 #
+[ "${skip_disablescript+X}" = "" ] && \
 disablescript () {
   echo
   if [ -f "$lockfile/$scriptdisabled" ]; then  # -e isn't portable
@@ -2705,6 +2798,7 @@ disablescript () {
 # utilities: rm, echo, printf, [
 # files: $lockfile/$scriptdisabled
 #
+[ "${skip_enablescript+X}" = "" ] && \
 enablescript () {
   echo
   if [ ! -f "$lockfile/$scriptdisabled" ]; then  # -e isn't portable
@@ -2739,6 +2833,7 @@ enablescript () {
 # utilities: rm, echo, printf, [
 # files: $lockfile
 #
+[ "${skip_clearlock+X}" = "" ] && \
 clearlock () {
   echo
   if [ ! -d "$lockfile" ]; then  # -e isn't portable
@@ -2795,6 +2890,7 @@ clearlock () {
 #                    do_exit()
 # utilities: printf, grep, sed, expr, mv, [
 #
+[ "${skip_rotatenumfiles+X}" = "" ] && \
 rotatenumfiles () {
   prefix="$1"
   sep="$2"
@@ -2930,6 +3026,7 @@ rotatenumfiles () {
 # library functions: escregex(), getseddelim(), sendalert(), do_exit()
 # utilities: printf, grep, sed, rm, find, [
 #
+[ "${skip_prunenumfiles+X}" = "" ] && \
 prunenumfiles () {
   prefix="$1"
   sep="$2"
@@ -3018,6 +3115,7 @@ prunenumfiles () {
 # library functions: escregex()
 # utilities: printf, grep, find, rm, [
 #
+[ "${skip_prunedatefiles+X}" = "" ] && \
 prunedatefiles () {
   prefix="$1"
   sep="$2"
@@ -3078,6 +3176,7 @@ prunedatefiles () {
 #
 # library functions: prunenumfiles(), prunedatefiles()
 #
+[ "${skip_prunefiles+X}" = "" ] && \
 prunefiles () {
   case "$1" in
     single|singledir|append)
@@ -3104,6 +3203,7 @@ prunefiles () {
 # utilities: [
 # files: $outputlog, (previous outputlogs)
 #
+[ "${skip_rotatepruneoutputlogs+X}" = "" ] && \
 rotatepruneoutputlogs () {
   if [ "$outputlog" = "" ]; then
     logstatus "output logging is off; not rotating logs"
@@ -3140,6 +3240,7 @@ rotatepruneoutputlogs () {
 #
 # utilities: [
 #
+[ "${skip_existsfilezip+X}" = "" ] && \
 existsfilezip () {
   [ "$1" = "" ] && return 1;  # false
 
@@ -3176,6 +3277,7 @@ existsfilezip () {
 #
 # utilities: rm
 #
+[ "${skip_removefilezip+X}" = "" ] && \
 removefilezip () {
   rm -f "$1"
 
@@ -3215,6 +3317,7 @@ removefilezip () {
 #
 # utilities: mv
 #
+[ "${skip_movefilezip+X}" = "" ] && \
 movefilezip () {
   mv -f "$1" "$2" >/dev/null 2>&1
 
@@ -3259,6 +3362,7 @@ movefilezip () {
 # files: $ssh_keyfile
 # bashisms: arrays
 #
+[ "${skip_sshremotecmd+X}" = "" ] && \
 sshremotecmd () {
   ssh \
     ${ssh_port:+-p "$ssh_port"} \
@@ -3286,6 +3390,7 @@ sshremotecmd () {
 # files: $ssh_keyfile
 # bashisms: arrays, printf -v [v3.1]
 #
+[ "${skip_sshremotebgcmd+X}" = "" ] && \
 sshremotebgcmd () {
   # apply default
   sshpid_var="sshpid"
@@ -3323,6 +3428,7 @@ sshremotebgcmd () {
 # utilities: printf, kill, [
 # bashisms: ${!var}, printf -v [v3.1]
 #
+[ "${skip_killsshremotebg+X}" = "" ] && \
 killsshremotebg () {
   # apply default
   sshpid_var="sshpid"
@@ -3358,6 +3464,7 @@ killsshremotebg () {
 # files: $tun_sshkeyfile
 # bashisms: arrays, printf -v [v3.1]
 #
+[ "${skip_sshtunnelcmd+X}" = "" ] && \
 sshtunnelcmd () {
   # apply default
   tunpid_var="tunpid"
@@ -3397,6 +3504,7 @@ sshtunnelcmd () {
 # utilities: printf, kill, [
 # bashisms: ${!var}, printf -v [v3.1]
 #
+[ "${skip_killsshtunnel+X}" = "" ] && \
 killsshtunnel () {
   # apply default
   tunpid_var="tunpid"
@@ -3449,6 +3557,7 @@ killsshtunnel () {
 # FDs: 3
 # bashisms: ${!var}, printf -v [v3.1]
 #
+[ "${skip_opensshtunnel+X}" = "" ] && \
 opensshtunnel () {
   # apply default
   tunpid_var="tunpid"
@@ -3540,6 +3649,7 @@ opensshtunnel () {
 # utilities: printf, kill, [
 # bashisms: ${!var}, printf -v [v3.1]
 #
+[ "${skip_closesshtunnel+X}" = "" ] && \
 closesshtunnel () {
   # apply default
   tunpid_var="tunpid"
@@ -3590,6 +3700,7 @@ closesshtunnel () {
 # files: $[dbms]_pwfile, $[dbms]_socketfile
 # bashisms: arrays
 #
+[ "${skip_dbcmd+X}" = "" ] && \
 dbcmd () {
   case "$dbms_prefix" in
     mysql)
@@ -3647,6 +3758,7 @@ dbcmd () {
 # files: $[dbms]_pwfile, $[dbms]_socketfile
 # bashisms: arrays
 #
+[ "${skip_dblistcmd+X}" = "" ] && \
 dblistcmd () {
   case "$dbms_prefix" in
     mysql)
@@ -3700,6 +3812,7 @@ dblistcmd () {
 # library vars: tab
 # utilities: printf, sed
 #
+[ "${skip_dbunescape+X}" = "" ] && \
 dbunescape () {
   case "$dbms_prefix" in
     mysql)
@@ -3738,6 +3851,7 @@ dbunescape () {
 # files: $rsync_sshkeyfile, $rsync_pwfile, $rsync_filterfile
 # bashisms: arrays
 #
+[ "${skip_rsynccmd+X}" = "" ] && \
 rsynccmd () {
   case "$rsync_mode" in
     tunnel|direct)
