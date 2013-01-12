@@ -49,10 +49,10 @@ case "$BASH_VERSION" in
   ''|1.*|2.*|3.0.*)
     cat <<-EOF 1>&2
 
-	This script requires bash version 3.1 or later.
+	Error: This script requires bash version 3.1 or later.
 
 	EOF
-    exit 1
+    exit 10  # startup_exitval
     ;;
 esac
 
