@@ -613,7 +613,8 @@ alldbs="alldbs"  # gets [DBMS]- prepended
 dumptmp=".tmp"
 
 # exit values; see top of script for details
-# (when modifying: keep numbers in sync, and take
+# (when modifying: keep the numbers in sync with the notes at the top
+# and the exit values for the bash check and the library sourcing, and take
 # http://tldp.org/LDP/abs/html/exitcodes.html into account)
 no_error_exitval="0"
 startup_exitval="10"
