@@ -892,6 +892,9 @@ Usage:
   sourcing (not running) the script after defining them, or a wrapper can be
   used as with array settings.
 
+  The location of the Aeolus library can be specified/overriden by setting
+  AEOLUSLIB.
+
 Options:
 
   -f /path/to/config/file: supply the path to the config file
