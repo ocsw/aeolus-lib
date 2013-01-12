@@ -2298,7 +2298,7 @@ validcreate () {
   #
   # note: [ -e ] isn't portable, so try ls, even though it's probably not
   # robust enough to be a general solution...
-  if ls "$vval" > /dev/null 2>&1; then
+  if ls -d "$vval" > /dev/null 2>&1; then
     case "$2" in
       file)
         # [ dereferences symlinks for us
