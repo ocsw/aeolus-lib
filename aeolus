@@ -118,16 +118,86 @@ esac
 ######################
 
 # preparatory massaging:
-# this won't get reset if it's set on the command line,
-# but if it's unset, the library will set it;
-# this will make the script think it was set on the command line
-[ "${on_tunerr+X}" = "" ] && on_tunerr_unset="yes"
+# we need to know if this was set on the command line or not
+skip_on_tunerr="yes"
 
 # source the library
-. /root/aeolus/aeolus-lib.sh
+if [ "$AEOLUSLIB" != "" ]; then
+  # silly, but [ -e ] isn't portable, and neither is !
+  if ls -d "$AEOLUSLIB" > /dev/null 2>&1; then
+    :  # do nothing
+  else
+    cat <<-EOF 1>&2
 
-# finish massaging
-[ "$on_tunerr_unset" = "yes" ] && unset on_tunerr
+	Error: specified Aeolus library path does not exist.
+	(AEOLUSLIB='$AEOLUSLIB')
+
+	EOF
+    exit 10  # startup_exitval
+  fi
+
+  if [ ! -f "$AEOLUSLIB" ]; then
+    cat <<-EOF 1>&2
+
+	Error: specified Aeolus library path is not a file, or a link to one.
+	(AEOLUSLIB='$AEOLUSLIB')
+
+	EOF
+    exit 10  # startup_exitval
+  fi
+
+  if [ ! -r "$AEOLUSLIB" ]; then
+    cat <<-EOF 1>&2
+
+	Error: specified Aeolus library path is not readable.
+	(AEOLUSLIB='$AEOLUSLIB')
+
+	EOF
+    exit 10  # startup_exitval
+  fi
+
+  . "$AEOLUSLIB"
+else  # AEOLUSLIB not set
+  for libdir in "/usr/local/lib" "/usr/lib" "~/bin" \
+        "$(dirname "$0" 2>/dev/null)"; do
+    libpath="${libdir}/aeolus-lib.sh"
+
+    # check for "" in case there is no dirname util; [ -e ] isn't portable
+    if [ "$libdir" != "" ] && ls -d "$libpath" > /dev/null 2>&1; then
+      if [ ! -f "$libpath" ]; then
+        cat <<-EOF 1>&2
+
+	Error: Aeolus library path was found, but it's not a file, or a link to one.
+	(path: '$libpath')
+
+	EOF
+        exit 10  # startup_exitval
+      fi
+
+      if [ ! -r "$libpath" ]; then
+        cat <<-EOF 1>&2
+
+	Error: Aeolus library path was found, but the file is not readable.
+	(path: '$libpath')
+
+	EOF
+        exit 10  # startup_exitval
+      fi
+
+      . "$libpath"
+      break
+    fi
+  done
+fi
+
+if [ "$aeolus_lib_sourced" != "yes" ]; then
+    cat <<-EOF 1>&2
+
+	Error: Aeolus library not found.
+
+	EOF
+  exit 10  # startup_exitval
+fi
 
 
 ############
