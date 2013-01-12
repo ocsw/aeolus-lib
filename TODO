@@ -6,8 +6,6 @@ rdiff
 integrated pg_dumpall -g
 gitolite writable
 
-script, docs re library install and source
 set -x for commands?  but remember retvals
-warn, blank non-existent
 
 arrayisnotallnull
