@@ -1468,7 +1468,7 @@ dbdumponecmd () {
         ${mysql_host:+-h "$mysql_host"} \
         ${mysql_port:+-P "$mysql_port"} \
         ${mysql_socketfile:+-S "$mysql_socketfile"} \
-        ${opts_l+"${opts_l[@]}"} \
+        "${opts_l[@]}" \
         "$1"
       endcmdprint 2>/dev/null
       ;;
@@ -1486,7 +1486,7 @@ dbdumponecmd () {
         ${postgres_user:+-U "$postgres_user"} \
         ${postgres_host:+-h "$postgres_host"} \
         ${postgres_port:+-p "$postgres_port"} \
-        ${opts_l+"${opts_l[@]}"} \
+        "${opts_l[@]}" \
         "$1"
       endcmdprint 2>/dev/null
       ;;
@@ -1537,7 +1537,7 @@ dbdumpmultcmd () {
         ${mysql_host:+-h "$mysql_host"} \
         ${mysql_port:+-P "$mysql_port"} \
         ${mysql_socketfile:+-S "$mysql_socketfile"} \
-        ${mysql_dumpoptions+"${mysql_dumpoptions[@]}"} \
+        "${mysql_dumpoptions[@]}" \
         -B "${dbnames[@]}"
       endcmdprint 2>/dev/null
       ;;
@@ -1589,7 +1589,7 @@ dbdumpallcmd () {
         ${mysql_host:+-h "$mysql_host"} \
         ${mysql_port:+-P "$mysql_port"} \
         ${mysql_socketfile:+-S "$mysql_socketfile"} \
-        ${mysql_dumpoptions+"${mysql_dumpoptions[@]}"} \
+        "${mysql_dumpoptions[@]}" \
         -A
       endcmdprint 2>/dev/null
       ;;
@@ -1600,7 +1600,7 @@ dbdumpallcmd () {
         ${postgres_user:+-U "$postgres_user"} \
         ${postgres_host:+-h "$postgres_host"} \
         ${postgres_port:+-p "$postgres_port"} \
-        ${postgres_dumpalloptions+"${postgres_dumpalloptions[@]}"}
+        "${postgres_dumpalloptions[@]}"
       endcmdprint 2>/dev/null
       ;;
   esac

@@ -3451,10 +3451,10 @@ sshremotecmd () {
   ssh \
     ${ssh_port:+-p "$ssh_port"} \
     ${ssh_keyfile:+-i "$ssh_keyfile"} \
-    ${ssh_options+"${ssh_options[@]}"} \
+    "${ssh_options[@]}" \
     ${ssh_user:+-l "$ssh_user"} \
     "$ssh_host" \
-    ${ssh_rcommand+"${ssh_rcommand[@]}"}
+    "${ssh_rcommand[@]}"
   endcmdprint 2>/dev/null
 
   return "$cmdexitval"
@@ -3491,10 +3491,10 @@ sshremotebgcmd () {
   ssh \
     ${ssh_port:+-p "$ssh_port"} \
     ${ssh_keyfile:+-i "$ssh_keyfile"} \
-    ${ssh_options+"${ssh_options[@]}"} \
+    "${ssh_options[@]}" \
     ${ssh_user:+-l "$ssh_user"} \
     "$ssh_host" \
-    ${ssh_rcommand+"${ssh_rcommand[@]}"} \
+    "${ssh_rcommand[@]}" \
     &
   endcmdprintbg 2>/dev/null
 
@@ -3568,7 +3568,7 @@ sshtunnelcmd () {
     -L "${tun_localport}:${tun_remotehost}:${tun_remoteport}" -N \
     ${tun_sshport:+-p "$tun_sshport"} \
     ${tun_sshkeyfile:+-i "$tun_sshkeyfile"} \
-    ${tun_sshoptions+"${tun_sshoptions[@]}"} \
+    "${tun_sshoptions[@]}" \
     ${tun_sshuser:+-l "$tun_sshuser"} \
     "$tun_sshhost" \
     &
@@ -3807,7 +3807,7 @@ dbcmd () {
         ${mysql_port:+-P "$mysql_port"} \
         ${mysql_socketfile:+-S "$mysql_socketfile"} \
         ${mysql_connectdb:+"$mysql_connectdb"} \
-        ${mysql_options+"${mysql_options[@]}"} \
+        "${mysql_options[@]}" \
         ${1+-e "$1"}
       endcmdprint 2>/dev/null
       ;;
@@ -3819,7 +3819,7 @@ dbcmd () {
         ${postgres_host:+-h "$postgres_host"} \
         ${postgres_port:+-p "$postgres_port"} \
         ${postgres_connectdb:+-d "$postgres_connectdb"} \
-        ${postgres_options+"${postgres_options[@]}"} \
+        "${postgres_options[@]}" \
         ${1+-c "$1"}
       endcmdprint 2>/dev/null
       ;;
@@ -3871,7 +3871,7 @@ dblistcmd () {
         ${mysql_host:+-h "$mysql_host"} \
         ${mysql_port:+-P "$mysql_port"} \
         ${mysql_socketfile:+-S "$mysql_socketfile"} \
-        ${mysql_options+"${mysql_options[@]}"} \
+        "${mysql_options[@]}" \
         -BN -e "SHOW DATABASES;"
       endcmdprint 2>/dev/null
       ;;
@@ -3883,7 +3883,7 @@ dblistcmd () {
         ${postgres_host:+-h "$postgres_host"} \
         ${postgres_port:+-p "$postgres_port"} \
         ${postgres_connectdb:+-d "$postgres_connectdb"} \
-        ${postgres_options+"${postgres_options[@]}"} \
+        "${postgres_options[@]}" \
         -At -c "SELECT datname FROM pg_catalog.pg_database;"
       endcmdprint 2>/dev/null
       ;;
@@ -3968,8 +3968,8 @@ rsynccmd () {
         ${rsync_port:+"--port=$rsync_port"} \
         ${rsync_pwfile:+"--password-file=$rsync_pwfile"} \
         ${rsync_filterfile:+-f "merge $rsync_filterfile"} \
-        ${rsync_options+"${rsync_options[@]}"} \
-        ${rsync_add+"${rsync_add[@]}"} \
+        "${rsync_options[@]}" \
+        "${rsync_add[@]}" \
         "${rsync_source[@]}" \
         "$rsync_dest"
       endcmdprint 2>/dev/null
@@ -3980,8 +3980,8 @@ rsynccmd () {
       rsync \
         -e "ssh ${rsync_sshport:+-p "$rsync_sshport"} ${rsync_sshkeyfile:+-i "$rsync_sshkeyfile"} ${rsync_sshoptions+"${rsync_sshoptions[@]}"}" \
         ${rsync_filterfile:+-f "merge $rsync_filterfile"} \
-        ${rsync_options+"${rsync_options[@]}"} \
-        ${rsync_add+"${rsync_add[@]}"} \
+        "${rsync_options[@]}" \
+        "${rsync_add[@]}" \
         "${rsync_source[@]}" \
         "$rsync_dest"
       endcmdprint 2>/dev/null
@@ -3990,8 +3990,8 @@ rsynccmd () {
       begincmdprint
       rsync \
         ${rsync_filterfile:+-f "merge $rsync_filterfile"} \
-        ${rsync_options+"${rsync_options[@]}"} \
-        ${rsync_add+"${rsync_add[@]}"} \
+        "${rsync_options[@]}" \
+        "${rsync_add[@]}" \
         "${rsync_source[@]}" \
         "$rsync_dest"
       endcmdprint 2>/dev/null
