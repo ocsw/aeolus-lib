@@ -324,6 +324,8 @@ configsettings="
   syslogtag
   quiet
   statuslog
+  do_rsync
+  rsync_mode
   rsync_sshuser
   rsync_sshhost
   rsync_sshkeyfile
@@ -334,15 +336,13 @@ configsettings="
   rsync_remoteport
   rsync_sshoptions
   rsync_sshtimeout
-  do_rsync
-  rsync_mode
-  rsync_source
-  rsync_dest
   rsync_port
   rsync_pwfile
   rsync_filterfile
   rsync_options
   rsync_add
+  rsync_source
+  rsync_dest
   mysql_dodump
   mysql_usetunnel
   mysql_sshuser
@@ -455,7 +455,7 @@ configsettingtype () {
   # broken up for readability
   case "$1" in
     # rsync
-    rsync_sshoptions|rsync_source|rsync_options|rsync_add)
+    rsync_sshoptions|rsync_options|rsync_add|rsync_source)
       echo "array"
       ;;
 
@@ -1277,9 +1277,6 @@ validconf () {
       [ "$rsync_sshport" != "" ] && validnum "rsync_sshport" 1 65535
       unsparsearray "rsync_sshoptions"
     fi
-    validnoblankarr "rsync_source"
-    unsparsearray "rsync_source"
-    validnoblank "rsync_dest"
     if [ "$rsync_mode" = "direct" ]; then
       [ "$rsync_port" != "" ] && validnum "rsync_port" 1 65535
     fi
@@ -1288,6 +1285,9 @@ validconf () {
     [ "$rsync_filterfile" != "" ] && validreadfile "rsync_filterfile"
     unsparsearray "rsync_options"
     unsparsearray "rsync_add"
+    validnoblankarr "rsync_source"
+    unsparsearray "rsync_source"
+    validnoblank "rsync_dest"
   fi
 
   # DBMS dumps, including SSH tunnels

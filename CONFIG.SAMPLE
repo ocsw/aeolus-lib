@@ -386,13 +386,29 @@
 ###statuslog=
 
 
-################################
-# SSH settings for rsync tunnel
-# (ignored if do_rsync="no")
-################################
+#################
+# rsync settings
+#################
 
 #
-# username on the remote host
+# are we going to do an rsync backup ("yes" or "no")?
+#
+# if "no", the rest of the rsync settings are ignored
+#
+# * if blank or unset, defaults to "no"
+#
+###do_rsync=
+
+#
+# mode of operation ("tunnel", "direct", "nodaemon", or "local")
+# (see usage notes on rsync modes)
+#
+# * if blank or unset, defaults to "tunnel"
+#
+###rsync_mode=
+
+#
+# username on the remote SSH host
 #
 # * ignored if rsync_mode is not "tunnel"
 # * if blank or unset, the ssh utility's default will be used (generally
@@ -401,7 +417,7 @@
 ###rsync_sshuser=
 
 #
-# hostname of the remote host
+# hostname of the remote SSH host
 #
 # * ignored if rsync_mode is not "tunnel"
 #
@@ -424,7 +440,7 @@
 ###rsync_sshport=
 
 #
-# hostname on the local end of the tunnel
+# hostname on the local end of the SSH tunnel
 #
 # generally "localhost", but may need to be (e.g.) 127.0.0.1 or ::1
 #
@@ -434,7 +450,7 @@
 ###rsync_localhost=
 
 #
-# port number on the local end of the tunnel
+# port number on the local end of the SSH tunnel
 #
 # can be any valid unused port
 #
@@ -444,7 +460,8 @@
 ###rsync_localport=
 
 #
-# hostname on the remote end of the tunnel; connected to from rsync_sshhost
+# hostname on the remote end of the SSH tunnel;
+# connected to from rsync_sshhost
 #
 # generally "localhost", but may need to be (e.g.) 127.0.0.1 or ::1
 #
@@ -458,7 +475,7 @@
 ###rsync_remotehost=
 
 #
-# port number on remote end of the tunnel
+# port number on remote end of the SSH tunnel
 #
 # generally 873
 #
@@ -485,46 +502,6 @@
 # * if blank or unset, defaults to "15"
 #
 ###rsync_sshtimeout=
-
-
-#################
-# rsync settings
-#################
-
-#
-# are we going to do an rsync backup ("yes" or "no")?
-#
-# if "no", the rest of the rsync settings and the rsync SSH tunnel settings
-# are ignored
-#
-# * if blank or unset, defaults to "no"
-#
-###do_rsync=
-
-#
-# mode of operation ("tunnel", "direct", "nodaemon", or "local")
-# (see usage notes on rsync modes)
-#
-# * if blank or unset, defaults to "tunnel"
-#
-###rsync_mode=
-
-#
-# source files and/or directories
-# (see usage notes on rsync modes)
-#
-# note that directories ending with / will have their _contents_ transferred,
-# while directories not ending with / will be transferred themselves
-#
-# * must be an array (see usage notes on the config file)
-#
-###rsync_source=()
-
-#
-# destination
-# (see usage notes on rsync modes)
-#
-###rsync_dest=
 
 #
 # remote rsyncd port
@@ -585,6 +562,23 @@
 #
 ###rsync_add=()
 
+#
+# source files and/or directories
+# (see usage notes on rsync modes)
+#
+# note that directories ending with / will have their _contents_ transferred,
+# while directories not ending with / will be transferred themselves
+#
+# * must be an array (see usage notes on the config file)
+#
+###rsync_source=()
+
+#
+# destination
+# (see usage notes on rsync modes)
+#
+###rsync_dest=
+
 
 ############################################
 # MySQL dump settings, including SSH tunnel
@@ -602,8 +596,8 @@
 
 #
 # MySQL SSH tunnel settings
-# (see rsync SSH tunnel settings for descriptions, but disregard references
-# to rsync_mode)
+# (see rsync settings for descriptions, but disregard references to
+# rsync_mode)
 #
 # usually the databases are dumped on the actual database server, but
 # sometimes they have to be dumped remotely; using an SSH tunnel will
