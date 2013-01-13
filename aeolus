@@ -1913,14 +1913,15 @@ getdumppaths () {
 # global vars: dbnames, dumptmp, dumpprefix, dumpsuffix, rotateprefix,
 #              rotatesep, rotatesuffix, dbms_prefix, dbms_layout,
 #              dbms_numfiles, dbms_daysfiles, dbms_zipmode, dbms_zipoptions,
-#              dbms_preserve, dumpexists_exitval, dbdump_exitval,
-#              dbzip_exitval
+#              dbms_preserve, cmdexitval, dumpexists_exitval,
+#              dbdump_exitval, dbzip_exitval
 # config settings: on_duplerr, on_dbdumperr, on_dbziperr
 # library vars: newline
 # library functions: rotatenumfiles(), prunefiles(), existsfilezip(),
 #                    removefilezip(), dbdumponecmd(), dbdumpmultcmd(),
 #                    dbdumpallcmd(), sendalert(), logstatus(),
-#                    logstatusquiet(), do_exit(), setexitval()
+#                    logstatusquiet(), begincmdprint(), endcmdprint(),
+#                    do_exit(), setexitval()
 # utilities: (allowed values of $dbms_zipmode), rm, mv, date, printf, [
 # FDs: 3
 # bashisms: arrays
@@ -2151,35 +2152,37 @@ do_dbdump () {
     printf "%s\n" "$dbms_zipmode started $(date)" >&3
 
     # do the zip
+    begincmdprint
     "$dbms_zipmode" "${dbms_zipoptions[@]}" \
                     "$dumpprefix$dbname$dumpsuffix" >&3 2>&1
-    zipexit="$?"
+    endcmdprint 2>/dev/null
+    zipexit="$cmdexitval"
 
     # check status
     if [ "$zipexit" != "0" ]; then
       case "$on_dbziperr" in
         exit)
           if [ "$dbname" != "" ]; then
-            sendalert "error compressing $dbms_prefix database '$dbname' (status code $dumpexit); exiting" log
+            sendalert "error compressing $dbms_prefix database '$dbname' (status code $zipexit); exiting" log
           else
-            sendalert "error compressing $dbms_prefix database(s) (status code $dumpexit); exiting" log
+            sendalert "error compressing $dbms_prefix database(s) (status code $zipexit); exiting" log
           fi
           do_exit "$dbzip_exitval"
           ;;
         phase)
           if [ "$dbname" != "" ]; then
-            sendalert "error compressing $dbms_prefix database '$dbname' (status code $dumpexit);${newline}skipping $dbms_prefix dumps" log
+            sendalert "error compressing $dbms_prefix database '$dbname' (status code $zipexit);${newline}skipping $dbms_prefix dumps" log
           else
-            sendalert "error compressing $dbms_prefix database(s) (status code $dumpexit);${newline}skipping $dbms_prefix dumps" log
+            sendalert "error compressing $dbms_prefix database(s) (status code $zipexit);${newline}skipping $dbms_prefix dumps" log
           fi
           setexitval "$dbzip_exitval"
           return 1  # skip to the next phase
           ;;
         db)
           if [ "$dbname" != "" ]; then
-            sendalert "error compressing $dbms_prefix database '$dbname' (status code $dumpexit);${newline}skipping this database" log
+            sendalert "error compressing $dbms_prefix database '$dbname' (status code $zipexit);${newline}skipping this database" log
           else
-            sendalert "error compressing $dbms_prefix database(s) (status code $dumpexit);${newline}skipping this dump" log
+            sendalert "error compressing $dbms_prefix database(s) (status code $zipexit);${newline}skipping this dump" log
           fi
           setexitval "$dbzip_exitval"
           return 2  # skip to the next DB

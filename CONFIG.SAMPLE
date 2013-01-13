@@ -62,7 +62,7 @@
 #
 # for key commands, print the actual commands run ("yes" or "no")?
 #
-# this applies to SSH, DBMS, and rsync commands
+# this applies to SSH, DBMS, compression, and rsync commands
 #
 # commands will be printed preceded by 'cmd: '
 #
