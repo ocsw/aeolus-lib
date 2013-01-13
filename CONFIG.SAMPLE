@@ -391,6 +391,11 @@
 #################
 
 #
+# NOTE: if both rsync and DBMS dumps are turned on, the rsync will be done
+# after all of the DBMS dumps
+#
+
+#
 # are we going to do an rsync backup ("yes" or "no")?
 #
 # if "no", the rest of the rsync settings are ignored
@@ -583,6 +588,11 @@
 ############################################
 # MySQL dump settings, including SSH tunnel
 ############################################
+
+#
+# NOTE: if both rsync and DBMS dumps are turned on, the rsync will be done
+# after all of the DBMS dumps
+#
 
 #
 # are we going to do a MySQL dump ("yes" or "no")?
