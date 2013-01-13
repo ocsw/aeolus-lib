@@ -945,6 +945,87 @@ checkextcmds () {
   echo
 }
 
+#
+# turn on shell command printing for particular commands
+#
+# commands will be printed preceded by 'cmd: '
+#
+# note that any variables set on the same line as the command will be
+# printed on separate lines, one variable per line, e.g.:
+#   cmd: foo=bar
+#   cmd: baz=quux
+#   cmd: do_something arg1 arg2 arg3
+#
+# global vars: PS4, PS4save, xtracereset
+# config settings: printcmds
+# utilities: grep, [
+# bashisms: set +o
+#
+[ "${skip_begincmdprint+X}" = "" ] && \
+begincmdprint () {
+  if [ "$printcmds" = "yes" ]; then
+    PS4save="$PS4"
+    xtracereset=$(set +o | grep xtrace)
+
+    PS4="cmd: "
+    set -x
+  fi
+}
+
+#
+# turn off shell command printing for particular commands and get exit value
+#
+# you probably want to call this with 2>/dev/null, so as not to print
+# lines like this:
+#   cmd: cmdexitval=0
+#   cmd: '[' yes = yes ']'
+#   cmd: eval 'set +o xtrace'
+#   ccmd: set +o xtrace
+# however, there is no way to avoid printing this:
+#   cmd: endcmdprint
+#
+# global vars: cmdexitval, PS4, PS4save, xtracereset
+# config settings: printcmds
+# utilities: [
+#
+[ "${skip_endcmdprint+X}" = "" ] && \
+endcmdprint () {
+  cmdexitval="$?"
+
+  if [ "$printcmds" = "yes" ]; then
+    eval "$xtracereset"
+    PS4="$PS4save"
+  fi
+}
+
+#
+# turn off shell command printing for particular bg commands and get PID
+#
+# you probably want to call this with 2>/dev/null, so as not to print
+# lines like this:
+#   cmd: cmdpid=21546
+#   cmd: '[' yes = yes ']'
+#   cmd: eval 'set +o xtrace'
+#   ccmd: set +o xtrace
+# however, there is no way to avoid printing this:
+#   cmd: endcmdprint
+# and it will generally (always?) be printed _before_ the line with the
+# command, due to buffering
+#
+# global vars: cmdpid, PS4, PS4save, xtracereset
+# config settings: printcmds
+# utilities: [
+#
+[ "${skip_endcmdprint+X}" = "" ] && \
+endcmdprintbg () {
+  cmdpid="$!"
+
+  if [ "$printcmds" = "yes" ]; then
+    eval "$xtracereset"
+    PS4="$PS4save"
+  fi
+}
+
 
 ###########################
 # shutdown and exit values
@@ -3356,14 +3437,17 @@ movefilezip () {
 #
 # ssh_options and ssh_rcommand must be indexed, non-sparse arrays
 #
+# global vars: cmdexitval
 # config settings: ssh_port, ssh_keyfile, ssh_options, ssh_user, ssh_host,
 #                  ssh_rcommand
+# library functions: begincmdprint(), endcmdprint()
 # utilities: ssh
 # files: $ssh_keyfile
 # bashisms: arrays
 #
 [ "${skip_sshremotecmd+X}" = "" ] && \
 sshremotecmd () {
+  begincmdprint
   ssh \
     ${ssh_port:+-p "$ssh_port"} \
     ${ssh_keyfile:+-i "$ssh_keyfile"} \
@@ -3371,6 +3455,9 @@ sshremotecmd () {
     ${ssh_user:+-l "$ssh_user"} \
     "$ssh_host" \
     ${ssh_rcommand+"${ssh_rcommand[@]}"}
+  endcmdprint 2>/dev/null
+
+  return "$cmdexitval"
 }
 
 #
@@ -3383,9 +3470,10 @@ sshremotecmd () {
 # ssh_options and ssh_rcommand must be indexed, non-sparse arrays
 #
 # "local" vars: sshpid_var, sshpid_l
-# global vars: (contents of $1, or sshpid)
+# global vars: (contents of $1, or sshpid), cmdpid
 # config settings: ssh_port, ssh_keyfile, ssh_options, ssh_user, ssh_host,
 #                  ssh_rcommand
+# library functions: begincmdprint(), endcmdprintbg()
 # utilities: ssh, printf, [
 # files: $ssh_keyfile
 # bashisms: arrays, printf -v [v3.1]
@@ -3399,6 +3487,7 @@ sshremotebgcmd () {
   [ "$1" != "" ] && sshpid_var="$1"
 
   # run the command
+  begincmdprint
   ssh \
     ${ssh_port:+-p "$ssh_port"} \
     ${ssh_keyfile:+-i "$ssh_keyfile"} \
@@ -3407,10 +3496,10 @@ sshremotebgcmd () {
     "$ssh_host" \
     ${ssh_rcommand+"${ssh_rcommand[@]}"} \
     &
+  endcmdprintbg 2>/dev/null
 
   # get the PID
-  sshpid_l="$!"
-
+  sshpid_l="$cmdpid"
   printf -v "$sshpid_var" "%s" "$sshpid_l"  # set the global
 }
 
@@ -3456,10 +3545,11 @@ killsshremotebg () {
 # tun_sshoptions must be an indexed, non-sparse array
 #
 # "local" vars: tunpid_var, tunpid_l
-# global vars: (contents of $1, or tunpid)
+# global vars: (contents of $1, or tunpid), cmdpid
 # config settings: tun_localport, tun_remotehost, tun_remoteport,
 #                  tun_sshport, tun_sshkeyfile, tun_sshoptions, tun_sshuser,
 #                  tun_sshhost
+# library functions: begincmdprint(), endcmdprintbg()
 # utilities: ssh, printf, [
 # files: $tun_sshkeyfile
 # bashisms: arrays, printf -v [v3.1]
@@ -3473,6 +3563,7 @@ sshtunnelcmd () {
   [ "$1" != "" ] && tunpid_var="$1"
 
   # run the command
+  begincmdprint
   ssh \
     -L "${tun_localport}:${tun_remotehost}:${tun_remoteport}" -N \
     ${tun_sshport:+-p "$tun_sshport"} \
@@ -3481,9 +3572,10 @@ sshtunnelcmd () {
     ${tun_sshuser:+-l "$tun_sshuser"} \
     "$tun_sshhost" \
     &
+  endcmdprintbg 2>/dev/null
 
   # get the PID
-  tunpid_l="$!"
+  tunpid_l="$cmdpid"
   printf -v "$tunpid_var" "%s" "$tunpid_l"  # set the global
 }
 
@@ -3692,10 +3784,11 @@ closesshtunnel () {
 #
 # [dbms]_options must be an indexed, non-sparse array
 #
-# global vars: dbms_prefix
+# global vars: dbms_prefix, cmdexitval
 # config settings: [dbms]_user, [dbms]_pwfile, [dbms]_protocol, [dbms]_host,
 #                  [dbms]_port, [dbms]_socketfile, [dbms]_options,
 #                  [dbms]_connectdb
+# library functions: begincmdprint(), endcmdprint()
 # utilities: mysql, psql
 # files: $[dbms]_pwfile, $[dbms]_socketfile
 # bashisms: arrays
@@ -3704,6 +3797,7 @@ closesshtunnel () {
 dbcmd () {
   case "$dbms_prefix" in
     mysql)
+      begincmdprint
       # --defaults-extra-file must be the first option if present
       mysql \
         ${mysql_pwfile:+"--defaults-extra-file=$mysql_pwfile"} \
@@ -3715,18 +3809,23 @@ dbcmd () {
         ${mysql_connectdb:+"$mysql_connectdb"} \
         ${mysql_options+"${mysql_options[@]}"} \
         ${1+-e "$1"}
+      endcmdprint 2>/dev/null
       ;;
     postgres)
+      begincmdprint
       PGPASSFILE=${postgres_pwfile:+"$postgres_pwfile"} \
-      psql \
+        psql \
         ${postgres_user:+-U "$postgres_user"} \
         ${postgres_host:+-h "$postgres_host"} \
         ${postgres_port:+-p "$postgres_port"} \
         ${postgres_connectdb:+-d "$postgres_connectdb"} \
         ${postgres_options+"${postgres_options[@]}"} \
-        ${1+-e "$1"}
+        ${1+-c "$1"}
+      endcmdprint 2>/dev/null
       ;;
   esac
+
+  return "$cmdexitval"
 }
 
 #
@@ -3750,10 +3849,11 @@ dbcmd () {
 #
 # [dbms]_options must be an indexed, non-sparse array
 #
-# global vars: dbms_prefix
+# global vars: dbms_prefix, cmdexitval
 # config settings: [dbms]_user, [dbms]_pwfile, [dbms]_protocol, [dbms]_host,
 #                  [dbms]_port, [dbms]_socketfile, [dbms]_connectdb,
 #                  [dbms]_options
+# library functions: begincmdprint(), endcmdprint()
 # utilities: mysql, psql
 # files: $[dbms]_pwfile, $[dbms]_socketfile
 # bashisms: arrays
@@ -3762,6 +3862,7 @@ dbcmd () {
 dblistcmd () {
   case "$dbms_prefix" in
     mysql)
+      begincmdprint
       # --defaults-extra-file must be the first option if present
       mysql \
         ${mysql_pwfile:+"--defaults-extra-file=$mysql_pwfile"} \
@@ -3772,18 +3873,23 @@ dblistcmd () {
         ${mysql_socketfile:+-S "$mysql_socketfile"} \
         ${mysql_options+"${mysql_options[@]}"} \
         -BN -e "SHOW DATABASES;"
+      endcmdprint 2>/dev/null
       ;;
     postgres)
+      begincmdprint
       PGPASSFILE=${postgres_pwfile:+"$postgres_pwfile"} \
-      psql \
+        psql \
         ${postgres_user:+-U "$postgres_user"} \
         ${postgres_host:+-h "$postgres_host"} \
         ${postgres_port:+-p "$postgres_port"} \
         ${postgres_connectdb:+-d "$postgres_connectdb"} \
         ${postgres_options+"${postgres_options[@]}"} \
         -At -c "SELECT datname FROM pg_catalog.pg_database;"
+      endcmdprint 2>/dev/null
       ;;
   esac
+
+  return "$cmdexitval"
 }
 
 #
@@ -3844,10 +3950,12 @@ dbunescape () {
 # rsync_sshoptions, rsync_options, rsync_add, and rsync_source must be
 # indexed, non-sparse arrays
 #
+# global vars: cmdexitval
 # config settings: rsync_mode, rsync_pwfile, rsync_port, rsync_sshport,
 #                  rsync_sshkeyfile, rsync_sshoptions, rsync_filterfile,
 #                  rsync_options, rsync_add, rsync_source, rsync_dest
-# utilities: rsync, (ssh)
+# library functions: begincmdprint(), endcmdprint()
+# utilities: rsync, ssh
 # files: $rsync_sshkeyfile, $rsync_pwfile, $rsync_filterfile
 # bashisms: arrays
 #
@@ -3855,6 +3963,7 @@ dbunescape () {
 rsynccmd () {
   case "$rsync_mode" in
     tunnel|direct)
+      begincmdprint
       rsync \
         ${rsync_port:+"--port=$rsync_port"} \
         ${rsync_pwfile:+"--password-file=$rsync_pwfile"} \
@@ -3863,8 +3972,10 @@ rsynccmd () {
         ${rsync_add+"${rsync_add[@]}"} \
         "${rsync_source[@]}" \
         "$rsync_dest"
+      endcmdprint 2>/dev/null
       ;;
     nodaemon)
+      begincmdprint
       # argument to -e has to be on one line
       rsync \
         -e "ssh ${rsync_sshport:+-p "$rsync_sshport"} ${rsync_sshkeyfile:+-i "$rsync_sshkeyfile"} ${rsync_sshoptions+"${rsync_sshoptions[@]}"}" \
@@ -3873,14 +3984,19 @@ rsynccmd () {
         ${rsync_add+"${rsync_add[@]}"} \
         "${rsync_source[@]}" \
         "$rsync_dest"
+      endcmdprint 2>/dev/null
       ;;
     local)
+      begincmdprint
       rsync \
         ${rsync_filterfile:+-f "merge $rsync_filterfile"} \
         ${rsync_options+"${rsync_options[@]}"} \
         ${rsync_add+"${rsync_add[@]}"} \
         "${rsync_source[@]}" \
         "$rsync_dest"
+      endcmdprint 2>/dev/null
       ;;
   esac
+
+  return "$cmdexitval"
 }

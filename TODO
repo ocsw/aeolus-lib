@@ -6,6 +6,4 @@ rdiff
 integrated pg_dumpall -g
 gitolite writable
 
-set -x for commands?  but remember retvals
-
 arrayisnotallnull

@@ -60,6 +60,25 @@
 ###debugme=
 
 #
+# for key commands, print the actual commands run ("yes" or "no")?
+#
+# this applies to SSH, DBMS, and rsync commands
+#
+# commands will be printed preceded by 'cmd: '
+#
+# note that any variables set on the same line as the command will be
+# printed on separate lines, one variable per line, e.g.:
+#   cmd: PGPASSFILE=postgres.pw
+#   cmd: pg_dump -U postgres -h 127.0.0.1 -c postgres
+#
+# also, the line 'cmd: endcmdprint' will follow the output of each command,
+# or in certain cases precede the printing of the command itself
+#
+# * if blank or unset, defaults to "no"
+#
+###printcmds=
+
+#
 # how to handle various errors
 #
 # possible options include:

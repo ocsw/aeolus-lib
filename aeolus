@@ -296,6 +296,7 @@ configsettings="
   useumask
   timecomptype
   debugme
+  printcmds
   on_tunerr
   on_dbreplerr
   on_dblisterr
@@ -501,6 +502,7 @@ configsettingtype () {
 # default settings: housekeeping
 timecomptype_default="find"
 debugme_default="no"
+printcmds_default="no"
 on_tunerr_default="phase"
 on_dbreplerr_default="phase"
 on_dblisterr_default="phase"
@@ -1086,6 +1088,7 @@ applydefaults () {
   # housekeeping
   [ "$timecomptype" = "" ] && timecomptype="$timecomptype_default"
   [ "$debugme" = "" ] && debugme="$debugme_default"
+  [ "$printcmds" = "" ] && printcmds="$printcmds_default"
   [ "$on_tunerr" = "" ] && on_tunerr="$on_tunerr_default"
   [ "$on_dbreplerr" = "" ] && on_dbreplerr="$on_dbreplerr_default"
   [ "$on_dblisterr" = "" ] && on_dblisterr="$on_dblisterr_default"
@@ -1217,6 +1220,7 @@ validconf () {
   # note: umask could be symbolic, not going to try to parse it
   validlist "timecomptype" "find" "date-r" "date-d" "awk" "gawk"
   validlist "debugme" "yes" "no"
+  validlist "printcmds" "yes" "no"
   validlist "on_tunerr" "phase" "exit"
   validlist "on_dbreplerr" "phase" "exit"
   validlist "on_dblisterr" "phase" "exit"
@@ -1434,13 +1438,13 @@ validconf () {
 # non-sparse arrays
 #
 # "local" vars: opts_l
-# global vars: dbms_prefix, altopts
+# global vars: dbms_prefix, altopts, cmdexitval
 # config settings: [dbms]_user, [dbms]_pwfile, [dbms]_protocol, [dbms]_host,
 #                  [dbms]_port, [dbms]_socketfile, [dbms]_splitdbs,
 #                  [dbms]_dumpoptions/[dbms]_dumponeoptions/etc. (depending
 #                  on the DBMS), [dbms]_usealtopts
 # config functions: [dbms]_altopts()
-# library functions: copyarray()
+# library functions: copyarray(), begincmdprint(), endcmdprint()
 # utilities: mysqldump, pg_dump, [
 # files: $[dbms]_pwfile, $[dbms]_socketfile
 # bashisms: arrays
@@ -1455,6 +1459,7 @@ dbdumponecmd () {
         copyarray "mysql_dumpoptions" "opts_l" exact
       fi
 
+      begincmdprint
       # --defaults-extra-file must be the first option if present
       mysqldump \
         ${mysql_pwfile:+"--defaults-extra-file=$mysql_pwfile"} \
@@ -1465,6 +1470,7 @@ dbdumponecmd () {
         ${mysql_socketfile:+-S "$mysql_socketfile"} \
         ${opts_l+"${opts_l[@]}"} \
         "$1"
+      endcmdprint 2>/dev/null
       ;;
     postgres)
       if [ "$postgres_splitdbs" = "yes" ] && \
@@ -1474,15 +1480,19 @@ dbdumponecmd () {
         copyarray "postgres_dumponeoptions" "opts_l" exact
       fi
 
+      begincmdprint
       PGPASSFILE=${postgres_pwfile:+"$postgres_pwfile"} \
-      pg_dump \
+        pg_dump \
         ${postgres_user:+-U "$postgres_user"} \
         ${postgres_host:+-h "$postgres_host"} \
         ${postgres_port:+-p "$postgres_port"} \
         ${opts_l+"${opts_l[@]}"} \
         "$1"
+      endcmdprint 2>/dev/null
       ;;
   esac
+
+  return "$cmdexitval"
 }
 
 #
@@ -1504,13 +1514,13 @@ dbdumponecmd () {
 # dbnames and [dbms]_dumpoptions/[dbms]_dumpmultoptions/etc. must be indexed,
 # non-sparse arrays
 #
-# global vars: dbnames, dbms_prefix, internal_exitval
+# global vars: dbnames, dbms_prefix, internal_exitval, cmdexitval
 # config settings: [dbms]_user, [dbms]_pwfile, [dbms]_protocol, [dbms]_host,
 #                  [dbms]_port, [dbms]_socketfile,
 #                  [dbms]_dumpoptions/[dbms]_dumpmultoptions/etc. (depending
 #                  on the DBMS)
 # library vars: newline
-# library functions: sendalert(), do_exit()
+# library functions: begincmdprint(), endcmdprint(), sendalert(), do_exit()
 # utilities: mysqldump
 # files: $[dbms]_pwfile, $[dbms]_socketfile
 # bashisms: arrays
@@ -1519,6 +1529,7 @@ dbdumpmultcmd () {
   case "$dbms_prefix" in
     mysql)
       # --defaults-extra-file must be the first option if present
+      begincmdprint
       mysqldump \
         ${mysql_pwfile:+"--defaults-extra-file=$mysql_pwfile"} \
         ${mysql_user:+-u "$mysql_user"} \
@@ -1528,12 +1539,15 @@ dbdumpmultcmd () {
         ${mysql_socketfile:+-S "$mysql_socketfile"} \
         ${mysql_dumpoptions+"${mysql_dumpoptions[@]}"} \
         -B "${dbnames[@]}"
+      endcmdprint 2>/dev/null
       ;;
     postgres)
       sendalert "Internal Error: PostgreSQL cannot dump multiple DBs at once; exiting${newline}-> THERE IS A BUG IN THE SCRIPT! <-" log
       do_exit "$internal_exitval"
       ;;
   esac
+
+  return "$cmdexitval"
 }
 
 #
@@ -1553,11 +1567,12 @@ dbdumpmultcmd () {
 # [dbms]_dumpoptions/[dbms]_dumpalloptions/etc. must be indexed, non-sparse
 # arrays
 #
-# global vars: dbms_prefix
+# global vars: dbms_prefix, cmdexitval
 # config settings: [dbms]_user, [dbms]_pwfile, [dbms]_protocol, [dbms]_host,
 #                  [dbms]_port, [dbms]_socketfile,
 #                  [dbms]_dumpoptions/[dbms]_dumpalloptions/etc. (depending
 #                  on the DBMS)
+# library functions: begincmdprint(), endcmdprint()
 # utilities: mysqldump, pg_dumpall
 # files: $[dbms]_pwfile, $[dbms]_socketfile
 # bashisms: arrays
@@ -1565,6 +1580,7 @@ dbdumpmultcmd () {
 dbdumpallcmd () {
   case "$dbms_prefix" in
     mysql)
+      begincmdprint
       # --defaults-extra-file must be the first option if present
       mysqldump \
         ${mysql_pwfile:+"--defaults-extra-file=$mysql_pwfile"} \
@@ -1575,16 +1591,21 @@ dbdumpallcmd () {
         ${mysql_socketfile:+-S "$mysql_socketfile"} \
         ${mysql_dumpoptions+"${mysql_dumpoptions[@]}"} \
         -A
+      endcmdprint 2>/dev/null
       ;;
     postgres)
+      begincmdprint
       PGPASSFILE=${postgres_pwfile:+"$postgres_pwfile"} \
-      pg_dumpall \
+        pg_dumpall \
         ${postgres_user:+-U "$postgres_user"} \
         ${postgres_host:+-h "$postgres_host"} \
         ${postgres_port:+-p "$postgres_port"} \
         ${postgres_dumpalloptions+"${postgres_dumpalloptions[@]}"}
+      endcmdprint 2>/dev/null
       ;;
   esac
+
+  return "$cmdexitval"
 }
 
 #
