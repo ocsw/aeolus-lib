@@ -798,6 +798,7 @@ copyarray () {
       printf "%s\n" "Internal Error: illegal subscript name ('$skey'; \$1='$1') in copyarray(); exiting."
       do_exit "$badvarname_exitval"
     fi
+
     eval "${2}[\"$skey\"]=\"\${${1}[\"$skey\"]}\""
   done
 }
@@ -942,6 +943,7 @@ unsparsearray () {
       printf "%s\n" "Internal Error: illegal subscript name ('$akey'; \$1='$1') in unsparsearray(); exiting."
       do_exit "$badvarname_exitval"
     fi
+
     eval "unsparsetmp+=(\"\${${1}[\"$akey\"]}\")"
   done
 
