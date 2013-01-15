@@ -589,7 +589,7 @@ postgres_usealtopts_default="no"
 postgres_fileprefix_default="postgresdump"  # only if unset
 postgres_subdirprefix_default="postgresdump"  # only if unset
 
-# settings that have no default, and can't be blank
+# settings that have no default, and can't be null
 # (but may be ignored, depending on other settings)
 #
 # [tun]_sshhost
@@ -1192,7 +1192,7 @@ applydefaults () {
 #
 # validate the configuration settings
 #
-# adjusts/blanks some settings based on others; e.g.:
+# adjusts/clears some settings based on others; e.g.:
 # - host/port -> localhost/localport when using tunnels
 # - ignore socketfile when using TCP
 #
@@ -1319,7 +1319,7 @@ validconf () {
           ;;
 
         postgres)
-          # this can be blank and still work in _some_ cases, but we're
+          # this can be null and still work in _some_ cases, but we're
           # just going to require it
           validnotvoid "postgres_connectdb"
 

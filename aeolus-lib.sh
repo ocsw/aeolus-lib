@@ -204,7 +204,7 @@ issafesubscript () {
 
 #
 # check if a non-array variable specified by name is unset
-# (which is not the same thing as null (blank))
+# (which is not the same thing as null)
 #
 # for arrays, use arrayisunset() instead
 #
@@ -238,7 +238,7 @@ isunset () {
 }
 
 #
-# check if a non-array variable specified by name is set but null (blank)
+# check if a non-array variable specified by name is set but null
 #
 # for arrays, use arrayisempty() instead
 #
@@ -274,7 +274,7 @@ isnull () {
 }
 
 #
-# check if a non-array variable specified by name is unset or null (blank)
+# check if a non-array variable specified by name is unset or null
 # (we'll call this "void", for convenience)
 #
 # for arrays, use arrayisvoid() instead
@@ -309,7 +309,7 @@ isvoid () {
 }
 
 #
-# check if a non-array variable specified by name is set and not null (blank)
+# check if a non-array variable specified by name is set and not null
 # (that is, the variable is not "void", in the terminology we're using here)
 #
 # for arrays, use arrayisnotvoid() instead
@@ -345,7 +345,7 @@ isnotvoid () {
 
 #
 # check if a non-array variable specified by name is set
-# (whether it's null (blank) or not)
+# (whether it's null or not)
 #
 # for arrays, use arrayisset() instead
 #
@@ -430,7 +430,7 @@ arrayisunset () {
 
 #
 # check if an array specified by name is set but empty
-# (has no set elements; null (blank) elements still count as set)
+# (has no set elements; null elements still count as set)
 #
 # for non-array variables, use isnull() instead
 #
@@ -489,7 +489,7 @@ arrayisvoid () {
 #
 # check if an array specified by name is set and not empty
 # (that is, the array is not "void", in the terminology we're using here;
-# it has at least one set element, which may or may not be null (blank))
+# it has at least one set element, which may or may not be null)
 #
 # for non-array variables, use isnotvoid() instead
 #
@@ -2216,7 +2216,7 @@ throwsettingerr () {
 }
 
 #
-# validate a setting that can't be blank
+# validate a setting that can't be unset or null
 #
 # $1 = variable name
 #
@@ -2237,7 +2237,7 @@ validnotvoid () {
 }
 
 #
-# validate two settings that can't both be blank
+# validate two settings that can't both be unset/null
 #
 # $1 = first variable name
 # $2 = second variable name
@@ -2410,9 +2410,9 @@ validlist () {
 #
 # validate a directory setting, for directories in which we need to create
 # and/or rotate files:
-# setting must not be blank, and directory must exist, be a directory or a
-# symlink to a one, and have full permissions (r/w/x; r for rotation,
-# wx for creating files)
+# setting must not be unset or null, and directory must exist,
+# be a directory or a symlink to a one, and have full permissions
+# (r/w/x; r for rotation, wx for creating files)
 #
 # $1 = variable name
 #
@@ -2447,7 +2447,7 @@ validrwxdir () {
 #
 # validate a file/dir setting, for files/directories we're going to be
 # touching, writing to, creating, and/or rotating (but not reading):
-# 1) the setting may not be blank
+# 1) the setting may not be unset or null
 # 2) if the file/dir exists, then:
 #    2a) if $2="file", it must be a file or a symlink to one,
 #        and it must be writable
@@ -2532,8 +2532,8 @@ validcreate () {
 
 #
 # validate a file setting, for files we just need to be able to read:
-# setting must not be blank, and file must exist, be a file or a symlink
-# to one, and be readable
+# setting must not be unset or null, and file must exist,
+# be a file or a symlink to one, and be readable
 #
 # $1 = variable name ("configfile" treated specially)
 #
@@ -2549,7 +2549,7 @@ validreadfile () {
   vname="$1"
   vval="${!vname}"
 
-  # blank?
+  # unset/null?
   validnotvoid "$vname"
 
   # from here on, we will only be using $vname for printing purposes,
@@ -2573,8 +2573,8 @@ validreadfile () {
 #
 # validate a file setting, for files we need to be able to read and write,
 # but not create or rotate:
-# setting must not be blank, and file must exist, be a file or a
-# symlink to a file, and be readable and writable
+# setting must not be unset or null, and file must exist,
+# be a file or a symlink to a file, and be readable and writable
 #
 # $1 = variable name
 #
