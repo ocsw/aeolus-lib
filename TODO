@@ -5,6 +5,3 @@ checker script
 rdiff
 integrated pg_dumpall -g
 gitolite writable
-
-arrayisnotallnull
-reorder rsync?
