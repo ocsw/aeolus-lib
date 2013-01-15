@@ -23,5 +23,4 @@ $*_command: SQL command (or equivalent)
 
 config settings: rsync_mode, rsync_pwfile, rsync_localport, rsync_port,
                  rsync_sshport, rsync_sshkeyfile, rsync_sshoptions,
-                 rsync_filterfile, rsync_options, rsync_add, rsync_source,
-                 rsync_dest
+                 rsync_filterfile, rsync_options, rsync_source, rsync_dest

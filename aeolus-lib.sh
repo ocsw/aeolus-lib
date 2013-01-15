@@ -4053,13 +4053,13 @@ dbunescape () {
 # localhost (or 127.0.0.1/::1/etc.) for the host (in rsync_source/dest)
 # and set rsync_port to the local port of the tunnel
 #
-# rsync_sshoptions, rsync_options, rsync_add, and rsync_source must be
-# indexed, non-sparse arrays
+# rsync_sshoptions, rsync_options, and rsync_source must be indexed,
+# non-sparse arrays
 #
 # global vars: cmdexitval
 # config settings: rsync_mode, rsync_pwfile, rsync_port, rsync_sshport,
 #                  rsync_sshkeyfile, rsync_sshoptions, rsync_filterfile,
-#                  rsync_options, rsync_add, rsync_source, rsync_dest
+#                  rsync_options, rsync_source, rsync_dest
 # library functions: begincmdprint(), endcmdprint()
 # utilities: rsync, ssh
 # files: $rsync_sshkeyfile, $rsync_pwfile, $rsync_filterfile
@@ -4075,7 +4075,6 @@ rsynccmd () {
         ${rsync_pwfile:+"--password-file=$rsync_pwfile"} \
         ${rsync_filterfile:+-f "merge $rsync_filterfile"} \
         "${rsync_options[@]}" \
-        "${rsync_add[@]}" \
         "${rsync_source[@]}" \
         "$rsync_dest"
       endcmdprint 2>/dev/null
@@ -4088,7 +4087,6 @@ rsynccmd () {
         -e "ssh ${rsync_sshport:+-p "$rsync_sshport"} ${rsync_sshkeyfile:+-i "$rsync_sshkeyfile"} ${rsync_sshoptions+"${rsync_sshoptions[@]}"}" \
         ${rsync_filterfile:+-f "merge $rsync_filterfile"} \
         "${rsync_options[@]}" \
-        "${rsync_add[@]}" \
         "${rsync_source[@]}" \
         "$rsync_dest"
       endcmdprint 2>/dev/null
@@ -4098,7 +4096,6 @@ rsynccmd () {
       rsync \
         ${rsync_filterfile:+-f "merge $rsync_filterfile"} \
         "${rsync_options[@]}" \
-        "${rsync_add[@]}" \
         "${rsync_source[@]}" \
         "$rsync_dest"
       endcmdprint 2>/dev/null

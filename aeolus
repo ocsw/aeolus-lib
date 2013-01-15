@@ -340,7 +340,6 @@ configsettings="
   rsync_pwfile
   rsync_filterfile
   rsync_options
-  rsync_add
   rsync_source
   rsync_dest
   mysql_dodump
@@ -455,7 +454,7 @@ configsettingtype () {
   # broken up for readability
   case "$1" in
     # rsync
-    rsync_sshoptions|rsync_options|rsync_add|rsync_source)
+    rsync_sshoptions|rsync_options|rsync_source)
       echo "array"
       ;;
 
@@ -1285,7 +1284,6 @@ validconf () {
         [ "$rsync_pwfile" != "" ] && validreadfile "rsync_pwfile"
     [ "$rsync_filterfile" != "" ] && validreadfile "rsync_filterfile"
     unsparsearray "rsync_options"
-    unsparsearray "rsync_add"
     validarrnotvoid "rsync_source"
     validarrnonulls "rsync_source"
     unsparsearray "rsync_source"

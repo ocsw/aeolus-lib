@@ -557,17 +557,6 @@
 ###rsync_options=()
 
 #
-# yet more options to rsync
-#
-# mostly useful to pass additional options from the command line without
-# having to repeat the ones in the config file
-#
-# * must be an array (see usage notes on the config file)
-# * can be blank or unset
-#
-###rsync_add=()
-
-#
 # source files and/or directories
 # (see usage notes on rsync modes)
 #
