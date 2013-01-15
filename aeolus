@@ -1203,10 +1203,11 @@ applydefaults () {
 # "local" vars: dbms
 # global vars: dbmslist, dbms_*, some of tun_*
 # config settings: (most of them)
-# library functions: validnoblank(), validnoblankarr(), validnotbothblank(),
-#                    validnum(), validnochar(), validlist(), validrwxdir(),
-#                    validcreate(), validreadfile(), validrwfile(),
-#                    validfunction(), copyvar(), unsparsearray()
+# library functions: validnotvoid(), validnotbothvoid(), validarrnotvoid(),
+#                    validarrnonulls(), validnum(), validnochar(),
+#                    validlist(), validrwxdir(), validcreate(),
+#                    validreadfile(), validrwfile(), validfunction(),
+#                    copyvar(), unsparsearray()
 # utilities: [
 # files: $startedfile, $lockfile, $alertfile, $outputlog, $statuslog,
 #        $rsync_sshkeyfile, $rsync_pwfile, $rsync_filterfile,
@@ -1237,8 +1238,8 @@ validconf () {
   validcreate "alertfile" "file"
   validlist "suppressemail" "yes" "no"
   if [ "$suppressemail" = "no" ]; then
-    validnoblank "mailto"
-    validnoblank "subject"
+    validnotvoid "mailto"
+    validnotvoid "subject"
   fi
   if [ "$outputlog" != "" ]; then
     validcreate "outputlog" "file" "rotate"
@@ -1263,10 +1264,10 @@ validconf () {
   if [ "$do_rsync" = "yes" ]; then
     validlist "rsync_mode" "tunnel" "direct" "nodaemon" "local"
     if [ "$rsync_mode" = "tunnel" ]; then
-      validnoblank "rsync_sshhost"
-      validnoblank "rsync_localhost"
+      validnotvoid "rsync_sshhost"
+      validnotvoid "rsync_localhost"
       validnum "rsync_localport" 1 65535
-      validnoblank "rsync_remotehost"
+      validnotvoid "rsync_remotehost"
       validnum "rsync_remoteport" 1 65535
       validnum "rsync_sshtimeout" 1
       # use the local port for rsync_port
@@ -1285,9 +1286,10 @@ validconf () {
     [ "$rsync_filterfile" != "" ] && validreadfile "rsync_filterfile"
     unsparsearray "rsync_options"
     unsparsearray "rsync_add"
-    validnoblankarr "rsync_source"
+    validarrnotvoid "rsync_source"
+    validarrnonulls "rsync_source"
     unsparsearray "rsync_source"
-    validnoblank "rsync_dest"
+    validnotvoid "rsync_dest"
   fi
 
   # DBMS dumps, including SSH tunnels
@@ -1319,7 +1321,7 @@ validconf () {
         postgres)
           # this can be blank and still work in _some_ cases, but we're
           # just going to require it
-          validnoblank "postgres_connectdb"
+          validnotvoid "postgres_connectdb"
 
           # PostgreSQL can't dump multiple DBs at once
           [ "$postgres_splitdbs" = "no" ] && [ "$postgres_dbmode" != "all" ] && \
@@ -1329,12 +1331,12 @@ validconf () {
 
       validlist "${dbms}_usetunnel" "yes" "no"
       if [ "$dbms_usetunnel" = "yes" ]; then
-        validnoblank "${dbms}_sshhost"
+        validnotvoid "${dbms}_sshhost"
         [ "$tun_sshkeyfile" != "" ] && validreadfile "${dbms}_sshkeyfile"
         [ "$tun_sshport" != "" ] && validnum "${dbms}_sshport" 1 65535
-        validnoblank "${dbms}_localhost"
+        validnotvoid "${dbms}_localhost"
         validnum "${dbms}_localport" 1 65535
-        validnoblank "${dbms}_remotehost"
+        validnotvoid "${dbms}_remotehost"
         validnum "${dbms}_remoteport" 1 65535
         validnum "${dbms}_sshtimeout" 1
         unsparsearray "${dbms}_sshoptions"
@@ -1381,13 +1383,13 @@ validconf () {
       validlist "${dbms}_layout" "single" "number" "date" "singledir" \
                 "numberdir" "datedir"
       [ "$dbms_splitdbs" = "no" ] && [ "$dbms_layout" != "date" ] && \
-          validnotbothblank "${dbms}_fileprefix" "${dbms}_filesuffix"
+          validnotbothvoid "${dbms}_fileprefix" "${dbms}_filesuffix"
       validnochar "${dbms}_fileprefix" "/"
       validnochar "${dbms}_fileprefix" "$newline"
       validnochar "${dbms}_filesuffix" "/"
       validnochar "${dbms}_filesuffix" "$newline"
       { [ "$dbms_layout" = "singledir" ] || [ "$dbms_layout" = "numberdir" ]; } && \
-          validnoblank "${dbms}_subdirprefix"
+          validnotvoid "${dbms}_subdirprefix"
       validnochar "${dbms}_subdirprefix" "/"
       validnochar "${dbms}_subdirprefix" "$newline"
       validnochar "${dbms}_filedirsep" "/"

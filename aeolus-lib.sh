@@ -550,6 +550,97 @@ arrayisset () {
 }
 
 #
+# are all elements of a non-empty array null?
+#
+# $1 = the name of the array to check
+#
+# IMPORTANT: only pass arrays whose names are under your control!
+#
+# "local" vars: skey, skeys, atemp
+# library vars: badvarname_exitval
+# library functions: islegalvarname(), issafesubscript(), arrayisvoid(),
+#                    do_exit()
+# utilities: printf, [
+# bashisms: !, arrays, ${!array[@]} [v3.0]
+#
+[ "${skip_arrayallnull+X}" = "" ] && \
+arrayallnull () {
+  if ! islegalvarname "$1"; then
+    printf "%s\n" "Internal Error: illegal variable name ('$1') in arrayallnull(); exiting."
+    do_exit "$badvarname_exitval"
+  fi
+
+  if arrayisvoid "$1"; then
+    return 1  # false
+  fi
+
+  eval "skeys=(\"\${!${1}[@]}\")"
+
+  for skey in "${skeys[@]}"; do
+    # $skey has already been used as a subscript, but we're going to be
+    # extra-cautious (paranoid), since we're using eval
+    if ! issafesubscript "$skey"; then
+      printf "%s\n" "Internal Error: illegal subscript name ('$skey'; \$1='$1') in arrayallnull(); exiting."
+      do_exit "$badvarname_exitval"
+    fi
+
+    eval "atemp=\"\${${1}[\"$skey\"]}\""
+
+    if [ "$atemp" != "" ]; then
+      return 1  # false
+    fi
+  done
+
+  return 0  # true
+}
+
+#
+# are all elements of a non-empty array non-null?
+# (we're calling this "not void": set and not null)
+#
+# $1 = the name of the array to check
+#
+# IMPORTANT: only pass arrays whose names are under your control!
+#
+# "local" vars: skey, skeys, atemp
+# library vars: badvarname_exitval
+# library functions: islegalvarname(), issafesubscript(), arrayisvoid(),
+#                    do_exit()
+# utilities: printf, [
+# bashisms: !, arrays, ${!array[@]} [v3.0]
+#
+[ "${skip_arrayallnotvoid+X}" = "" ] && \
+arrayallnotvoid () {
+  if ! islegalvarname "$1"; then
+    printf "%s\n" "Internal Error: illegal variable name ('$1') in arrayallnotvoid(); exiting."
+    do_exit "$badvarname_exitval"
+  fi
+
+  if arrayisvoid "$1"; then
+    return 1  # false
+  fi
+
+  eval "skeys=(\"\${!${1}[@]}\")"
+
+  for skey in "${skeys[@]}"; do
+    # $skey has already been used as a subscript, but we're going to be
+    # extra-cautious (paranoid), since we're using eval
+    if ! issafesubscript "$skey"; then
+      printf "%s\n" "Internal Error: illegal subscript name ('$skey'; \$1='$1') in arrayallnotvoid(); exiting."
+      do_exit "$badvarname_exitval"
+    fi
+
+    eval "atemp=\"\${${1}[\"$skey\"]}\""
+
+    if [ "$atemp" = "" ]; then
+      return 1  # false
+    fi
+  done
+
+  return 0  # true
+}
+
+#
 # copy between non-array variables specified by name
 #
 # for arrays, use copyarray() instead
@@ -2135,42 +2226,14 @@ throwsettingerr () {
 # utilities: [
 # bashisms: ${!var}
 #
-[ "${skip_validnoblank+X}" = "" ] && \
-validnoblank () {
+[ "${skip_validnotvoid+X}" = "" ] && \
+validnotvoid () {
   vname="$1"
   vval="${!vname}"
 
   if [ "$vval" = "" ]; then
     throwstartuperr "Error: $vname is unset or blank; exiting."
   fi
-}
-
-#
-# validate an array setting that can't be blank
-# (i.e. there must be at least one non-null member of the array)
-#
-# $1 = variable name
-#
-# "local" vars: aname, arrcopy, val
-# config settings: (contents of $1)
-# library functions: copyarray(), throwstartuperr()
-# utilities: [
-# bashisms: arrays
-#
-[ "${skip_validnoblankarr+X}" = "" ] && \
-validnoblankarr () {
-  aname="$1"
-  copyarray "$aname" "arrcopy"
-
-  # go through the array; if we use [*] or [@] we won't we able to tell the
-  # difference between ("" "") and (" ")
-  for val in "${arrcopy[@]}"; do
-    if [ "$val" != "" ]; then
-      return
-    fi
-  done
-
-  throwstartuperr "Error: $aname is unset or blank; exiting."
 }
 
 #
@@ -2185,8 +2248,8 @@ validnoblankarr () {
 # utilities: [
 # bashisms: ${!var}
 #
-[ "${skip_validnotbothblank+X}" = "" ] && \
-validnotbothblank () {
+[ "${skip_validnotbothvoid+X}" = "" ] && \
+validnotbothvoid () {
   vname1="$1"
   vname2="$2"
   vval1="${!vname1}"
@@ -2195,6 +2258,47 @@ validnotbothblank () {
   if [ "$vval1" = "" ] && [ "$vval2" = "" ]; then
     throwstartuperr "Error: $vname1 and $vname2 cannot both be blank; exiting."
   fi
+}
+
+#
+# validate an array setting that can't be unset or empty
+#
+# $1 = array name
+#
+# "local" vars: aname
+# config settings: (contents of $1)
+# library functions: arrayisvoid(), throwstartuperr()
+#
+[ "${skip_validarrnotvoid+X}" = "" ] && \
+validarrnotvoid () {
+  aname="$1"
+
+  if arrayisvoid "$aname"; then
+    throwstartuperr "Error: $aname is unset or has no elements; exiting."
+  fi
+}
+
+#
+# validate an array setting that can't have any null elements
+#
+# if the array also can't be unset or empty, combine with validarrnotvoid()
+#
+# $1 = array name
+#
+# "local" vars: aname
+# config settings: (contents of $1)
+# library functions: arrayisvoid(), arrayallnotvoid(), throwstartuperr()
+# bashisms: !
+#
+[ "${skip_validarrnonulls+X}" = "" ] && \
+validarrnonulls () {
+  aname="$1"
+
+  if arrayisvoid "$aname" || arrayallnotvoid "$aname"; then
+    return
+  fi
+
+  throwstartuperr "Error: $aname may not contain blank elements; exiting."
 }
 
 #
@@ -2314,7 +2418,7 @@ validlist () {
 #
 # "local" vars: vname, vval
 # config settings: (contents of $1)
-# library functions: validnoblank(), throwstartuperr()
+# library functions: validnotvoid(), throwstartuperr()
 # utilities: [
 # bashisms: ${!var}
 #
@@ -2323,7 +2427,7 @@ validrwxdir () {
   vname="$1"
   vval="${!vname}"
 
-  validnoblank "$vname"
+  validnotvoid "$vname"
 
   # [ dereferences symlinks for us
   if [ ! -d "$vval" ]; then
@@ -2363,7 +2467,7 @@ validrwxdir () {
 #
 # "local" vars: vname, vval, parentdir
 # config settings: (contents of $1)
-# library functions: validnoblank(), throwstartuperr(), getparentdir()
+# library functions: validnotvoid(), throwstartuperr(), getparentdir()
 # utilities: ls, [
 # bashisms: ${!var}
 #
@@ -2373,7 +2477,7 @@ validcreate () {
   vval="${!vname}"
 
   # condition 1
-  validnoblank "$vname"
+  validnotvoid "$vname"
 
   # condition 2
   #
@@ -2436,7 +2540,7 @@ validcreate () {
 # "local" vars: vname, vval
 # global vars: (contents of $1, if "configfile")
 # config settings: (contents of $1, usually)
-# library functions: validnoblank(), throwstartuperr()
+# library functions: validnotvoid(), throwstartuperr()
 # utilities: [
 # bashisms: ${!var}
 #
@@ -2446,7 +2550,7 @@ validreadfile () {
   vval="${!vname}"
 
   # blank?
-  validnoblank "$vname"
+  validnotvoid "$vname"
 
   # from here on, we will only be using $vname for printing purposes,
   # so we can doctor it
