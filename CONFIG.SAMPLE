@@ -573,6 +573,41 @@
 #
 ###rsync_dest=
 
+#
+# hooks to run functions before and after rsync backups
+#
+# this feature allows you to run arbitrary code before and after the rsync
+# phase of the script; it is particularly helpful for preventing files from
+# changing during the dump by, e.g., locking a code repository
+#
+# rsync_userunbefore and rsync_userunafter can be "yes" or "no";
+# if "yes", you must define a function called rsync_runbefore or
+# rsync_runafter, respectively
+#
+# rsync_runbefore takes no parameters, and can return:
+#   0 = success
+#   1 = skip the rsync phase
+#   2 = abort the script completely
+#
+# rsync_runafter takes one parameter, the return value of the rsync,
+# and can return:
+#   0 = success
+#   2 = abort the script
+#
+# your functions can access any of the internal variables of the script;
+# it is recommended to study the script and library code, and to use the
+# available logging tools
+#
+# see mysql_aftereach for an example that includes some useful techniques
+#
+# * functions are ignored if respective settings are "no"
+# * if blank or unset, settings default to "no"
+#
+###rsync_userunbefore=
+###rsync_runbefore () { }
+###rsync_userunafter=
+###rsync_runafter () { }
+
 
 ############################################
 # MySQL dump settings, including SSH tunnel
@@ -1152,6 +1187,39 @@
 ###mysql_useaftereach=
 ###mysql_aftereach () { }
 
+#
+# hooks to run functions before and after MySQL dumps
+#
+# this feature allows you to run arbitrary code before and after the MySQL
+# phase of the script
+#
+# mysql_userunbefore and mysql_userunafter can be "yes" or "no";
+# if "yes", you must define a function called mysql_runbefore or
+# mysql_runafter, respectively
+#
+# mysql_runbefore takes no parameters, and can return:
+#   0 = success
+#   1 = skip the MySQL phase
+#   2 = abort the script completely
+#
+# mysql_runafter takes no parameters, and can return:
+#   0 = success
+#   2 = abort the script
+#
+# your functions can access any of the internal variables of the script;
+# it is recommended to study the script and library code, and to use the
+# available logging tools
+#
+# see mysql_aftereach for an example that includes some useful techniques
+#
+# * functions are ignored if respective settings are "no"
+# * if blank or unset, settings default to "no"
+#
+###mysql_userunbefore=
+###mysql_runbefore () { }
+###mysql_userunafter=
+###mysql_runafter () { }
+
 
 #################################################
 # PostgreSQL dump settings, including SSH tunnel
@@ -1362,3 +1430,7 @@
 ###postgres_preserve=
 ###postgres_useaftereach=
 ###postgres_aftereach () { }
+###postgres_userunbefore=
+###postgres_runbefore () { }
+###postgres_userunafter=
+###postgres_runafter () { }
