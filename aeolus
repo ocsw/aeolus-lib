@@ -2656,7 +2656,7 @@ for dbms in $dbmslist; do
       logstatus "${dbms_prefix}_runafter() complete"
     fi
 
-    logstatus "$dbms_prefix dump sequence completed"
+    logstatus "$dbms_prefix dump sequence complete"
   fi
 done
 
@@ -2748,7 +2748,7 @@ while true; do  # only here to allow us to easily skip to the next phase
       logstatus "rsync_runafter() complete"
     fi
 
-    logstatus "rsync backup sequence completed"
+    logstatus "rsync backup sequence complete"
   fi
 
   break  # don't actually loop

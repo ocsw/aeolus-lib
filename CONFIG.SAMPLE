@@ -1159,8 +1159,8 @@
 #      else 0
 #
 # your function can access any of the internal variables of the script;
-# it is recommended to study the code before writing functions, and to use
-# the available logging tools
+# it is recommended to study the script and library code, and to use the
+# available logging tools
 #
 # sample function:
 #
