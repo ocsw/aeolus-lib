@@ -272,6 +272,7 @@ externalcmds="
   sed
   tr
   expr
+  sort
   cat
   tee
   ls
@@ -699,43 +700,6 @@ if funcisnotdefined "mysql_altopts"; then
     return 1
   }
 fi
-
-
-#################################
-# helper functions: housekeeping
-#################################
-
-#
-# cleanup function, to be called by do_exit()
-#
-#   * closes any open SSH tunnel
-#   * removes the lockfile, unless the scriptdisabled semaphore exists
-#
-# note: we could use a trap to automatically remove the lockfile,
-# but we explicitly remove it instead so that its unexpected presence
-# serves as notice that something went wrong previously;
-# this is also the reason for not using -f
-#
-# global vars: tunpid_prefix, scriptdisabled
-# config settings: lockfile
-# library functions: closesshtunnel()
-# utilities: rm, [
-# files: $lockfile, $lockfile/$scriptdisabled
-#
-do_exit_cleanup () {
-  # closesshtunnel() can be run after the tunnel was already closed,
-  # but should not be run if it was never started
-  if [ "$tunpid_prefix" != "" ]; then
-    closesshtunnel
-  fi
-
-  if [ ! -f "$lockfile/$scriptdisabled" ]; then
-    rm -r "$lockfile"
-  fi
-  # otherwise, a disable command must have been run while we were
-  # doing this backup; leave the lockfile dir alone, so future backups
-  # will be disabled
-}
 
 
 #######################################

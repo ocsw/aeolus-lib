@@ -1144,27 +1144,135 @@ setexitval () {
 }
 
 #
-# update exit value (see setexitval()) and exit, possibly doing some cleanup
+# add a function to the list of functions to call before exiting the script
+#
+# $1 = the name of the function to add
+# $2 through $9 = optional arguments to call the function with
+#                 (limited to 8 to avoid various difficulties
+#                 and incompatibilities)
+#
+# note that the callback function will be called with nulls for any
+# arguments that were not supplied to addexitcallback()
+#
+# returns 1 if the function doesn't exist, otherwise 0
+#
+# global vars: exitcallbacks, exitcallbackarg1 through 8
+# user-defined functions: (contents of $1)
+# library functions: funcisdefined()
+# bashisms: arrays, array+=() [v3.1]
+#
+[ "${skip_addexitcallback+X}" = "" ] && \
+addexitcallback () {
+  if funcisdefined "$1"; then
+    exitcallbacks+=("$1")
+    exitcallbackarg1+=("$2")
+    exitcallbackarg2+=("$3")
+    exitcallbackarg3+=("$4")
+    exitcallbackarg4+=("$5")
+    exitcallbackarg5+=("$6")
+    exitcallbackarg6+=("$7")
+    exitcallbackarg7+=("$8")
+    exitcallbackarg8+=("$9")
+    return 0  # success
+  else
+    return 1  # failure
+  fi
+}
+
+#
+# remove a function from the list of functions to call before exiting
+# the script
+#
+# removes only the most-recently-added incidence matching both the function
+# and its arguments
+#
+# $1 = the name of the function to remove
+# $2 through $9 = optional arguments to the callback function (trailing
+#                 nulls can be omitted)
+#
+# returns 1 if the function is not in the list, otherwise 0
+#
+# "local" vars: ecbkeys, ecbkey
+# global vars: exitcallbacks, exitcallbackarg1 through 8
+# user-defined functions: (contents of $1)
+# utilities: printf, sort, [
+# bashisms: arrays, ${!array[@]} [v3.0], unset
+#
+[ "${skip_removeexitcallback+X}" = "" ] && \
+removeexitcallback () {
+  ecbkeys=("${!exitcallbacks[@]}")
+
+  # this 'for $()' approach is unsafe in general
+  # (see http://mywiki.wooledge.org/DontReadLinesWithFor),
+  # but it works in this case because the range of values is known;
+  # also, printf doubles here as a way to put the values on separate lines
+  for ecbkey in $(printf "%s\n" "${ecbkeys[@]}" | sort -nr); do
+    if [ "${exitcallbacks["$ecbkey"]}" = "$1" ] && \
+       [ "${exitcallbackarg1["$ecbkey"]}" = "$2" ] && \
+       [ "${exitcallbackarg2["$ecbkey"]}" = "$3" ] && \
+       [ "${exitcallbackarg3["$ecbkey"]}" = "$4" ] && \
+       [ "${exitcallbackarg4["$ecbkey"]}" = "$5" ] && \
+       [ "${exitcallbackarg5["$ecbkey"]}" = "$6" ] && \
+       [ "${exitcallbackarg6["$ecbkey"]}" = "$7" ] && \
+       [ "${exitcallbackarg7["$ecbkey"]}" = "$8" ] && \
+       [ "${exitcallbackarg8["$ecbkey"]}" = "$9" ]; then
+      unset "exitcallbacks[$ecbkey]"
+      unset "exitcallbackarg1[$ecbkey]"
+      unset "exitcallbackarg2[$ecbkey]"
+      unset "exitcallbackarg3[$ecbkey]"
+      unset "exitcallbackarg4[$ecbkey]"
+      unset "exitcallbackarg5[$ecbkey]"
+      unset "exitcallbackarg6[$ecbkey]"
+      unset "exitcallbackarg7[$ecbkey]"
+      unset "exitcallbackarg8[$ecbkey]"
+      return 0  # success
+    fi
+  done
+
+  return 1  # failure
+}
+
+#
+# exit the script in an orderly fashion
+#
+# before exiting:
+#   * calls callbacks (starting with the most recently added;
+#     see addexitcallback())
+#   * updates exit value (see setexitval())
 #
 # $1 = exit value (required)
 #
-# if cleanup_on_exit is non-null, calls do_exit_cleanup(), which must be
-# defined by the calling script
-#
-# for clarity, a value of "yes" is recommended when setting cleanup_on_exit
-#
-# global vars: cleanup_on_exit, exitval
-# user-defined functions: do_exit_cleanup()
+# "local" vars: ecbkeys, ecbkey
+# global vars: exitcallbacks, exitcallbackarg1 through 8, exitval
+# user-defined functions: (contents of exitcallbacks)
 # library functions: setexitval()
-# utilities: [
+# utilities: printf, sort, [
+# bashisms: arrays, ${!array[@]} [v3.0]
 #
 [ "${skip_do_exit+X}" = "" ] && \
 do_exit () {
-  if [ "$cleanup_on_exit" != "" ]; then
-    do_exit_cleanup
-  fi
+  ecbkeys=("${!exitcallbacks[@]}")
+
+  # this 'for $()' approach is unsafe in general
+  # (see http://mywiki.wooledge.org/DontReadLinesWithFor),
+  # but it works in this case because the range of values is known;
+  # also, printf doubles here as a way to put the values on separate lines
+  for ecbkey in $(printf "%s\n" "${ecbkeys[@]}" | sort -nr); do
+    if [ "${exitcallbacks["$ecbkey"]}" != "" ]; then
+      "${exitcallbacks["$ecbkey"]}" \
+          "${exitcallbackarg1["$ecbkey"]}" \
+          "${exitcallbackarg2["$ecbkey"]}" \
+          "${exitcallbackarg3["$ecbkey"]}" \
+          "${exitcallbackarg4["$ecbkey"]}" \
+          "${exitcallbackarg5["$ecbkey"]}" \
+          "${exitcallbackarg6["$ecbkey"]}" \
+          "${exitcallbackarg7["$ecbkey"]}" \
+          "${exitcallbackarg8["$ecbkey"]}"
+    fi
+  done
 
   setexitval "$1"
+
   exit "$exitval"
 }
 
@@ -2714,6 +2822,31 @@ do_config () {
 ##################################
 
 #
+# exit callback: clean up lockfile
+#
+# removes the lockfile, unless the scriptdisabled semaphore exists
+#
+# note: we could use a trap to automatically remove the lockfile,
+# but we explicitly remove it instead so that its unexpected presence
+# serves as notice that something went wrong previously;
+# this is also the reason for not using -f
+#
+# global vars: scriptdisabled
+# config settings: lockfile
+# utilities: rm, [
+# files: $lockfile, $lockfile/$scriptdisabled
+#
+[ "${skip_lockfile_cleanup+X}" = "" ] && \
+lockfile_cleanup () {
+  if [ ! -f "$lockfile/$scriptdisabled" ]; then
+    rm -r "$lockfile"
+  fi
+  # otherwise, a disable command must have been run while we were
+  # doing this backup; leave the lockfile dir alone, so future backups
+  # will be disabled
+}
+
+#
 # check if we should actually start running
 #
 # * has $runevery passed?
@@ -2726,11 +2859,11 @@ do_config () {
 # $2 is the plural of $1, used in messages like "backups have been manually
 # disabled"
 #
-# global vars: cleanup_on_exit, lfalertssilenced, scriptdisabled, timetemp
+# global vars: lfalertssilenced, scriptdisabled, timetemp
 # config settings: runevery, startedfile, lockfile, ifrunning, alertfile
 # library vars: no_error_exitval, lockfile_exitval
 # library functions: newerthan(), logstatus(), logalert(), sendalert(),
-#                    do_exit()
+#                    addexitcallback(), lockfile_cleanup(), do_exit()
 # utilities: mkdir, rm, touch, [
 # files: $startedfile, $lockfile, $alertfile, $lockfile/$lfalertssilenced,
 #        $lockfile/$scriptdisabled, $lockfile/timetemp
@@ -2762,13 +2895,14 @@ checkstatus () {
   # it could cause issues with commands that don't manipulate symlinks
   # directly; plus, now we have a tempdir)
   if mkdir "$lockfile" > /dev/null 2>&1; then
-    # got the lock, clear lock-alert status
+    # add callback to remove the lockfile on exit
+    addexitcallback "lockfile_cleanup"
+
+    # clear lock-alert status
     if [ -f "$alertfile" ]; then  # -f is more portable than -e
       rm "$alertfile"
       sendalert "lockfile created; cancelling previous alert status" log
     fi
-    # set flag to remove the lockfile (etc.) on exit
-    cleanup_on_exit="yes"
   else
     # assume mkdir failed because it already existed;
     # but that could be because we manually disabled the script
@@ -3573,13 +3707,20 @@ sshremotecmd () {
 # differentiate between multiple commands; if unset or null, it defaults to
 # "sshpid"
 #
+# if $2 is unset or null, a callback function to kill the ssh process when
+# the script exits will be registered; to prevent this, make $2 non-null
+# (suggested value: "noauto")
+#
+# (to set $2 while leaving $1 as the default, use "" for $1)
+#
 # ssh_options and ssh_rcommand must be indexed, non-sparse arrays
 #
 # "local" vars: sshpid_var, sshpid_l
 # global vars: (contents of $1, or sshpid), cmdpid
 # config settings: ssh_port, ssh_keyfile, ssh_options, ssh_user, ssh_host,
 #                  ssh_rcommand
-# library functions: begincmdprint(), endcmdprintbg()
+# library functions: begincmdprint(), endcmdprintbg(), addexitcallback(),
+#                    killsshremotebg()
 # utilities: ssh, printf, [
 # files: $ssh_keyfile
 # bashisms: arrays, printf -v [v3.1]
@@ -3604,6 +3745,9 @@ sshremotebgcmd () {
     &
   endcmdprintbg 2>/dev/null
 
+  # register the exit callback
+  [ "$2" = "" ] && addexitcallback "killsshremotebg" "$sshpid_var"
+
   # get the PID
   sshpid_l="$cmdpid"
   printf -v "$sshpid_var" "%s" "$sshpid_l"  # set the global
@@ -3616,10 +3760,17 @@ sshremotebgcmd () {
 # differentiate between multiple commands; if unset or null, it defaults to
 # "sshpid"
 #
+# if $2 is unset or null, the callback function to kill the ssh process when
+# the script exits will be unregistered (see sshremotebgcmd()); to prevent
+# this, make $2 non-null (suggested value: "noauto")
+#
+# (to set $2 while leaving $1 as the default, use "" for $1)
+#
 # can be run even if the command was already killed / died
 #
 # "local" vars: sshpid_var, sshpid_l
 # global vars: (contents of $1, or sshpid)
+# library functions: removeexitcallback()
 # utilities: printf, kill, [
 # bashisms: ${!var}, printf -v [v3.1]
 #
@@ -3639,6 +3790,9 @@ killsshremotebg () {
     wait "$sshpid_l"
     printf -v "$sshpid_var" "%s" ""  # so we know it's been killed
   fi
+
+  # unregister the exit callback
+  [ "$2" = "" ] && removeexitcallback "killsshremotebg" "$sshpid_var"
 }
 
 #
@@ -3648,6 +3802,12 @@ killsshremotebg () {
 # differentiate between multiple tunnels; if unset or null, it defaults to
 # "tunpid"
 #
+# if $2 is unset or null, a callback function to kill the ssh process when
+# the script exits will be registered; to prevent this, make $2 non-null
+# (suggested value: "noauto")
+#
+# (to set $2 while leaving $1 as the default, use "" for $1)
+#
 # tun_sshoptions must be an indexed, non-sparse array
 #
 # "local" vars: tunpid_var, tunpid_l
@@ -3655,7 +3815,8 @@ killsshremotebg () {
 # config settings: tun_localport, tun_remotehost, tun_remoteport,
 #                  tun_sshport, tun_sshkeyfile, tun_sshoptions, tun_sshuser,
 #                  tun_sshhost
-# library functions: begincmdprint(), endcmdprintbg()
+# library functions: begincmdprint(), endcmdprintbg(), addexitcallback(),
+#                    killsshtunnel()
 # utilities: ssh, printf, [
 # files: $tun_sshkeyfile
 # bashisms: arrays, printf -v [v3.1]
@@ -3680,6 +3841,9 @@ sshtunnelcmd () {
     &
   endcmdprintbg 2>/dev/null
 
+  # register the exit callback
+  [ "$2" = "" ] && addexitcallback "killsshtunnel" "$tunpid_var"
+
   # get the PID
   tunpid_l="$cmdpid"
   printf -v "$tunpid_var" "%s" "$tunpid_l"  # set the global
@@ -3692,6 +3856,12 @@ sshtunnelcmd () {
 # differentiate between multiple tunnels; if unset or null, it defaults to
 # "tunpid"
 #
+# if $2 is unset or null, the callback function to kill the ssh process when
+# the script exits will be unregistered (see sshtunnelcmd()); to prevent
+# this, make $2 non-null (suggested value: "noauto")
+#
+# (to set $2 while leaving $1 as the default, use "" for $1)
+#
 # can be run even if the tunnel already died / was closed / was killed
 #
 # note: this will hang if the remote port isn't open; you should be using
@@ -3699,6 +3869,7 @@ sshtunnelcmd () {
 #
 # "local" vars: tunpid_var, tunpid_l
 # global vars: (contents of $1, or tunpid)
+# library functions: removeexitcallback()
 # utilities: printf, kill, [
 # bashisms: ${!var}, printf -v [v3.1]
 #
@@ -3718,6 +3889,9 @@ killsshtunnel () {
     wait "$tunpid_l"
     printf -v "$tunpid_var" "%s" ""  # so we know it's been killed
   fi
+
+  # unregister the exit callback
+  [ "$2" = "" ] && removeexitcallback "killsshtunnel" "$tunpid_var"
 }
 
 #
@@ -3733,6 +3907,12 @@ killsshtunnel () {
 # a global variable with name "$1_descr" (defaults to "tunpid_descr"
 # if $1 is unset or null) will be used to save the current value of
 # $tun_descr
+#
+# if $2 is unset or null, a callback function to close the tunnel when
+# the script exits will be registered; to prevent this, make $2 non-null
+# (suggested value: "noauto")
+#
+# (to set $2 while leaving $1 as the default, use "" for $1)
 #
 # returns 0 on success
 # on error, calls sendalert(), then acts according to the value of
@@ -3750,7 +3930,8 @@ killsshtunnel () {
 # config settings: tun_localhost, tun_localport, tun_sshtimeout
 # library vars: newline, on_tunerr, sshtunnel_exitval
 # library functions: sshtunnelcmd(), logstatus(), logstatusquiet(),
-#                    sendalert(), do_exit()
+#                    sendalert(), addexitcallback(), closesshtunnel(),
+#                    do_exit()
 # utilities: nc, printf, sleep, kill, expr, [
 # FDs: 3
 # bashisms: ${!var}, printf -v [v3.1]
@@ -3771,8 +3952,11 @@ opensshtunnel () {
   printf "%s\n" "running SSH tunnel command for $tun_descr" >&3
 
   # run the command and get the PID
-  sshtunnelcmd "$tunpid_var" >&3 2>&1
+  sshtunnelcmd "$tunpid_var" "noauto" >&3 2>&1
   tunpid_l="${!tunpid_var}"
+
+  # register the exit callback
+  [ "$2" = "" ] && addexitcallback "closesshtunnel" "$tunpid_var"
 
   # make sure it's actually working;
   # see http://mywiki.wooledge.org/ProcessManagement#Starting_a_.22daemon.22_and_checking_whether_it_started_successfully
@@ -3837,13 +4021,19 @@ opensshtunnel () {
 # differentiate between multiple tunnels; if unset or null, it defaults to
 # "tunpid"
 #
+# if $2 is unset or null, the callback function to kill the ssh process when
+# the script exits will be unregistered (see opensshtunnel()); to prevent
+# this, make $2 non-null (suggested value: "noauto")
+#
+# (to set $2 while leaving $1 as the default, use "" for $1)
+#
 # can be run even if the tunnel already died / was closed / was killed,
 # but should not be run before the tunnel was started, or the logs won't
 # make sense
 #
 # "local" vars: tunpid_var, tunpid_l, descr_l
 # global vars: (contents of $1, or tunpid, and the corresponding *_descr)
-# library functions: copyvar(), logstatus()
+# library functions: copyvar(), logstatus(), removeexitcallback()
 # utilities: printf, kill, [
 # bashisms: ${!var}, printf -v [v3.1]
 #
@@ -3868,6 +4058,9 @@ closesshtunnel () {
   else
     logstatus "SSH tunnel for $descr_l was already closed"
   fi
+
+  # unregister the exit callback
+  [ "$2" = "" ] && removeexitcallback "closesshtunnel" "$tunpid_var"
 }
 
 

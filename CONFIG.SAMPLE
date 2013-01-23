@@ -598,7 +598,10 @@
 # it is recommended to study the script and library code, and to use the
 # available logging tools
 #
-# see mysql_aftereach for an example that includes some useful techniques
+# see mysql_aftereach for an example that includes some useful techniques;
+# the addexitcallback library function may also be useful in case you need
+# to be sure certain things happen even if the rsync_runafter function never
+# gets called (e.g., because the script aborts)
 #
 # * functions are ignored if respective settings are "no"
 # * if blank or unset, settings default to "no"
@@ -1210,7 +1213,10 @@
 # it is recommended to study the script and library code, and to use the
 # available logging tools
 #
-# see mysql_aftereach for an example that includes some useful techniques
+# see mysql_aftereach for an example that includes some useful techniques;
+# the addexitcallback library function may also be useful in case you need
+# to be sure certain things happen even if the rsync_runafter function never
+# gets called (e.g., because the script aborts)
 #
 # * functions are ignored if respective settings are "no"
 # * if blank or unset, settings default to "no"
