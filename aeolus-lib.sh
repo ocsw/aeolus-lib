@@ -1151,8 +1151,11 @@ setexitval () {
 #                 (limited to 8 to avoid various difficulties
 #                 and incompatibilities)
 #
-# note that the callback function will be called with nulls for any
-# arguments that were not supplied to addexitcallback()
+# also works with external commands in the $PATH rather than functions
+#
+# note that the callback function/command will be called with nulls for any
+# arguments that were not supplied to addexitcallback(); for this reason,
+# adding external commands is usually a bad idea without a wrapper
 #
 # returns 1 if the function doesn't exist, otherwise 0
 #
@@ -1163,7 +1166,9 @@ setexitval () {
 #
 [ "${skip_addexitcallback+X}" = "" ] && \
 addexitcallback () {
-  if funcisdefined "$1"; then
+  # command -v also includes functions, but I don't know if that behavior
+  # is reliable
+  if funcisdefined "$1" || command -v "$1" > /dev/null 2>&1; then
     exitcallbacks+=("$1")
     exitcallbackarg1+=("$2")
     exitcallbackarg2+=("$3")
