@@ -145,23 +145,23 @@ CONTENTS
 
       This will of course require adjustments for your specific application
       and for other transfer modes.  In particular:
-        * the address line at the top only works if all rsync connections
+        * the 'address' line at the top only works if all rsync connections
           are via SSH tunnel
-        * some settings, such as chroot, are not really useful in this
+        * some settings, such as 'use chroot', are not really useful in this
           example, but are there as reminders should you use a different
           setup
-        * read only = no allows restores without changing any configuration;
-          for greater security you can set read only = yes and change it
-          when necessary
-        * uid/gid must be 0 to copy the entire server, but if your
+        * 'read only = no' allows restores without changing any
+          configuration; for greater security you can set 'read only = yes'
+          and change it when necessary
+        * 'uid'/'gid' must be 0 to copy the entire server, but if your
           application allows, using (or creating) a separate account with
           fewer privileges is more secure
-        * fake super is especially helpful when one end of the connection
+        * 'fake super' is especially helpful when one end of the connection
           is running as root and the other one isn't; however, it requires
           turning on extended attributes on the filesystem to which the
           data is being copied (e.g., mount with user_xattr on Linux)
-        * the names in the auth users line refer to lines in the secrets
-          file; each line in this file has the format:
+        * the names in the 'auth users' line refer to lines in the 'secrets
+          file'; each line in this file has the format:
             username:password
           and the file must not be world-readable
 
