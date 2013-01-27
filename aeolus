@@ -744,7 +744,7 @@ sendalert_body () {
 # note: the [tun]_* settings may still be used in addition to or instead of
 # the tun_* globals; keep them in sync while in use
 #
-# [tun]_sshoptions must be an indexed, non-sparse array
+# [tun]_sshoptions must be an indexed array
 #
 # global vars: tun_prefix, tun_descr, tun_sshuser, tun_sshhost,
 #              tun_sshkeyfile, tun_sshport, tun_localhost, tun_localport,
@@ -783,7 +783,7 @@ switchtunnel () {
 #
 # [dbms]_dblist, [dbms]_options, [dbms]_dumpoptions, [dbms]_dumponeoptions,
 # [dbms]_dumpmultoptions, [dbms]_dumpalloptions, and [dbms]_zipoptions must
-# be indexed, non-sparse arrays
+# be indexed arrays
 #
 # global vars: [dbms]_datestring, dbms_prefix,
 #              dbms_dodump, dbms_usetunnel, dbms_user, dbms_pwfile,
@@ -1437,8 +1437,8 @@ validconf () {
 #
 # (in the notes below, [dbms] = the value of $dbms_prefix)
 #
-# altopts and [dbms]_dumpoptions/[dbms]_dumponeoptions/etc. must be indexed,
-# non-sparse arrays
+# altopts and [dbms]_dumpoptions/[dbms]_dumponeoptions/etc. must be indexed
+# arrays
 #
 # "local" vars: opts_l
 # global vars: dbms_prefix, altopts, cmdexitval
@@ -1514,8 +1514,8 @@ dbdumponecmd () {
 #
 # (in the notes below, [dbms] = the value of $dbms_prefix)
 #
-# dbnames and [dbms]_dumpoptions/[dbms]_dumpmultoptions/etc. must be indexed,
-# non-sparse arrays
+# dbnames and [dbms]_dumpoptions/[dbms]_dumpmultoptions/etc. must be indexed
+# arrays
 #
 # global vars: dbnames, dbms_prefix, internal_exitval, cmdexitval
 # config settings: [dbms]_user, [dbms]_pwfile, [dbms]_protocol, [dbms]_host,
@@ -1567,8 +1567,7 @@ dbdumpmultcmd () {
 #
 # (in the notes below, [dbms] = the value of $dbms_prefix)
 #
-# [dbms]_dumpoptions/[dbms]_dumpalloptions/etc. must be indexed, non-sparse
-# arrays
+# [dbms]_dumpoptions/[dbms]_dumpalloptions/etc. must be indexed arrays
 #
 # global vars: dbms_prefix, cmdexitval
 # config settings: [dbms]_user, [dbms]_pwfile, [dbms]_protocol, [dbms]_host,
@@ -1910,7 +1909,7 @@ getdumppaths () {
 #
 # see getdumppaths() for info about dumpprefix/dumpsuffix
 #
-# dbnames and dbms_zipoptions must be indexed, non-sparse arrays
+# dbnames and dbms_zipoptions must be indexed arrays
 #
 # "local" vars: dumptype, dbname, fileexists, dumpexit, zipexit
 # global vars: dbnames, dumptmp, dumpprefix, dumpsuffix, rotateprefix,
@@ -2240,7 +2239,7 @@ do_dbdump_wrapper () {
 #
 # returns 1 to mean "skip to the next phase of the backup", else 0
 #
-# dbms_dblist must be an indexed, non-sparse array
+# dbms_dblist must be an indexed array
 #
 # "local" vars: OLDIFS, dbname_esc, dbname, exclude
 # global vars: IFS, dbnames, dbms_prefix, dbms_dbmode, dbms_dblist,
