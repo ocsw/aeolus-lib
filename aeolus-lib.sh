@@ -4254,8 +4254,8 @@ dbunescape () {
 # rsync_sshoptions, rsync_options, and rsync_source must be indexed arrays
 #
 # global vars: cmdexitval
-# config settings: rsync_mode, rsync_pwfile, rsync_port, rsync_sshport,
-#                  rsync_sshkeyfile, rsync_sshoptions, rsync_filterfile,
+# config settings: rsync_mode, rsync_pwfile, rsync_port, rsync_sshkeyfile,
+#                  rsync_sshport, rsync_sshoptions, rsync_filterfile,
 #                  rsync_options, rsync_source, rsync_dest
 # library functions: begincmdprint(), endcmdprint()
 # utilities: rsync, ssh
@@ -4281,7 +4281,7 @@ rsynccmd () {
       # argument to -e has to be on one line; use trickery to get
       # "${rsync_sshoptions[@]}" in quotes inside the outer quotes
       rsync \
-        -e "ssh ${rsync_sshport:+-p "$rsync_sshport"} ${rsync_sshkeyfile:+-i "$rsync_sshkeyfile"} ${rsync_sshoptions+"${rsync_sshoptions[@]}"}" \
+        -e "ssh ${rsync_sshkeyfile:+-i "$rsync_sshkeyfile"} ${rsync_sshport:+-p "$rsync_sshport"} ${rsync_sshoptions+"${rsync_sshoptions[@]}"}" \
         ${rsync_filterfile:+-f "merge $rsync_filterfile"} \
         "${rsync_options[@]}" \
         "${rsync_source[@]}" \
