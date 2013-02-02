@@ -542,7 +542,7 @@
 #
 # * must be an array (see usage notes on the config file)
 # * ignored if mysql_dbmode="all"
-# * can be blank or unset if mysql_dbmode="include" or "exclude"
+# * can be empty or unset if mysql_dbmode="include" or "exclude"
 #
 ###mysql_dblist=()
 
@@ -571,7 +571,7 @@
 # * for MySQL, ignored unless either mysql_dbmode="all" and
 #   mysql_splitdbs="yes", or mysql_dbmode="exclude" (may be different for
 #   other DBMSes)
-# * can be blank or unset
+# * can be empty or unset
 #
 ###mysql_options=()
 
@@ -608,8 +608,8 @@
 # note that options are order-sensitive; later ones override earlier ones
 #
 # * must be an array (see usage notes on the config file)
-# * can be blank (i.e., mysql_dumpoptions=(""))
-# * if this is unset (as opposed to just blank), it defaults to
+# * can be empty (i.e., mysql_dumpoptions=())
+# * if this is unset (as opposed to just empty), it defaults to
 #   (--opt -Q -R -c)
 #
 ###mysql_dumpoptions=()
@@ -897,7 +897,7 @@
 #
 # * must be an array (see usage notes on the config file)
 # * ignored if mysql_zipmode="none"
-# * can be blank or unset
+# * can be empty or unset
 #
 ###mysql_zipoptions=()
 
@@ -1187,8 +1187,8 @@
 #                            and post-processing)
 #
 # * must be arrays (see usage notes on the config file)
-# * can be blank (e.g., postgres_dumponeoptions=(""))
-# * if these are unset (as opposed to just blank), they default to (-c)
+# * can be empty (e.g., postgres_dumponeoptions=())
+# * if these are unset (as opposed to just empty), they default to (-c)
 #
 ###postgres_dumponeoptions=()
 ###postgres_dumpalloptions=()
