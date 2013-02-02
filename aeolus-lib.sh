@@ -3680,7 +3680,7 @@ movefilezip () {
 #
 # run a remote SSH command
 #
-# ssh_options and ssh_rcommand must be indexed arrays
+# ssh_options and ssh_rcommand must be indexed, non-sparse arrays
 #
 # global vars: cmdexitval
 # config settings: ssh_port, ssh_keyfile, ssh_options, ssh_user, ssh_host,
@@ -3718,7 +3718,7 @@ sshremotecmd () {
 #
 # (to set $2 while leaving $1 as the default, use "" for $1)
 #
-# ssh_options and ssh_rcommand must be indexed arrays
+# ssh_options and ssh_rcommand must be indexed, non-sparse arrays
 #
 # "local" vars: sshpid_var, sshpid_l
 # global vars: (contents of $1, or sshpid), cmdpid
@@ -3813,7 +3813,7 @@ killsshremotebg () {
 #
 # (to set $2 while leaving $1 as the default, use "" for $1)
 #
-# tun_sshoptions must be an indexed array
+# tun_sshoptions must be an indexed, non-sparse array
 #
 # "local" vars: tunpid_var, tunpid_l
 # global vars: (contents of $1, or tunpid), cmdpid
@@ -4086,7 +4086,7 @@ closesshtunnel () {
 #
 # (in the notes below, [dbms] = the value of $dbms_prefix)
 #
-# [dbms]_options must be an indexed array
+# [dbms]_options must be an indexed, non-sparse array
 #
 # global vars: dbms_prefix, cmdexitval
 # config settings: [dbms]_user, [dbms]_pwfile, [dbms]_protocol, [dbms]_host,
@@ -4151,7 +4151,7 @@ dbcmd () {
 #
 # (in the notes below, [dbms] = the value of $dbms_prefix)
 #
-# [dbms]_options must be an indexed array
+# [dbms]_options must be an indexed, non-sparse array
 #
 # global vars: dbms_prefix, cmdexitval
 # config settings: [dbms]_user, [dbms]_pwfile, [dbms]_protocol, [dbms]_host,
@@ -4251,7 +4251,8 @@ dbunescape () {
 # localhost (or 127.0.0.1/::1/etc.) for the host (in rsync_source/dest)
 # and set rsync_port to the local port of the tunnel
 #
-# rsync_sshoptions, rsync_options, and rsync_source must be indexed arrays
+# rsync_sshoptions, rsync_options, and rsync_source must be indexed,
+# non-sparse arrays
 #
 # global vars: cmdexitval
 # config settings: rsync_mode, rsync_pwfile, rsync_port, rsync_sshkeyfile,
