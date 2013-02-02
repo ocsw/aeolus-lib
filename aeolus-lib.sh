@@ -4240,9 +4240,9 @@ dbunescape () {
 }
 
 
-################
-# rsync backups
-################
+###########################
+# backups and file syncing
+###########################
 
 #
 # run an rsync command
@@ -4295,6 +4295,86 @@ rsynccmd () {
         "${rsync_options[@]}" \
         "${rsync_source[@]}" \
         "$rsync_dest"
+      endcmdprint 2>/dev/null
+      ;;
+  esac
+
+  return "$cmdexitval"
+}
+
+#
+# run an rdiff-backup command
+#
+# rdb_sshoptions and rdb_options must be indexed arrays
+#
+# global vars: cmdexitval
+# config settings: rdb_mode, rdb_sshkeyfile, rdb_sshport, rdb_sshoptions,
+#                  rdb_options, rdb_source, rdb_dest
+# library functions: begincmdprint(), endcmdprint()
+# utilities: rdiff-backup, ssh
+# files: $rdb_sshkeyfile
+# bashisms: arrays
+#
+[ "${skip_rdbcmd+X}" = "" ] && \
+rdbcmd () {
+  case "$rdb_mode" in
+    remote)
+      begincmdprint
+      # argument to -remote-schema has to be on one line; use trickery to get
+      # "${rdb_sshoptions[@]}" in quotes inside the outer quotes
+      rdiff-backup \
+        --remote-schema "ssh ${rdb_sshkeyfile:+-i "$rdb_sshkeyfile"} ${rdb_sshport:+-p "$rdb_sshport"} ${rdb_sshoptions+"${rdb_sshoptions[@]}"} %s rdiff-backup --server" \
+        "${rdb_options[@]}" \
+        "$rdb_source" \
+        "$rdb_dest"
+      endcmdprint 2>/dev/null
+      ;;
+    local)
+      begincmdprint
+      rdiff-backup \
+        "${rdb_options[@]}" \
+        "$rdb_source" \
+        "$rdb_dest"
+      endcmdprint 2>/dev/null
+      ;;
+  esac
+
+  return "$cmdexitval"
+}
+
+#
+# run an rdiff-backup prune command
+#
+# rdb_sshoptions and rdb_options must be indexed arrays
+#
+# global vars: cmdexitval
+# config settings: rdb_mode, rdb_sshkeyfile, rdb_sshport, rdb_sshoptions,
+#                  rbd_prune, rdb_options, rdb_dest
+# library functions: begincmdprint(), endcmdprint()
+# utilities: rdiff-backup, ssh
+# files: $rdb_sshkeyfile
+# bashisms: arrays
+#
+[ "${skip_rdbprunecmd+X}" = "" ] && \
+rdbprunecmd () {
+  case "$rdb_mode" in
+    remote)
+      begincmdprint
+      # argument to -remote-schema has to be on one line; use trickery to get
+      # "${rdb_sshoptions[@]}" in quotes inside the outer quotes
+      rdiff-backup \
+        --remote-schema "ssh ${rdb_sshkeyfile:+-i "$rdb_sshkeyfile"} ${rdb_sshport:+-p "$rdb_sshport"} ${rdb_sshoptions+"${rdb_sshoptions[@]}"} %s rdiff-backup --server" \
+        "${rdb_options[@]}" \
+        --remove-older-than "$rdb_prune" --force \
+        "$rdb_dest"
+      endcmdprint 2>/dev/null
+      ;;
+    local)
+      begincmdprint
+      rdiff-backup \
+        "${rdb_options[@]}" \
+        --remove-older-than "$rdb_prune" --force \
+        "$rdb_dest"
       endcmdprint 2>/dev/null
       ;;
   esac

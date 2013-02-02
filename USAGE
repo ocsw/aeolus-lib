@@ -496,8 +496,8 @@ CONTENTS
    b) The script uses these utilities:
         awk, bzip2, cat, date, expr, find, gawk, grep, gzip, hostname,
         logger, ls, lzip, mailx, mkdir, mkfifo, mv, mysql, mysqldump, nc,
-        pg_dump, pg_dumpall, pigz, psql, rm, rsync, sed, sleep, sort, ssh,
-        tee, touch, tr, xz
+        pg_dump, pg_dumpall, pigz, psql, rdiff-backup, rm, rsync, sed,
+        sleep, sort, ssh, tee, touch, tr, xz
 
    c) Some of the above are optional, depending on the settings used.  In
       the list below, [dbms] means any DBMS, but the same one throughout any
@@ -565,6 +565,8 @@ CONTENTS
         psql is only needed if postgres_dodump="yes" and either
         postgres_dbmode="all" and postgres_splitdbs="yes", or
         postgres_dbmode="exclude"
+
+        rdiff-backup is only needed if do_rdb="yes"
 
         rsync is only needed if do_rsync="yes"
 

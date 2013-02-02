@@ -1,11 +1,11 @@
 #!/bin/bash
 
-#######################################################################
+###########################################################################
 # Aeolus
-# a portable, super-configurable database dump and rsync backup script
+# a portable, super-configurable, failsafe database dump and backup script
 # by Daniel Malament
 # see license() for license info
-#######################################################################
+###########################################################################
 
 # see usage() and the usage and sample config files for usage notes
 
@@ -31,6 +31,9 @@
 #   43  = error compressing DB dump
 #
 #   50  = rsync error
+#
+#   60  = rdiff-backup error
+#   61  = rdiff-backup pruning error
 #
 #   230 = abort from user-supplied function
 #   240 = bad variable name or subscript key
@@ -262,6 +265,7 @@ externalcmds="
   lzip
   xz
   rsync
+  rdiff-backup
   date
   hostname
   logger
@@ -435,6 +439,20 @@ configsettings="
   rsync_runbefore
   rsync_userunafter
   rsync_runafter
+  do_rdb
+  rdb_mode
+  rdb_sshkeyfile
+  rdb_sshport
+  rdb_sshoptions
+  rdb_options
+  rdb_source
+  rdb_dest
+  rdb_prune
+  rdb_pruneorder
+  rdb_userunbefore
+  rdb_runbefore
+  rdb_userunafter
+  rdb_runafter
 "
 
 # names of nonexistent settings which the user might accidentally try to set;
@@ -500,6 +518,14 @@ configsettingtype () {
       echo "array"
       ;;
     rsync_runbefore|rsync_runafter)
+      echo "function"
+      ;;
+
+    # rdiff-backup
+    rdb_sshoptions|rdb_options)
+      echo "array"
+      ;;
+    rdb_runbefore|rdb_runafter)
       echo "function"
       ;;
 
@@ -609,6 +635,14 @@ rsync_pwfile_default="/etc/aeolus/rsync.pw"  # only if unset
 rsync_userunbefore_default="no"
 rsync_userunafter_default="no"
 
+# default settings: rdiff-backup
+do_rdb_default="no"
+rdb_mode_default="remote"
+rdb_sshoptions_default=(-C)  # only if unset
+rdb_pruneorder_default="after"
+rdb_userunbefore_default="no"
+rdb_userunafter_default="no"
+
 # settings that have no default, and can't be null
 # (but may be ignored, depending on other settings)
 #
@@ -649,6 +683,8 @@ dumpexists_exitval="41"
 dbdump_exitval="42"
 dbzip_exitval="43"
 rsync_exitval="50"
+rdb_exitval="60"
+rdbprune_exitval="61"
 userfunc_exitval="230"
 badvarname_exitval="240"
 nodelim_exitval="241"
@@ -1181,6 +1217,15 @@ applydefaults () {
   [ "${rsync_pwfile+X}" = "" ] && rsync_pwfile="$rsync_pwfile_default"
   [ "$rsync_userunbefore" = "" ] && rsync_userunbefore="$rsync_userunbefore_default"
   [ "$rsync_userunafter" = "" ] && rsync_userunafter="$rsync_userunafter_default"
+
+  # rdiff-backup
+  [ "$do_rdb" = "" ] && do_rdb="$do_rdb_default"
+  [ "$rdb_mode" = "" ] && rdb_mode="$rdb_mode_default"
+  arrayisunset "rdb_sshoptions" && \
+      copyarray "rdb_sshoptions_default" "rdb_sshoptions"
+  [ "$rdb_pruneorder" = "" ] && rdb_pruneorder="$rdb_pruneorder_default"
+  [ "$rdb_userunbefore" = "" ] && rdb_userunbefore="$rdb_userunbefore_default"
+  [ "$rdb_userunafter" = "" ] && rdb_userunafter="$rdb_userunafter_default"
 }
 
 #
@@ -1206,7 +1251,7 @@ applydefaults () {
 # files: $startedfile, $lockfile, $alertfile, $outputlog, $statuslog,
 #        $[dbms]_sshkeyfile, $[dbms]_socketfile, $[dbms]_pwfile,
 #        $[dbms]_dumpdir, $rsync_sshkeyfile, $rsync_pwfile,
-#        $rsync_filterfile
+#        $rsync_filterfile, $rdb_sshkeyfile
 # bashisms: printf -v [v3.1]
 #
 validconf () {
@@ -1413,6 +1458,25 @@ validconf () {
     [ "$rsync_userunbefore" = "yes" ] && validfunction "rsync_runbefore"
     validlist "rsync_userunafter" "yes" "no"
     [ "$rsync_userunafter" = "yes" ] && validfunction "rsync_runafter"
+  fi
+
+  # rdiff-backup
+  validlist "do_rdb" "yes" "no"
+  if [ "$do_rdb" = "yes" ]; then
+    validlist "rdb_mode" "remote" "local"
+    if [ "$rdb_mode" = "remote" ]; then
+      [ "$rdb_sshkeyfile" != "" ] && validreadfile "rdb_sshkeyfile"
+      [ "$rdb_sshport" != "" ] && validnum "rdb_sshport" 1 65535
+      unsparsearray "rdb_sshoptions"
+    fi
+    unsparsearray "rdb_options"
+    validnotvoid "rdb_source"
+    validnotvoid "rdb_dest"
+    validlist "rdb_pruneorder" "before" "after"
+    validlist "rdb_userunbefore" "yes" "no"
+    [ "$rdb_userunbefore" = "yes" ] && validfunction "rdb_runbefore"
+    validlist "rdb_userunafter" "yes" "no"
+    [ "$rdb_userunafter" = "yes" ] && validfunction "rdb_runafter"
   fi
 }
 
@@ -2712,6 +2776,131 @@ while true; do  # only here to allow us to easily skip to the next phase
     fi
 
     logstatus "rsync backup sequence complete"
+  fi
+
+  break  # don't actually loop
+done
+
+
+###############
+# rdiff-backup
+###############
+
+while true; do  # only here to allow us to easily skip to the next phase
+  if [ "$do_rdb" = "yes" ]; then
+    do_something="yes"
+
+    logstatus "starting rdiff-backup sequence"
+
+    # pre-phase hook
+    if [ "$rdb_userunbefore" = "yes" ]; then
+      logstatus "running user-supplied rdb_runbefore() function"
+      rdb_runbefore
+      case "$?" in
+        1)  # skip to the next phase
+          break
+          ;;
+        2)  # abort the script
+          do_exit "$userfunc_exitval"
+          ;;
+      esac
+      logstatus "rdb_runbefore() complete"
+    fi
+
+    # pruning, if rdb_pruneorder="before"
+    if [ "$rdb_pruneorder" = "before" ]; then
+      # log that we're running the command
+      logstatusquiet "running rdiff-backup pruning command"
+      printf "%s\n" "running rdiff-backup pruning command" >&3
+
+      # starting timestamp
+      printf "%s\n" "rdiff-backup pruning started $(date)" >&3
+
+      # run the command
+      rdbprunecmd >&3 2>&1
+      rdbpruneexit="$?"
+
+      # check status
+      case "$rdbpruneexit" in
+        0)
+          logstatus "rdiff-backup pruning completed without errors"
+          ;;
+        *)
+          sendalert "error running rdiff-backup pruning (status code $rdbpruneexit)" log
+          setexitval "$rdbprune_exitval"
+          ;;
+      esac
+
+      # ending timestamp
+      printf "%s\n" "rdiff-backup pruning finished $(date)" >&3
+    fi  # pruning
+
+    # main rdiff-backup
+
+    # log that we're running the command
+    logstatusquiet "running rdiff-backup command"
+    printf "%s\n" "running rdiff-backup command" >&3
+
+    # starting timestamp
+    printf "%s\n" "rdiff-backup started $(date)" >&3
+
+    # run the command
+    rdbcmd >&3 2>&1
+    rdbexit="$?"
+
+    # check status
+    case "$rdbexit" in
+      0)
+        logstatus "rdiff-backup completed without errors"
+        ;;
+      *)
+        sendalert "error running rdiff-backup (status code $rdbexit)" log
+        setexitval "$rdb_exitval"
+    esac
+
+    # ending timestamp
+    printf "%s\n" "rdiff-backup finished $(date)" >&3
+
+    # pruning, if rdb_pruneorder="after"
+    if [ "$rdb_pruneorder" = "after" ]; then
+      # log that we're running the command
+      logstatusquiet "running rdiff-backup pruning command"
+      printf "%s\n" "running rdiff-backup pruning command" >&3
+
+      # starting timestamp
+      printf "%s\n" "rdiff-backup pruning started $(date)" >&3
+
+      # run the command
+      rdbprunecmd >&3 2>&1
+      rdbpruneexit="$?"
+
+      # check status
+      case "$rdbpruneexit" in
+        0)
+          logstatus "rdiff-backup pruning completed without errors"
+          ;;
+        *)
+          sendalert "error running rdiff-backup pruning (status code $rdbpruneexit)" log
+          setexitval "$rdbprune_exitval"
+      esac
+
+      # ending timestamp
+      printf "%s\n" "rdiff-backup pruning finished $(date)" >&3
+    fi  # pruning
+
+    # post-phase hook
+    if [ "$rdb_userunafter" = "yes" ]; then
+      logstatus "running user-supplied rdb_runafter() function"
+      rdb_runafter "$rdbexit"
+      case "$?" in
+        2)  # abort the script
+          do_exit "$userfunc_exitval"
+          ;;
+      esac
+      logstatus "rdb_runafter() complete"
+    fi
+
+    logstatus "rdiff-backup sequence complete"
   fi
 
   break  # don't actually loop

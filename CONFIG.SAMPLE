@@ -1435,3 +1435,147 @@
 ###rsync_runbefore () { }
 ###rsync_userunafter=
 ###rsync_runafter () { }
+
+
+########################
+# rdiff-backup settings
+########################
+
+#
+# are we going to run rdiff-backup ("yes" or "no")?
+#
+# if "no", the rest of the rdiff-backup settings are ignored
+#
+# * if blank or unset, defaults to "no"
+#
+###do_rdb=
+
+#
+# mode of operation ("remote" or "local")
+# (see usage notes on rdiff-backup modes)
+#
+# * if blank or unset, defaults to "remote"
+#
+###rdb_mode=
+
+#
+# path to the SSH key file
+#
+# * ignored if rdb_mode is "local"
+# * if blank or unset, the ssh utility's default will be used
+#
+###rdb_sshkeyfile=
+
+#
+# SSH port on the remote host
+#
+# * ignored if rdb_mode is "local"
+# * if blank or unset, the ssh utility's default will be used (generally 22)
+#
+###rdb_sshport=
+
+#
+# additional options to pass to the SSH client
+#
+# rdiff-backup passes "-C" (compression) by default; if you set
+# rdb_sshoptions and you want to retain this option, you have to include it
+# in the array
+#
+# * must be an array (see usage notes on the config file)
+# * ignored if rdb_mode is "local"
+# * can be empty (i.e., rdb_sshoptions=())
+# * if this is unset (as opposed to just empty), it defaults to (-C)
+#
+###rdb_sshoptions=()
+
+#
+# additional options to rdiff-backup
+#
+# if you set the --remote-schema option here, and rdb_mode="remote", it
+# will override rdb_sshkeyfile, rdb_sshkeyport, and rdb_sshoptions; you will
+# have to include the relevant values in the array if you want to use them
+#
+# * must be an array (see usage notes on the config file)
+# * can be empty or unset
+#
+###rdb_options=()
+
+#
+# source directory
+# (see usage notes on rdiff-backup modes)
+#
+###rdb_source=
+
+#
+# destination
+# (see usage notes on rdiff-backup modes)
+#
+###rdb_dest=
+
+#
+# how far back should we prune old increments?
+#
+# if blank or unset, no pruning is done; otherwise, increments older than
+# the specified time are removed
+#
+# examples: 3D = 3 days; 2W = 2 weeks; 1Y = 1 year; 3B = 3 backups ago
+#
+# see the section on time formats in the rdiff-backup man page for more
+# information
+#
+# * can be blank or unset
+#
+###rdb_prune=
+
+#
+# when should we prune the archive ("before" or "after" the rdiff-backup)?
+#
+# "before": keep the total disk space usage during the backup process as low
+#           as possible
+# "after": prune after saving the new increment, so we preserve the old data
+#          longer, especially in case an error prevents us from obtaining
+#          new data
+#
+# * ignored if rdb_prune is blank or unset
+# * if blank or unset, defaults to "after"
+#
+###rdb_pruneorder=
+
+#
+# hooks to run functions before and after rdiff-backup
+#
+# this feature allows you to run arbitrary code before and after the
+# rdiff-backup phase of the script; it is particularly helpful for
+# preventing files from changing during the dump by, e.g., locking a code
+# repository
+#
+# rdb_userunbefore and rdb_userunafter can be "yes" or "no";
+# if "yes", you must define a function called rdb_runbefore or
+# rdb_runafter, respectively
+#
+# rdb_runbefore takes no parameters, and can return:
+#   0 = success
+#   1 = skip the rdiff-backup phase
+#   2 = abort the script completely
+#
+# rdb_runafter takes one parameter, the return value of the rdiff-backup,
+# and can return:
+#   0 = success
+#   2 = abort the script
+#
+# your functions can access any of the internal variables of the script;
+# it is recommended to study the script and library code, and to use the
+# available logging tools
+#
+# see mysql_aftereach for an example that includes some useful techniques;
+# the addexitcallback library function may also be useful in case you need
+# to be sure certain things happen even if the rdb_runafter function never
+# gets called (e.g., because the script aborts)
+#
+# * functions are ignored if the respective settings are "no"
+# * if blank or unset, settings default to "no"
+#
+###rdb_userunbefore=
+###rdb_runbefore () { }
+###rdb_userunafter=
+###rdb_runafter () { }
