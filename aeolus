@@ -249,7 +249,6 @@ scriptname="aeolus"
 # we try to test for them)
 #
 externalcmds="
-  rsync
   ssh
   nc
   mysql
@@ -262,6 +261,7 @@ externalcmds="
   bzip2
   lzip
   xz
+  rsync
   date
   hostname
   logger
@@ -326,28 +326,6 @@ configsettings="
   syslogtag
   quiet
   statuslog
-  do_rsync
-  rsync_mode
-  rsync_sshuser
-  rsync_sshhost
-  rsync_sshkeyfile
-  rsync_sshport
-  rsync_localhost
-  rsync_localport
-  rsync_remotehost
-  rsync_remoteport
-  rsync_sshoptions
-  rsync_sshtimeout
-  rsync_port
-  rsync_pwfile
-  rsync_filterfile
-  rsync_options
-  rsync_source
-  rsync_dest
-  rsync_userunbefore
-  rsync_runbefore
-  rsync_userunafter
-  rsync_runafter
   mysql_dodump
   mysql_usetunnel
   mysql_sshuser
@@ -435,6 +413,28 @@ configsettings="
   postgres_runbefore
   postgres_userunafter
   postgres_runafter
+  do_rsync
+  rsync_mode
+  rsync_sshuser
+  rsync_sshhost
+  rsync_sshkeyfile
+  rsync_sshport
+  rsync_localhost
+  rsync_localport
+  rsync_remotehost
+  rsync_remoteport
+  rsync_sshoptions
+  rsync_sshtimeout
+  rsync_port
+  rsync_pwfile
+  rsync_filterfile
+  rsync_options
+  rsync_source
+  rsync_dest
+  rsync_userunbefore
+  rsync_runbefore
+  rsync_userunafter
+  rsync_runafter
 "
 
 # names of nonexistent settings which the user might accidentally try to set;
@@ -467,14 +467,6 @@ bogusconfig="
 configsettingtype () {
   # broken up for readability
   case "$1" in
-    # rsync
-    rsync_sshoptions|rsync_options|rsync_source)
-      echo "array"
-      ;;
-    rsync_runbefore|rsync_runafter)
-      echo "function"
-      ;;
-
     # MySQL
     mysql_sshoptions|mysql_dblist|mysql_options|mysql_dumpoptions)
       echo "array"
@@ -500,6 +492,14 @@ configsettingtype () {
       echo "array"
       ;;
     postgres_altopts|postgres_aftereach|postgres_runbefore|postgres_runafter)
+      echo "function"
+      ;;
+
+    # rsync
+    rsync_sshoptions|rsync_options|rsync_source)
+      echo "array"
+      ;;
+    rsync_runbefore|rsync_runafter)
       echo "function"
       ;;
 
@@ -566,13 +566,6 @@ postgres_remotehost_default="localhost"
 postgres_remoteport_default="5432"
 sshtimeout_default="15"  # applies to all SSH tunnels
 
-# default settings: rsync
-do_rsync_default="no"
-rsync_mode_default="tunnel"
-rsync_pwfile_default="/etc/aeolus/rsync.pw"  # only if unset
-rsync_userunbefore_default="no"
-rsync_userunafter_default="no"
-
 # default settings: DBMSes (all; see also below)
 dbms_dodump_default="no"
 dbms_usetunnel_default="no"
@@ -609,13 +602,20 @@ postgres_usealtopts_default="no"
 postgres_fileprefix_default="postgresdump"  # only if unset
 postgres_subdirprefix_default="postgresdump"  # only if unset
 
+# default settings: rsync
+do_rsync_default="no"
+rsync_mode_default="tunnel"
+rsync_pwfile_default="/etc/aeolus/rsync.pw"  # only if unset
+rsync_userunbefore_default="no"
+rsync_userunafter_default="no"
+
 # settings that have no default, and can't be null
 # (but may be ignored, depending on other settings)
 #
 # [tun]_sshhost
+# [dbms]_dblist
 # rsync_source
 # rsync_dest
-# [dbms]_dblist
 
 # supported DBMSes, separated by spaces
 # must correspond to the relevant variable prefixes
@@ -1122,13 +1122,6 @@ applydefaults () {
   [ "$mysql_sshtimeout" = "" ] && mysql_sshtimeout="$sshtimeout_default"
   [ "$postgres_sshtimeout" = "" ] && postgres_sshtimeout="$sshtimeout_default"
 
-  # rsync
-  [ "$do_rsync" = "" ] && do_rsync="$do_rsync_default"
-  [ "$rsync_mode" = "" ] && rsync_mode="$rsync_mode_default"
-  [ "${rsync_pwfile+X}" = "" ] && rsync_pwfile="$rsync_pwfile_default"
-  [ "$rsync_userunbefore" = "" ] && rsync_userunbefore="$rsync_userunbefore_default"
-  [ "$rsync_userunafter" = "" ] && rsync_userunafter="$rsync_userunafter_default"
-
   # DBMSes (global defaults; see also below)
   [ "$mysql_dodump" = "" ] && mysql_dodump="$dbms_dodump_default"
   [ "$mysql_usetunnel" = "" ] && mysql_usetunnel="$dbms_usetunnel_default"
@@ -1181,6 +1174,13 @@ applydefaults () {
   [ "$postgres_usealtopts" = "" ] && postgres_usealtopts="$postgres_usealtopts_default"
   [ "${postgres_fileprefix+X}" = "" ] && postgres_fileprefix="$postgres_fileprefix_default"
   [ "${postgres_subdirprefix+X}" = "" ] && postgres_subdirprefix="$postgres_subdirprefix_default"
+
+  # rsync
+  [ "$do_rsync" = "" ] && do_rsync="$do_rsync_default"
+  [ "$rsync_mode" = "" ] && rsync_mode="$rsync_mode_default"
+  [ "${rsync_pwfile+X}" = "" ] && rsync_pwfile="$rsync_pwfile_default"
+  [ "$rsync_userunbefore" = "" ] && rsync_userunbefore="$rsync_userunbefore_default"
+  [ "$rsync_userunafter" = "" ] && rsync_userunafter="$rsync_userunafter_default"
 }
 
 #
@@ -1204,9 +1204,9 @@ applydefaults () {
 #                    copyvar(), unsparsearray()
 # utilities: [
 # files: $startedfile, $lockfile, $alertfile, $outputlog, $statuslog,
-#        $rsync_sshkeyfile, $rsync_pwfile, $rsync_filterfile,
 #        $[dbms]_sshkeyfile, $[dbms]_socketfile, $[dbms]_pwfile,
-#        $[dbms]_dumpdir
+#        $[dbms]_dumpdir, $rsync_sshkeyfile, $rsync_pwfile,
+#        $rsync_filterfile
 # bashisms: printf -v [v3.1]
 #
 validconf () {
@@ -1252,42 +1252,6 @@ validconf () {
   validlist "usesyslog" "yes" "no"
   validlist "quiet" "yes" "no"
   [ "$statuslog" != "" ] && validcreate "statuslog" "file"
-
-  # rsync, including SSH tunnel
-  validlist "do_rsync" "yes" "no"
-  if [ "$do_rsync" = "yes" ]; then
-    validlist "rsync_mode" "tunnel" "direct" "nodaemon" "local"
-    if [ "$rsync_mode" = "tunnel" ]; then
-      validnotvoid "rsync_sshhost"
-      validnotvoid "rsync_localhost"
-      validnum "rsync_localport" 1 65535
-      validnotvoid "rsync_remotehost"
-      validnum "rsync_remoteport" 1 65535
-      validnum "rsync_sshtimeout" 1
-      # use the local port for rsync_port
-      rsync_port="$rsync_localport"
-    fi
-    if [ "$rsync_mode" = "tunnel" ] || [ "$rsync_mode" = "nodaemon" ]; then
-      [ "$rsync_sshkeyfile" != "" ] && validreadfile "rsync_sshkeyfile"
-      [ "$rsync_sshport" != "" ] && validnum "rsync_sshport" 1 65535
-      unsparsearray "rsync_sshoptions"
-    fi
-    if [ "$rsync_mode" = "direct" ]; then
-      [ "$rsync_port" != "" ] && validnum "rsync_port" 1 65535
-    fi
-    { [ "$rsync_mode" = "tunnel" ] || [ "$rsync_mode" = "direct" ]; } && \
-        [ "$rsync_pwfile" != "" ] && validreadfile "rsync_pwfile"
-    [ "$rsync_filterfile" != "" ] && validreadfile "rsync_filterfile"
-    unsparsearray "rsync_options"
-    validarrnotvoid "rsync_source"
-    validarrnonulls "rsync_source"
-    unsparsearray "rsync_source"
-    validnotvoid "rsync_dest"
-    validlist "rsync_userunbefore" "yes" "no"
-    [ "$rsync_userunbefore" = "yes" ] && validfunction "rsync_runbefore"
-    validlist "rsync_userunafter" "yes" "no"
-    [ "$rsync_userunafter" = "yes" ] && validfunction "rsync_runafter"
-  fi
 
   # DBMS dumps, including SSH tunnels
   for dbms in $dbmslist; do
@@ -1414,6 +1378,42 @@ validconf () {
       [ "$dbms_userunafter" = "yes" ] && validfunction "${dbms}_runafter"
     fi  # if [ "$dbms_dodump" = "yes" ]
   done  # for dbms in $dbmslist
+
+  # rsync, including SSH tunnel
+  validlist "do_rsync" "yes" "no"
+  if [ "$do_rsync" = "yes" ]; then
+    validlist "rsync_mode" "tunnel" "direct" "nodaemon" "local"
+    if [ "$rsync_mode" = "tunnel" ]; then
+      validnotvoid "rsync_sshhost"
+      validnotvoid "rsync_localhost"
+      validnum "rsync_localport" 1 65535
+      validnotvoid "rsync_remotehost"
+      validnum "rsync_remoteport" 1 65535
+      validnum "rsync_sshtimeout" 1
+      # use the local port for rsync_port
+      rsync_port="$rsync_localport"
+    fi
+    if [ "$rsync_mode" = "tunnel" ] || [ "$rsync_mode" = "nodaemon" ]; then
+      [ "$rsync_sshkeyfile" != "" ] && validreadfile "rsync_sshkeyfile"
+      [ "$rsync_sshport" != "" ] && validnum "rsync_sshport" 1 65535
+      unsparsearray "rsync_sshoptions"
+    fi
+    if [ "$rsync_mode" = "direct" ]; then
+      [ "$rsync_port" != "" ] && validnum "rsync_port" 1 65535
+    fi
+    { [ "$rsync_mode" = "tunnel" ] || [ "$rsync_mode" = "direct" ]; } && \
+        [ "$rsync_pwfile" != "" ] && validreadfile "rsync_pwfile"
+    [ "$rsync_filterfile" != "" ] && validreadfile "rsync_filterfile"
+    unsparsearray "rsync_options"
+    validarrnotvoid "rsync_source"
+    validarrnonulls "rsync_source"
+    unsparsearray "rsync_source"
+    validnotvoid "rsync_dest"
+    validlist "rsync_userunbefore" "yes" "no"
+    [ "$rsync_userunbefore" = "yes" ] && validfunction "rsync_runbefore"
+    validlist "rsync_userunafter" "yes" "no"
+    [ "$rsync_userunafter" = "yes" ] && validfunction "rsync_runafter"
+  fi
 }
 
 

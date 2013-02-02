@@ -386,232 +386,6 @@
 ###statuslog=
 
 
-#################
-# rsync settings
-#################
-
-#
-# NOTE: if both rsync and DBMS dumps are turned on, the rsync will be done
-# after all of the DBMS dumps
-#
-
-#
-# are we going to do an rsync backup ("yes" or "no")?
-#
-# if "no", the rest of the rsync settings are ignored
-#
-# * if blank or unset, defaults to "no"
-#
-###do_rsync=
-
-#
-# mode of operation ("tunnel", "direct", "nodaemon", or "local")
-# (see usage notes on rsync modes)
-#
-# * if blank or unset, defaults to "tunnel"
-#
-###rsync_mode=
-
-#
-# username on the remote SSH host
-#
-# * ignored if rsync_mode is not "tunnel"
-# * if blank or unset, the ssh utility's default will be used (generally
-#   the username the script is run by)
-#
-###rsync_sshuser=
-
-#
-# hostname of the remote SSH host
-#
-# * ignored if rsync_mode is not "tunnel"
-#
-###rsync_sshhost=
-
-#
-# path to the SSH key file
-#
-# * ignored if rsync_mode is not "tunnel" or "nodaemon"
-# * if blank or unset, the ssh utility's default will be used
-#
-###rsync_sshkeyfile=
-
-#
-# SSH port on the remote host
-#
-# * ignored if rsync_mode is not "tunnel" or "nodaemon"
-# * if blank or unset, the ssh utility's default will be used (generally 22)
-#
-###rsync_sshport=
-
-#
-# hostname on the local end of the SSH tunnel
-#
-# generally "localhost", but may need to be (e.g.) 127.0.0.1 or ::1
-#
-# * ignored if rsync_mode is not "tunnel"
-# * if blank or unset, defaults to "localhost"
-#
-###rsync_localhost=
-
-#
-# port number on the local end of the SSH tunnel
-#
-# can be any valid unused port
-#
-# * ignored if rsync_mode is not "tunnel"
-# * if blank or unset, defaults to "8873"
-#
-###rsync_localport=
-
-#
-# hostname on the remote end of the SSH tunnel;
-# connected to from rsync_sshhost
-#
-# generally "localhost", but may need to be (e.g.) 127.0.0.1 or ::1
-#
-# it can also be something else entirely, for example if the purpose of the
-# tunnel is to get through a firewall, but a connection cannot be made
-# directly to the necessary server
-#
-# * ignored if rsync_mode is not "tunnel"
-# * if blank or unset, defaults to "localhost"
-#
-###rsync_remotehost=
-
-#
-# port number on remote end of the SSH tunnel
-#
-# generally 873
-#
-# * ignored if rsync_mode is not "tunnel"
-# * if blank or unset, defaults to "873"
-#
-###rsync_remoteport=
-
-#
-# additional options to pass to the SSH client
-#
-# * must be an array (see usage notes on the config file)
-# * ignored if rsync_mode is not "tunnel" or "nodaemon"
-# * can be blank or unset
-#
-###rsync_sshoptions=()
-
-#
-# how long to wait for the SSH tunnel to be established, in seconds
-#
-# minimum setting allowed is 1 second
-#
-# * ignored if rsync_mode is not "tunnel"
-# * if blank or unset, defaults to "15"
-#
-###rsync_sshtimeout=
-
-#
-# remote rsyncd port
-# (see usage notes on rsync modes)
-#
-# * ignored if rsync_mode is not "direct"
-# * if blank or unset, the rsync utility's default will be used (generally
-#   873)
-#
-###rsync_port=
-
-#
-# path to the password file (for the remote rsync user)
-#
-# the file must contain only the password to use
-#
-# * ignored if rsync_mode is not "tunnel" or "direct"
-# * if blank, no password file will be used, and rsync will prompt for a
-#   password if the remote host requires one (which can be a problem if,
-#   e.g., the script is being run from cron)
-# * if this is unset (as opposed to just blank), it defaults to
-#   "/etc/aeolus/rsync.pw"
-#
-###rsync_pwfile=
-
-#
-# path to the filter-rules file
-#
-# suggested location: /etc/aeolus/rsync.filter
-#
-# one particularly important use: the lockfile should not be transferred
-# if it is in the source directories; specifically, it should be hidden
-# (meaning not copied, and deleted from the remote host if present)
-#
-# * can be blank or unset for no file; file can also be empty
-#
-###rsync_filterfile=
-
-#
-# additional options to rsync
-#
-# typical options: -va --sparse --numeric-ids --delete
-# (note that -H (to preserve hard links) takes a lot of memory)
-#
-# * must be an array (see usage notes on the config file)
-# * can be blank or unset
-#
-###rsync_options=()
-
-#
-# source files and/or directories
-# (see usage notes on rsync modes)
-#
-# note that directories ending with / will have their _contents_ transferred,
-# while directories not ending with / will be transferred themselves
-#
-# * must be an array (see usage notes on the config file)
-#
-###rsync_source=()
-
-#
-# destination
-# (see usage notes on rsync modes)
-#
-###rsync_dest=
-
-#
-# hooks to run functions before and after rsync backups
-#
-# this feature allows you to run arbitrary code before and after the rsync
-# phase of the script; it is particularly helpful for preventing files from
-# changing during the dump by, e.g., locking a code repository
-#
-# rsync_userunbefore and rsync_userunafter can be "yes" or "no";
-# if "yes", you must define a function called rsync_runbefore or
-# rsync_runafter, respectively
-#
-# rsync_runbefore takes no parameters, and can return:
-#   0 = success
-#   1 = skip the rsync phase
-#   2 = abort the script completely
-#
-# rsync_runafter takes one parameter, the return value of the rsync,
-# and can return:
-#   0 = success
-#   2 = abort the script
-#
-# your functions can access any of the internal variables of the script;
-# it is recommended to study the script and library code, and to use the
-# available logging tools
-#
-# see mysql_aftereach for an example that includes some useful techniques;
-# the addexitcallback library function may also be useful in case you need
-# to be sure certain things happen even if the rsync_runafter function never
-# gets called (e.g., because the script aborts)
-#
-# * functions are ignored if respective settings are "no"
-# * if blank or unset, settings default to "no"
-#
-###rsync_userunbefore=
-###rsync_runbefore () { }
-###rsync_userunafter=
-###rsync_runafter () { }
-
-
 ############################################
 # MySQL dump settings, including SSH tunnel
 ############################################
@@ -1440,3 +1214,224 @@
 ###postgres_runbefore () { }
 ###postgres_userunafter=
 ###postgres_runafter () { }
+
+
+#################
+# rsync settings
+#################
+
+#
+# are we going to do an rsync backup ("yes" or "no")?
+#
+# if "no", the rest of the rsync settings are ignored
+#
+# * if blank or unset, defaults to "no"
+#
+###do_rsync=
+
+#
+# mode of operation ("tunnel", "direct", "nodaemon", or "local")
+# (see usage notes on rsync modes)
+#
+# * if blank or unset, defaults to "tunnel"
+#
+###rsync_mode=
+
+#
+# username on the remote SSH host
+#
+# * ignored if rsync_mode is not "tunnel"
+# * if blank or unset, the ssh utility's default will be used (generally
+#   the username the script is run by)
+#
+###rsync_sshuser=
+
+#
+# hostname of the remote SSH host
+#
+# * ignored if rsync_mode is not "tunnel"
+#
+###rsync_sshhost=
+
+#
+# path to the SSH key file
+#
+# * ignored if rsync_mode is not "tunnel" or "nodaemon"
+# * if blank or unset, the ssh utility's default will be used
+#
+###rsync_sshkeyfile=
+
+#
+# SSH port on the remote host
+#
+# * ignored if rsync_mode is not "tunnel" or "nodaemon"
+# * if blank or unset, the ssh utility's default will be used (generally 22)
+#
+###rsync_sshport=
+
+#
+# hostname on the local end of the SSH tunnel
+#
+# generally "localhost", but may need to be (e.g.) 127.0.0.1 or ::1
+#
+# * ignored if rsync_mode is not "tunnel"
+# * if blank or unset, defaults to "localhost"
+#
+###rsync_localhost=
+
+#
+# port number on the local end of the SSH tunnel
+#
+# can be any valid unused port
+#
+# * ignored if rsync_mode is not "tunnel"
+# * if blank or unset, defaults to "8873"
+#
+###rsync_localport=
+
+#
+# hostname on the remote end of the SSH tunnel;
+# connected to from rsync_sshhost
+#
+# generally "localhost", but may need to be (e.g.) 127.0.0.1 or ::1
+#
+# it can also be something else entirely, for example if the purpose of the
+# tunnel is to get through a firewall, but a connection cannot be made
+# directly to the necessary server
+#
+# * ignored if rsync_mode is not "tunnel"
+# * if blank or unset, defaults to "localhost"
+#
+###rsync_remotehost=
+
+#
+# port number on remote end of the SSH tunnel
+#
+# generally 873
+#
+# * ignored if rsync_mode is not "tunnel"
+# * if blank or unset, defaults to "873"
+#
+###rsync_remoteport=
+
+#
+# additional options to pass to the SSH client
+#
+# * must be an array (see usage notes on the config file)
+# * ignored if rsync_mode is not "tunnel" or "nodaemon"
+# * can be empty or unset
+#
+###rsync_sshoptions=()
+
+#
+# how long to wait for the SSH tunnel to be established, in seconds
+#
+# minimum setting allowed is 1 second
+#
+# * ignored if rsync_mode is not "tunnel"
+# * if blank or unset, defaults to "15"
+#
+###rsync_sshtimeout=
+
+#
+# remote rsyncd port
+# (see usage notes on rsync modes)
+#
+# * ignored if rsync_mode is not "direct"
+# * if blank or unset, the rsync utility's default will be used (generally
+#   873)
+#
+###rsync_port=
+
+#
+# path to the password file (for the remote rsync user)
+#
+# the file must contain only the password to use
+#
+# * ignored if rsync_mode is not "tunnel" or "direct"
+# * if blank, no password file will be used, and rsync will prompt for a
+#   password if the remote host requires one (which can be a problem if,
+#   e.g., the script is being run from cron)
+# * if this is unset (as opposed to just blank), it defaults to
+#   "/etc/aeolus/rsync.pw"
+#
+###rsync_pwfile=
+
+#
+# path to the filter-rules file
+#
+# suggested location: /etc/aeolus/rsync.filter
+#
+# one particularly important use: the lockfile should not be transferred
+# if it is in the source directories; specifically, it should be hidden
+# (meaning not copied, and deleted from the remote host if present)
+#
+# * can be blank or unset for no file; file can also be empty
+#
+###rsync_filterfile=
+
+#
+# additional options to rsync
+#
+# typical options: -va --sparse --numeric-ids --delete
+# (note that -H (to preserve hard links) takes a lot of memory)
+#
+# * must be an array (see usage notes on the config file)
+# * can be empty or unset
+#
+###rsync_options=()
+
+#
+# source files and/or directories
+# (see usage notes on rsync modes)
+#
+# note that directories ending with / will have their _contents_ transferred,
+# while directories not ending with / will be transferred themselves
+#
+# * must be an array (see usage notes on the config file)
+#
+###rsync_source=()
+
+#
+# destination
+# (see usage notes on rsync modes)
+#
+###rsync_dest=
+
+#
+# hooks to run functions before and after rsync backups
+#
+# this feature allows you to run arbitrary code before and after the rsync
+# phase of the script; it is particularly helpful for preventing files from
+# changing during the dump by, e.g., locking a code repository
+#
+# rsync_userunbefore and rsync_userunafter can be "yes" or "no";
+# if "yes", you must define a function called rsync_runbefore or
+# rsync_runafter, respectively
+#
+# rsync_runbefore takes no parameters, and can return:
+#   0 = success
+#   1 = skip the rsync phase
+#   2 = abort the script completely
+#
+# rsync_runafter takes one parameter, the return value of the rsync,
+# and can return:
+#   0 = success
+#   2 = abort the script
+#
+# your functions can access any of the internal variables of the script;
+# it is recommended to study the script and library code, and to use the
+# available logging tools
+#
+# see mysql_aftereach for an example that includes some useful techniques;
+# the addexitcallback library function may also be useful in case you need
+# to be sure certain things happen even if the rsync_runafter function never
+# gets called (e.g., because the script aborts)
+#
+# * functions are ignored if the respective settings are "no"
+# * if blank or unset, settings default to "no"
+#
+###rsync_userunbefore=
+###rsync_runbefore () { }
+###rsync_userunafter=
+###rsync_runafter () { }
