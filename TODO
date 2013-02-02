@@ -2,6 +2,12 @@ git (gitolite?  github?)
 versioning
 checker script
 
-rdiff
 integrated pg_dumpall -g
-gitolite writable
+
+rdiff
+*list incr?
+*notes re phases
+*on_rdb
+
+embedded [@]
+REDO SPARSE
