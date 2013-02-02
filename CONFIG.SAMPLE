@@ -992,7 +992,7 @@
 # to be sure certain things happen even if the rsync_runafter function never
 # gets called (e.g., because the script aborts)
 #
-# * functions are ignored if respective settings are "no"
+# * functions are ignored if the respective settings are "no"
 # * if blank or unset, settings default to "no"
 #
 ###mysql_userunbefore=
