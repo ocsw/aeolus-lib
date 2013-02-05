@@ -917,7 +917,8 @@ Usage:
   supplied array setting with an empty array, but ("") may suffice in some
   cases.  Function settings can be overridden from the command line by
   sourcing (not running) the script after defining them, or a wrapper can be
-  used as with array settings.
+  used as with array settings.  In bash, you can also define the functions,
+  then run 'export -f functionname'.
 
   The location of the Aeolus library can be specified/overriden by setting
   AEOLUSLIB.

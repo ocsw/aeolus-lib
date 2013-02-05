@@ -1,7 +1,13 @@
-####################################################
-# configuration file for Aeolus, by Daniel Malament
+###########################################################
+# sample configuration file for Aeolus, by Daniel Malament
 # run 'aeolus license' for license info
-####################################################
+###########################################################
+
+This is a shell script; see the usage notes for more information.
+
+The settings below are presented in roughly the order in which they are
+used by the script; in particular, any of the DBMS dumps, rsync, and
+rdiff-backup which are turned on, happen in the order below.
 
 
 ###############

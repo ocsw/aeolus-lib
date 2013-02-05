@@ -4,14 +4,16 @@ run 'aeolus license' for license info
 
 CONTENTS
 --------
-1) Installation
-2) Setup And Permissions
-3) Running The Script
-4) How To Use The Config File
-5) Script Output
-6) Database Dumps
-7) Rsync Modes
-8) Portability
+ 1) Installation
+ 2) Setup And Permissions
+ 3) Running The Script
+ 4) How To Use The Config File
+ 5) Script Output
+ 6) Database Dumps
+ 7) Rsync (General)
+ 8) Rsync Modes
+ 9) Rdiff-backup
+10) Portability
 
 
 1) Installation
@@ -30,7 +32,7 @@ CONTENTS
         cp aeolus /usr/local/bin/
         chmod 755 /usr/local/bin/aeolus
         chown 0:0 /usr/local/bin/aeolus
-        mkdir -p /etc/aeolus
+        mkdir /etc/aeolus
         chmod 755 /etc/aeolus
         chown 0:0 /etc/aeolus
         cp CONFIG.SAMPLE USAGE /etc/aeolus/
@@ -38,6 +40,8 @@ CONTENTS
         chown 0:0 /etc/aeolus/CONFIG.SAMPLE /etc/aeolus/USAGE
 
       To install the script in a user account, use something like:
+        mkdir ~/bin
+        chmod u=rwx ~/bin
         cp aeolus ~/bin/
         chmod u=rwx ~/bin/aeolus
         mkdir ~/.aeolus
@@ -47,6 +51,10 @@ CONTENTS
 
    c) To check whether the system supports the necessary utilities, run:
         aeolus systemtest
+
+      This will use the current PATH; alternatively, you may need to put
+      a suitable usepath setting in a config file and run:
+        aeolus -f aeolus.conf systemtest
 
       (See the Portability section for more information.)
 
@@ -59,30 +67,34 @@ CONTENTS
       Here are the minimium permissions required for the various files used
       by the script, relative to the user running the script:
 
-      r (read), and x (execute) on the parent directory:
+      r (read) on the file, and x (execute) on the parent directory:
         [the config file]
+        [dbms]_sshkeyfile
+        [dbms]_pwfile
         rsync_sshkeyfile
         rsync_pwfile
         rsync_filterfile
-        [dbms]_sshkeyfile
-        [dbms]_pwfile
+        rdb_sshkeyfile
 
-      rw (read/write), and x (execute) on the parent directory:
+      rw (read/write) on the file, and x (execute) on the parent directory:
         [dbms]_socketfile
         [the dump files]
 
-      rwx (read/write/execute), and x (execute) on the parent directory:
+      rwx (read/write/execute) on the file, and x (execute) on the parent
+      directory:
         [dbms]_dumpdir
 
-      w (write), and wx (write/execute) on the parent directory:
+      w (write) on the file, and wx (write/execute) on the parent directory:
         startedfile
         alertfile
         statuslog
 
-      wx (write/execute), and wx (write/execute) on the parent directory:
+      wx (write/execute) on the file, and wx (write/execute) on the parent
+      directory:
         lockfile
 
-      w (write), and rwx (read/write/execute) on the parent directory:
+      w (write) on the file, and rwx (read/write/execute) on the parent
+      directory:
         outputlog
 
    b) Email
@@ -93,28 +105,86 @@ CONTENTS
 
    c) SSH
 
-      For any SSH tunnel you plan to use (or rsync_mode="nodaemon"), you
-      will need:
-        * a shell account on the remote host, possibly created for this
-          purpose
-        * a key on the local host, created with a command like:
-            ssh-keygen -t dsa -f /etc/aeolus/remotehost
-          (it's a good idea to use a separate key for this)
-        * to insert the public key into the authorized_keys file for the
-          shell user on the remote host; ideally, this means creating a
-          line containing:
-            from="LOCALIP",no-agent-forwarding,no-x11-forwarding,no-pty,
-            permitopen="localhost:873",command="/usr/sbin/nologin"
-          followed by a space and the public key
-          (The long string above should all be on one line with no spaces;
-          replace LOCALIP with the local host's IP and correct the path to
-          nologin on the remote host if necessary.  For functions other than
-          rsync, replace the port number; to allow multiple ports, add more
-          permitopen sections.)
+      General:
 
-   d) rsync
+        For any SSH connection you plan to use (i.e. tunnels,
+        rsync_mode="nodaemon", or rdb_mode="remote"), you will need:
+          * a shell account on the remote host, possibly created for this
+            purpose
+          * an entry in the known_hosts file for the shell user on the
+            local host containing the remote server's public key (see below)
+          * a key on the local host, created with a command like:
+              ssh-keygen -t dsa -f /etc/aeolus/remotehost
+            (it's a good idea to use a separate key for this)
+          * an entry in the authorized_keys file for the shell user on the
+            remote host containing the public half of the key (see below)
 
-      For rsync_mode="tunnel" or "direct", you will need to configure rsync
+      Known_hosts:
+
+        Before running the script for the first time, the public key for
+        each remote host you will be connecting to must be added to the
+        known hosts file on the local host (~/.ssh/known_hosts).  This can
+        be done in several ways:
+          * editing the file directly (i.e., pasting in the public key)
+          * running ssh with the same options as in the config file and
+            answering "yes"
+          * running the script manually and answering "yes", assuming that
+            terminal I/O works properly when ssh is run in the background
+
+      Authorized_keys:
+
+        Before running the script for the first time, the public half of
+        each key you will be using to connect to a remote host must be added
+        to the authorized keys file on that host (~/.ssh/authorized_keys).
+
+        In the case of a tunnel for rsync, the ideal way to add the key is
+        to create an entry containing:
+          from="LOCALIP",no-agent-forwarding,no-x11-forwarding,no-pty,
+          permitopen="localhost:873",command="/usr/sbin/nologin"
+        followed by a space and the public key.  The string above should all
+        be on one line with no spaces; replace LOCALIP with the local host's
+        IP and correct the path to nologin on the remote host if necessary.
+
+        For tunnels for other services, replace the port number in the line
+        above; to allow multiple ports, add more permitopen sections.
+
+        For rsync_mode="nodaemon" or rdb_mode="remote", remove the
+        permitopen section from the line above, and either remove or replace
+        the command section.  For rsync, look into the rrsync script
+        provided with the rsync distribution; for rdiff-backup, you can use:
+          command="rdiff-backup --server"
+
+   d) MySQL
+
+      You will need a MySQL account with privileges for the databases you
+      want to dump.  This can mean setting separate permissions for each
+      database, or for all (*.*).  It can also mean giving full permissions
+      (ALL PRIVILEGES), or a minimal set of permissions designed to maximize
+      security while still allowing backups to be run with no problems.
+      For example, try:
+        GRANT SHOW DATABASES, SELECT, LOCK TABLES, RELOAD, SHOW VIEW
+        ON *.* ...
+      (if using --master-data, add REPLICATION CLIENT).
+
+   e) PostgreSQL
+
+      You will need a PostgreSQL account with privileges for the databases
+      you want to dump.  This may mean needing superuser privileges,
+      especially in the case of pg_dumpall, which is used when
+      postgres_dbmode="all" and postgres_splitdbs="no".  Pg_dumpall not only
+      needs to access the databases, but to access global data which is not
+      stored in a database (e.g., roles and tablespaces; see
+      postgres_dumpalloptions in the sample config file for more
+      information).
+
+      Further, from the pg_dumpall man page:
+          Also you will need superuser privileges to execute the saved
+          script in order to be allowed to add users and groups, and to
+          create databases.
+
+   f) rsync
+
+      For rsync_mode="tunnel" or "direct", you will need to configure rsyncd
       on the remote host.  Here is a sample rsyncd.conf for tunnel mode,
       pulling from the remote host:
 
@@ -150,16 +220,21 @@ CONTENTS
         * some settings, such as 'use chroot', are not really useful in this
           example, but are there as reminders should you use a different
           setup
+        * max connections can be set higher or omitted, but using a value
+          of 1 may be helpful if you wish to avoid having multiple backups,
+          or both backups and restores, running at the same time
         * 'read only = no' allows restores without changing any
           configuration; for greater security you can set 'read only = yes'
           and change it when necessary
         * 'uid'/'gid' must be 0 to copy the entire server, but if your
           application allows, using (or creating) a separate account with
           fewer privileges is more secure
-        * 'fake super' is especially helpful when one end of the connection
-          is running as root and the other one isn't; however, it requires
-          turning on extended attributes on the filesystem to which the
-          data is being copied (e.g., mount with user_xattr on Linux)
+        * 'fake super' is helpful when the server is not running as root
+          (i.e., 'uid'/'gid' are not 0); it is also available as an option
+          to rsync for the local side (--fake-super)
+          however, it requires turning on extended attributes on the
+          filesystem to which the data is being copied (e.g., mount with
+          user_xattr on Linux)
         * the names in the 'auth users' line refer to lines in the 'secrets
           file'; each line in this file has the format:
             username:password
@@ -167,34 +242,6 @@ CONTENTS
 
       Note that rsyncd.conf is re-read on each connection, so changes do not
       require restarting rsyncd.
-
-   e) MySQL
-
-      You will need a MySQL account with privileges for the databases you
-      want to dump.  This can mean setting separate permissions for each
-      database, or for all (*.*).  It can also mean giving full permissions
-      (ALL PRIVILEGES), or a minimal set of permissions designed to maximize
-      security while still allowing backups to be run with no problems.
-      For example, try:
-        GRANT SHOW DATABASES, SELECT, LOCK TABLES, RELOAD, SHOW VIEW
-        ON *.* ...
-      (if using --master-data, add REPLICATION CLIENT).
-
-   f) PostgreSQL
-
-      You will need a PostgreSQL account with privileges for the databases
-      you want to dump.  This may mean needing superuser privileges,
-      especially in the case of pg_dumpall, which is used when
-      postgres_dbmode="all" and postgres_splitdbs="no".  Pg_dumpall not only
-      needs to access the databases, but to access global data which is not
-      stored in a database (e.g., roles and tablespaces; see
-      postgres_dumpalloptions in the sample config file for more
-      information).
-
-      Further, from the pg_dumpall man page:
-          Also you will need superuser privileges to execute the saved
-          script in order to be allowed to add users and groups, and to
-          create databases.
 
 
 3) Running The Script
@@ -205,38 +252,21 @@ CONTENTS
       disable/enable backups, create config file templates, etc.
 
       It also shows how to override the config file by specifying settings
-      on the command line; note, however, that some settings have associated
-      shell functions, which cannot be included in the script invocation.
-      If you are running bash, you can specify these functions outside the
-      config file by defining them, then running 'export -f functionname'.
+      on the command line.
 
    b) The script is designed to be run fairly frequently from cron (e.g.,
-      every hour) and to determine for itself when to run a backup; this is
-      so that backups will be eventually be run even on systems that aren't
-      always on.  Alternatively, the script can be set to simply run a
-      backup every time it's invoked.  (See runevery in the sample config
-      file.)
+      every hour) and to determine for itself when to actually perform
+      dumps/rsyncs/etc.; this is so that backups will be eventually be done
+      even on systems that aren't always on.  Alternatively, the script can
+      be set to simply perform a backup every time it's invoked; see
+      runevery in the sample config file for more information.
 
-   c) Before running the script for the first time in tunnel or nodaemon
-      modes (*), the host key for the remote host must be added to the
-      known hosts file on the local host.  This can be done in several ways:
-        * editing the file directly (i.e., pasting in the public key)
-        * running ssh with the same options as in the config file and
-          answering "yes"
-        * running the script manually (see (d)) and answering "yes",
-          assuming that terminal I/O works properly when ssh is run in the
-          background
-
-      (*) see the Rsync Modes section
-
-   d) It's a good idea to run the script manually the first time, with
+   c) It's a good idea to run the script manually the first time, with
       quiet="no", especially on a new system; this will help catch
       incompatibilities and errors in the config settings.
 
-   e) The best way to restore files is to use the same config file as the
-      backup, and specify rsync_source and rsync_dest on the command line;
-      this will, among other things, use the same lockfile as the backups,
-      preventing backups and restores from interfering with each other.
+   d) Phases of the script (DBMSes, rsync, rdiff-backup) take place in the
+      order in which their settings are listed in the sample config file.
 
 
 4) How To Use The Config File
@@ -247,10 +277,10 @@ CONTENTS
         variable=value
       or arrays:
         variable=(value1 value2 etc.)
-      No spaces are allowed around the =; extra spaces _should_ be ignored
-      within the parentheses, but it's safer to avoid them.  The notes in
-      the sample config file indicate which settings are arrays, and the
-      'create' mode will include parentheses on the appropriate lines.
+      No spaces are allowed around the =; extra spaces are ignored within
+      the parentheses.  The notes in the sample config file indicate which
+      settings are arrays, and the 'create' mode will include parentheses
+      on the appropriate lines.
 
       Values containing whitespace or certain characters, including:
         " # $ & ' ( ) * ; < = > ? [ \ ` |
@@ -260,21 +290,23 @@ CONTENTS
       Double-quotes can be included in a double-quoted value by preceding
       them with \ (i.e., " becomes \"), but single-quotes cannot be included
       in a single-quoted value (there are other differences between the two
-      types of quotes; see the documentation for your shell).
+      types of quotes; see the bash documentation).
 
-      To leave a regular setting blank, omit the value entirely (i.e.,
-      variable=), or use an empty string ('' or "", i.e., variable='').
+      To leave a regular setting blank, omit the value entirely:
+        variable=
+      or use an empty string ('' or ""):
+        variable=''
       This is not the same as leaving the variable unset (i.e., not setting
       it at all); these two cases are treated differently for some settings.
-      (See the sample config file for more information.)
+      See the sample config file for more information.
 
-      To leave an array "blank", use an empty string (i.e., variable=("") or
-      variable=('')).  An array with no elements (i.e., variable=()) is
-      considered unset; as with regular settings, this is treated
-      differently from a "blank" value in some cases.
+      To leave an array empty, define it with no elements:
+        variable=()
+      As with regular settings, this is treated differently from an unset
+      variable in some cases.
 
    b) The usage of some settings requires the definition of shell functions;
-      see the sample config file for examples, and the shell documentation
+      see the sample config file for examples, and the bash documentation
       for further assistance.
 
    c) Comments beginning with # are allowed on their own lines or after
@@ -289,13 +321,14 @@ CONTENTS
       an effort has been made to prevent this).  The symbols listed in (a)
       are particularly likely to cause problems.
 
-   f) Additional files can be included using '.' but must have full paths;
-      for example:
+   f) Additional files can be included using '.':
         . /etc/aeolus/aeolus.conf.more
 
-      Note that relative paths (starting with ./ or ../) are allowed, but
-      will be interpreted relative to the current working directory, not
-      the location of the config file.
+      Relative paths are allowed, but they may have to be specified
+      explicitly:
+        . ./aeolus.conf.more
+      and they will be interpreted relative to the current working
+      directory, not the location of the config file.
 
 
 5) Script Output
@@ -305,7 +338,7 @@ CONTENTS
    turned off or configured.  Not every option is mentioned here; see the
    sample config file for more information.
 
-   a) Printing To stdout (Standard Output) And stderr
+   a) Printing To stdout And stderr (Standard Output / Error Output)
 
       If quiet="yes", the script does not intentionally print anything,
       leaving only the really unusual errors (e.g., shell parsing errors,
@@ -313,9 +346,10 @@ CONTENTS
       mode for "silent running" of the script.
 
       If quiet="no", the script prints everything that is logged, any output
-      generated by ssh, database, rsync, or other commands, and any shell
-      errors.  (Note that logs and rsync output are printed only to stdout,
-      not stderr.)
+      generated by ssh, database, rsync, rdiff-backup, or other commands,
+      and any shell errors.  Note that any output which is copied to the
+      output logs (see (d)) is printed on stdout, even if the original
+      commands printed it on stderr.
 
    b) Syslog
 
@@ -340,11 +374,13 @@ CONTENTS
    c) The Status Log
 
       This file contains a copy of all intentional script output, including
-      syslogged messages, except what goes in the output logs.  This means,
-      for example, that no shell parsing errors or SSH tunnel errors are
-      included in the status log; the former are unintentional, and the
-      latter are part of the output log.  (See (d) for more on the output
-      log.)
+      syslogged messages, except for what goes in the output logs.  This
+      means, for example, that no shell parsing errors or SSH tunnel errors
+      are included in the status log; the former are unintentional, and the
+      latter are part of the output logs.  (See (d) for more on the output
+      logs.)
+
+      Lines are preceded with a timestamp and the PID of the script process.
 
       Note that every invocation of the script with the same config file (*)
       will send output to the same status log; when multiple invocations are
@@ -354,15 +390,14 @@ CONTENTS
 
       (*) or more generally, the same value of the statuslog setting
 
-      Lines are preceded with a timestamp and the PID of the script process.
-
       This file will not be rotated by the script, only appended to.
 
    d) Output Logs
 
       These contain the printed output (*) from the ssh command, the
-      database commands, and rsync, and are rotated by the script.  (See
-      numlogs and dayslogs in the sample config file for rotation options.)
+      database commands, rsync, and rdiff-backup, and are rotated by the
+      script.  See numlogs and dayslogs in the sample config file for
+      rotation options.
 
       (*) stdout and/or stderr, depending on the command
 
@@ -370,8 +405,8 @@ CONTENTS
 
       Notification of all alerts and errors caught by the script is sent by
       email, including diagnostics (the configuration settings and the
-      timestamps of certain files).  In particular, this does not include
-      shell parsing errors (see (a)).
+      timestamps of certain files).  Uncaught errors are not included; for
+      example, this does not include shell parsing errors (see (a)).
 
    f) Return Value
 
@@ -387,7 +422,16 @@ CONTENTS
       on_dbnameerr in the sample config file for more information.
 
 
-7) Rsync Modes
+7) Rsync (General)
+------------------
+
+   a) The best way to restore files is to use the same config file as the
+      backup, and specify rsync_source and rsync_dest on the command line;
+      this will, among other things, use the same lockfile as the backups,
+      preventing backups and restores from interfering with each other.
+
+
+8) Rsync Modes
 --------------
 
    There are four main ways to use rsync (see the man page for more info):
@@ -426,7 +470,7 @@ CONTENTS
       For this mode:
         * rsync_mode="direct"
         * all of the ssh options are ignored
-        * all of the rsync options apply, including rsync_port
+        * all of the other rsync options apply, including rsync_port
 
       Source and destination are specified as follows:
         * if pushing to a remote host:
@@ -444,18 +488,20 @@ CONTENTS
       data are both encrypted; the biggest drawback is that access to files
       owned by multiple users requires a root login.  This problem can be
       mitigated, however, by limiting the key in the remote authorized_keys
-      file, at the cost of having fixed rsync settings.  (See the Setup
-      section, above, for a similar modification.)
+      file, at the possible cost of having fixed rsync settings.  See the
+      Setup section, above, for a similar modification, and the rrsync
+      script that comes with the rsync distribution.
 
       For this mode:
         * rsync_mode="nodaemon"
-        * rsync_sshuser, rsync_sshhost, rsync_localport, rsync_remoteport,
-          and rsync_sshtimeout are ignored (user/host must be included in
-          rsync_source/rsync_dest; see below)
+        * rsync_sshuser, rsync_sshhost, rsync_localhost, rsync_localport,
+          rsync_remotehost, rsync_remoteport, and rsync_sshtimeout are
+          ignored (user/host must be included in rsync_source/rsync_dest;
+          see below)
         * rsync_sshkeyfile, rsync_sshport, and rsync_sshoptions apply
         * rsync_port and rsync_pwfile are ignored
         * if rsync_options includes -e, you must manually include
-          the SSH key and port
+          the SSH key, port, and options
         * the rest of the rsync options apply
 
       Source and destination are specified as follows:
@@ -484,8 +530,16 @@ CONTENTS
         * rsync_dest="local path"
 
 
-8) Portability
---------------
+9) Rdiff-backup
+---------------
+
+   a) 
+
+   b) 
+
+
+10) Portability
+---------------
 
    a) The script must be run with bash version 3.1 or later, and assumes
       bash is located in /bin.  If you don't have (or don't want to use)
@@ -509,11 +563,12 @@ CONTENTS
         bzip2: see gzip
 
         expr is only needed if one of the following is true:
+          * the script is run in 'systemtest' mode
           * runevery and/or ifrunning is not 0, and timecomptype="date-r"
           * outputlog is not null and outputlog_layout="number"
           * [dbms]_dodump="yes" and [dbms]_layout="number" or "numberdir"
-          * do_rsync="yes" and rsync_mode="tunnel"
           * [dbms]_dodump="yes" and [dbms]_usetunnel="yes"
+          * do_rsync="yes" and rsync_mode="tunnel"
 
         find is only needed if one of the following is true:
           * runevery and/or ifrunning is not 0, and timecomptype is one of
@@ -550,8 +605,8 @@ CONTENTS
         mysqldump is only needed if mysql_dodump="yes"
 
         nc and sleep are only needed if one of the following is true:
-          * do_rsync="yes" and rsync_mode="tunnel"
           * [dbms]_dodump="yes" and [dbms]_usetunnel="yes"
+          * do_rsync="yes" and rsync_mode="tunnel"
 
         pg_dump is only needed if postgres_dodump="yes" and either
         postgres_dbmode is not "all", or postgres_dbmode="all" and
@@ -572,8 +627,10 @@ CONTENTS
 
         sleep: see nc
 
-        ssh is only needed if do_rsync="yes" and rsync_mode="tunnel" or
-        "nodaemon", or [dbms]_dodump="yes" and [dbms]_usetunnel="yes"
+        ssh is only needed if one of the following is true:
+          * [dbms]_dodump="yes" and [dbms]_usetunnel="yes"
+          * do_rsync="yes" and rsync_mode="tunnel" or "nodaemon"
+          * do_rdb="yes" and rdb_mode="remote"
 
         tee is only needed if quiet="no" and outputlog is not null
 
@@ -583,5 +640,5 @@ CONTENTS
         * see the timecomptype setting in the sample config file for more
           specific requirements for awk/gawk, find and date, depending on
           the value of that setting
-        * sed must accept any character as a delimiter for substitutions
         * nc must accept -z
+        * sed must accept any character as a delimiter for substitutions
