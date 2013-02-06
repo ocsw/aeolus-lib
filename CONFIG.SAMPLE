@@ -10,9 +10,9 @@ used by the script; in particular, any of the DBMS dumps, rsync, and
 rdiff-backup which are turned on, happen in the order below.
 
 
-###############
-# housekeeping
-###############
+#########################
+#      housekeeping
+#########################
 
 #
 # search path for executables
@@ -39,19 +39,18 @@ rdiff-backup which are turned on, happen in the order below.
 # in order to use a non-0 runevery or ifrunning (see below), your system
 # must support one of:
 #   "find":       find . -mmin +N
-#   "date-r":     date -r fileref +%s
+#   "date-r":     date -r fileref "+%s"
 #   "date-d":     date -d "N minutes ago" "+%Y%m%d%H%M.%S"
 #   "awk"/"gawk": awk/gawk with strftime() and systime()
 #
-# "date-d", "awk", and "gawk" also require touch -t timestamp and
-# find . -newer fileref, but those should usually be available
+# "date-d", "awk", and "gawk" also require 'touch -t timestamp' and
+# 'find . -newer fileref', but those should usually be available
 #
 # note that the rounding behavior of the various options may differ;
 # "date-d", "awk", and "gawk" should be accurate to within one second, but
 # the other options may have up to a 59-second lag
 #
-# * must have a value, but is currently only used if runevery is not 0
-#   and/or ifrunning is not 0
+# * ignored if runevery and ifrunning are both 0
 # * if blank or unset, defaults to "find"
 #
 ###timecomptype=
@@ -68,7 +67,7 @@ rdiff-backup which are turned on, happen in the order below.
 #
 # for key commands, print the actual commands run ("yes" or "no")?
 #
-# this applies to SSH, DBMS, compression, and rsync commands
+# this applies to SSH, DBMS, compression, rsync, and rdiff-backup commands
 #
 # commands will be printed preceded by 'cmd: '
 #
@@ -97,11 +96,11 @@ rdiff-backup which are turned on, happen in the order below.
 # (abbreviated below, but the full names must be used in the settings)
 #
 # error       | explanation
-# ------------------------------------------------------
+# --------------------------------------------------------
 #   tunerr    | error opening SSH tunnel
 #   dbreplerr | error getting DBMS replication status
 #   dblisterr | error getting DB list
-#   dbnameerr | DB name contains a problematic character
+#   dbnameerr | a DB name contains a problematic character
 #   dbduplerr | DB dumpfile already exists
 #   dbdumperr | error dumping DB
 #   dbziperr  | error compressing DB dump
@@ -137,9 +136,9 @@ rdiff-backup which are turned on, happen in the order below.
 ###on_dbziperr=
 
 
-#####################
-# checks and logging
-#####################
+###############################
+#      checks and logging
+###############################
 
 #
 # how often to actually run a backup, in minutes
@@ -237,8 +236,8 @@ rdiff-backup which are turned on, happen in the order below.
 # path to the output log
 # (see usage notes on output)
 #
-# this log gets a copy of the output of ssh, the DBMS commands, and rsync,
-# plus a few timestamps and diagnostics
+# this log gets a copy of the output of SSH, DBMS, compression, rsync, and
+# rdiff-backup commands, plus a few timestamps and diagnostics
 #
 # if outputlog_layout="date", the filename will have outputlog_sep and a
 # date string appended to it (see outputlog_sep and outputlog_date)
@@ -310,7 +309,7 @@ rdiff-backup which are turned on, happen in the order below.
 # dayslogs)
 #
 # note: currently applies only if outputlog_layout="number";
-# however, dayslogs applies to both
+# however, dayslogs applies to both "number" and "date"
 #
 # * ignored if outputlog is blank or outputlog_layout is not "number"
 # * if blank or unset, defaults to "0"
@@ -323,7 +322,8 @@ rdiff-backup which are turned on, happen in the order below.
 # 0 means no days limit (but there may still be a number limit; see numlogs)
 #
 # logs older than this many days are removed, first rounding _down_
-# to the nearest day
+# to the nearest day (e.g., if dayslogs=7, a file which is 7.5 days old will
+# not be deleted, but a file which is 8 days old will)
 #
 # note: _does_ apply to both outputlog_layout="number" and "date"
 #
@@ -371,7 +371,7 @@ rdiff-backup which are turned on, happen in the order below.
 ###syslogtag=
 
 #
-# print to stdout/stderr ("yes" or "no")?
+# suppress printing to stdout/stderr ("yes" or "no")?
 # (see usage notes on output)
 #
 # * if blank or unset, defaults to "no"
@@ -392,20 +392,14 @@ rdiff-backup which are turned on, happen in the order below.
 ###statuslog=
 
 
-############################################
-# MySQL dump settings, including SSH tunnel
-############################################
-
-#
-# NOTE: if both rsync and DBMS dumps are turned on, the rsync will be done
-# after all of the DBMS dumps
-#
+########################
+#      MySQL dumps
+########################
 
 #
 # are we going to do a MySQL dump ("yes" or "no")?
 #
-# if "no", the rest of the MySQL dump settings, including the MySQL SSH
-# tunnel settings, are ignored
+# if "no", the rest of the MySQL settings are ignored
 #
 # * if blank or unset, defaults to "no"
 #
@@ -413,12 +407,12 @@ rdiff-backup which are turned on, happen in the order below.
 
 #
 # MySQL SSH tunnel settings
-# (see rsync settings for descriptions, but disregard references to
-# rsync_mode)
 #
-# usually the databases are dumped on the actual database server, but
-# sometimes they have to be dumped remotely; using an SSH tunnel will
-# slow the process down, but increase security
+# see rsync settings for descriptions, but disregard references to
+# rsync_mode; only differences from those settings will be noted below
+#
+# if you need to dump databases remotely, using an SSH tunnel will slow
+# the process down, but increase security
 #
 # MySQL does have SSL support, but it's not directly supported by this
 # script; see mysql_options and mysql_dumpoptions
@@ -431,9 +425,9 @@ rdiff-backup which are turned on, happen in the order below.
 ###mysql_sshkeyfile=
 ###mysql_sshport=
 ###mysql_localhost=  # defaults to "127.0.0.1"
-###mysql_localport=  # * if blank or unset, defaults to "4306"
+###mysql_localport=  # defaults to "4306"
 ###mysql_remotehost=
-###mysql_remoteport=  # * if blank or unset, defaults to "3306" (usual port)
+###mysql_remoteport=  # defaults to "3306" (the usual port)
 ###mysql_sshoptions=()
 ###mysql_sshtimeout=
 
@@ -460,17 +454,17 @@ rdiff-backup which are turned on, happen in the order below.
 ###mysql_pwfile=
 
 #
-# protocol for connecting to the MySQL server (e.g., "tcp", "socket",
-# "pipe")
+# protocol for connecting to the MySQL server (e.g., "TCP", "SOCKET",
+# "PIPE"; values are not case-sensitive)
 #
-# usually doesn't need to be specified; see the MySQL documentation for more
-# info, and mysql_socketfile, below
+# usually doesn't need to be specified; see the MySQL documentation and
+# mysql_socketfile, below
 #
 # specifying mysql_host, mysql_port, and/or mysql_socketfile may cause
-# errors depending on the value of this setting (e.g., "tcp" is incompatible
+# errors depending on the value of this setting (e.g., "TCP" is incompatible
 # with mysql_socketfile)
 #
-# if mysql_usetunnel="yes", must be blank, unset, or "tcp"
+# if mysql_usetunnel="yes", must be blank, unset, or "TCP"
 #
 # * can be blank or unset
 #
@@ -479,8 +473,8 @@ rdiff-backup which are turned on, happen in the order below.
 #
 # hostname of the MySQL server
 #
-# in case you need to remotely dump databases; also, localhost and 127.0.0.1
-# may give different results, e.g., connecting via socket or TCP
+# note that localhost and 127.0.0.1 may give different results, e.g.,
+# connecting via socket or TCP
 #
 # * ignored if mysql_usetunnel="yes" (specify the host in mysql_sshhost
 #   instead in that case)
@@ -502,7 +496,7 @@ rdiff-backup which are turned on, happen in the order below.
 #
 # typically /tmp/mysql.sock or /var/run/mysqld/mysqld.sock
 #
-# if mysql_protocol="pipe", this is the path to the pipe
+# if mysql_protocol="PIPE", this is the path to the pipe
 #
 # * ignored if mysql_usetunnel="yes", mysql_host is specified, or mysql_port
 #   is specified
@@ -511,7 +505,7 @@ rdiff-backup which are turned on, happen in the order below.
 ###mysql_socketfile=
 
 #
-# there is no mysql_connectdb setting (see postgres_connectdb)
+# [there is no mysql_connectdb setting (see postgres_connectdb)]
 #
 
 #
@@ -532,7 +526,7 @@ rdiff-backup which are turned on, happen in the order below.
 #
 # "all" to dump everything
 # "include" to dump only those databases listed in mysql_dblist
-# "exclude" to dump everything _except_ those DBs listed in mysql_dblist
+# "exclude" to dump everything except those DBs listed in mysql_dblist
 #
 # if you get table-locking errors trying to dump the special
 # 'information_schema' database, see mysql_usealtopts
@@ -594,8 +588,9 @@ rdiff-backup which are turned on, happen in the order below.
 #
 # mysql_options will NOT be included
 #
-# the usual options are "--opt" and "-Q" (which are on by default in recent
-# versions), but some other (potentially) useful options include:
+# the usual options are "--opt" and "-Q" (which are on by default except
+# in very old versions of MySQL), but some other (potentially) useful
+# options include:
 #   "-R": include stored procedures and functions
 #         NOTE: may not work with DBs with newlines in their names;
 #               this may be a bug in MySQL
@@ -628,10 +623,11 @@ rdiff-backup which are turned on, happen in the order below.
 #
 # mysql_usealtopts can be "yes" or "no"
 #
-# if "yes", you must define a function called mysql_altopts which
-#   - takes the name of a database
-#   - returns 1 (false) if mysql_dumpoptions should be used
-#   - otherwise, returns 0 (true) and sets a global array called altopts
+# if "yes", you must define a function called mysql_altopts which takes the
+# name of a database as the first parameter, and returns:
+#   1 (false) if mysql_dumpoptions should be used
+#   0 (true) if a global array called altopts should be used instead;
+#     the function must define this array
 #
 # you can also set mysql_usealtopts to "yes" but not define the function,
 # in which case the default is used (see below; see also the usage notes
@@ -641,7 +637,7 @@ rdiff-backup which are turned on, happen in the order below.
 # set there must be repeated in the altopts array if they are to be used
 #
 # this feature is particularly useful for the special 'information_schema'
-# DB - use the same options as in mysql_dumpoptions, plus
+# database - use the same options as in mysql_dumpoptions, plus
 # '--skip-lock-tables'; however, note the following, from the mysqldump man
 # page:
 #     mysqldump does not dump the INFORMATION_SCHEMA database by default.
@@ -652,7 +648,7 @@ rdiff-backup which are turned on, happen in the order below.
 #     line.
 # (similar conditions apply to the v5.5 'performance_schema' DB as well)
 #
-# it can also be useful for dumping the grants DB with
+# this feature can also be useful for dumping the grants database with
 # "--skip-extended-insert" while not wasting space in the other dumps
 #
 # default function (also useful as a template):
@@ -855,7 +851,7 @@ rdiff-backup which are turned on, happen in the order below.
 # mysql_daysfiles)
 #
 # note: currently applies only if mysql_layout="number" or "numberdir";
-# however, mysql_daysfiles applies to both
+# however, mysql_daysfiles applies to both number- and date-based layouts
 #
 # * ignored if mysql_layout is not "number" or "numberdir"
 # * if blank or unset, defaults to "0"
@@ -869,7 +865,8 @@ rdiff-backup which are turned on, happen in the order below.
 # mysql_numfiles)
 #
 # dumps older than this many days are removed, first rounding _down_
-# to the nearest day
+# to the nearest day (e.g., if mysql_daysfiles=7, a dump which is 7.5 days
+# old will not be deleted, but a dump which is 8 days old will)
 #
 # note: _does_ apply to both "number"/"numberdir" and "date"/"datedir"
 #
@@ -935,11 +932,11 @@ rdiff-backup which are turned on, happen in the order below.
 #
 # if "yes", you must define a function called mysql_aftereach which takes
 # two parameters:
-# $1 = the database name if the dump was of a single database, else blank
-# $2 = the return value from db_dodump():
-#      1 to mean "skip to the next phase of the backup (e.g., DBMS/rsync)",
-#      2 to mean "we have skipped this dump",
-#      else 0
+#   $1 = the database name if the dump was of a single database, else blank
+#   $2 = the return value from db_dodump():
+#        0 = dump was successful (or errors were ignored based on settings)
+#        1 = "skip to the next phase of the backup" (e.g., DBMS/rsync)
+#        2 = "we have skipped this dump"
 #
 # your function can access any of the internal variables of the script;
 # it is recommended to study the script and library code, and to use the
@@ -995,7 +992,7 @@ rdiff-backup which are turned on, happen in the order below.
 #
 # see mysql_aftereach for an example that includes some useful techniques;
 # the addexitcallback library function may also be useful in case you need
-# to be sure certain things happen even if the rsync_runafter function never
+# to be sure certain things happen even if the mysql_runafter function never
 # gets called (e.g., because the script aborts)
 #
 # * functions are ignored if the respective settings are "no"
@@ -1007,9 +1004,9 @@ rdiff-backup which are turned on, happen in the order below.
 ###mysql_runafter () { }
 
 
-#################################################
-# PostgreSQL dump settings, including SSH tunnel
-#################################################
+#############################
+#      PostgreSQL dumps
+#############################
 
 #
 # see MySQL for descriptions; only differences from MySQL
@@ -1070,7 +1067,7 @@ rdiff-backup which are turned on, happen in the order below.
 ###postgres_pwfile=
 
 #
-# there is no postgres_protocol setting (i.e., it is always ignored)
+# [there is no postgres_protocol setting (i.e., it is always ignored)]
 #
 
 #
@@ -1222,9 +1219,9 @@ rdiff-backup which are turned on, happen in the order below.
 ###postgres_runafter () { }
 
 
-#################
-# rsync settings
-#################
+##########################
+#      rsync backups
+##########################
 
 #
 # are we going to do an rsync backup ("yes" or "no")?
@@ -1443,9 +1440,9 @@ rdiff-backup which are turned on, happen in the order below.
 ###rsync_runafter () { }
 
 
-########################
-# rdiff-backup settings
-########################
+#################################
+#      rdiff-backup backups
+#################################
 
 #
 # are we going to run rdiff-backup ("yes" or "no")?
