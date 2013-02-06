@@ -4081,8 +4081,8 @@ closesshtunnel () {
 # dbms_prefix must be one of the accepted values (currently "mysql" or
 # "postgres")
 #
-# when using an SSH tunnel, set host to localhost (or 127.0.0.1/::1/etc.
-# as necessary) and port to the local port of the tunnel
+# when using an SSH tunnel, set host to "localhost" (or "127.0.0.1" /
+# "::1" / etc. as necessary) and port to the local port of the tunnel
 #
 # (in the notes below, [dbms] = the value of $dbms_prefix)
 #
@@ -4140,8 +4140,8 @@ dbcmd () {
 # dbms_prefix must be one of the accepted values (currently "mysql" or
 # "postgres")
 #
-# when using an SSH tunnel, set host to localhost (or 127.0.0.1/::1/etc.
-# as necessary) and port to the local port of the tunnel
+# when using an SSH tunnel, set host to "localhost" (or "127.0.0.1" /
+# "::1" / etc. as necessary) and port to the local port of the tunnel
 #
 # some options are pre-included:
 #   MySQL:
@@ -4248,8 +4248,8 @@ dbunescape () {
 # run an rsync command
 #
 # for "tunnel" mode, SSH tunnel must be opened/closed separately; use
-# localhost (or 127.0.0.1/::1/etc.) for the host (in rsync_source/dest)
-# and set rsync_port to the local port of the tunnel
+# "localhost" (or "127.0.0.1" / "::1" / etc.) for the host (in
+# rsync_source/dest) and set rsync_port to the local port of the tunnel
 #
 # rsync_sshoptions, rsync_options, and rsync_source must be indexed,
 # non-sparse arrays

@@ -1497,8 +1497,8 @@ validconf () {
 # dbms_prefix must be one of the accepted values (see dbmslist),
 # but not all of them will necessarily work; see the code
 #
-# when using an SSH tunnel, set host to localhost (or 127.0.0.1/::1/etc.
-# as necessary) and port to the local port of the tunnel
+# when using an SSH tunnel, set host to "localhost" (or "127.0.0.1" /
+# "::1" / etc. as necessary) and port to the local port of the tunnel
 #
 # (in the notes below, [dbms] = the value of $dbms_prefix)
 #
@@ -1574,8 +1574,8 @@ dbdumponecmd () {
 # dbms_prefix must be one of the accepted values (see dbmslist),
 # but not all of them will necessarily work; see the code
 #
-# when using an SSH tunnel, set host to localhost (or 127.0.0.1/::1/etc.
-# as necessary) and port to the local port of the tunnel
+# when using an SSH tunnel, set host to "localhost" (or "127.0.0.1" /
+# "::1" / etc. as necessary) and port to the local port of the tunnel
 #
 # (in the notes below, [dbms] = the value of $dbms_prefix)
 #
@@ -1627,8 +1627,8 @@ dbdumpmultcmd () {
 # dbms_prefix must be one of the accepted values (see dbmslist),
 # but not all of them will necessarily work; see the code
 #
-# when using an SSH tunnel, set host to localhost (or 127.0.0.1/::1/etc.
-# as necessary) and port to the local port of the tunnel
+# when using an SSH tunnel, set host to "localhost" (or "127.0.0.1" /
+# "::1" / etc. as necessary) and port to the local port of the tunnel
 #
 # (in the notes below, [dbms] = the value of $dbms_prefix)
 #
