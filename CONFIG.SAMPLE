@@ -376,13 +376,15 @@ rdiff-backup which are turned on, happen in the order below.
 ###numlogs=
 
 #
-# days worth of logs to keep, including the current one
+# days worth of logs to keep
 #
 # 0 means no days limit (but there may still be a number limit; see numlogs)
 #
-# logs older than this many days are removed, first rounding _down_
-# to the nearest day (e.g., if dayslogs=7, a file which is 7.5 days old will
-# not be deleted, but a file which is 8 days old will)
+# logs this many days old or older are removed
+#
+# (1 day = a full 24 hours; if you run the script once a day, and set
+# dayslogs=1, the log from the previous run will be newer than 24 hours by
+# by however long the script took to run, and it will be saved)
 #
 # note: _does_ apply to both outputlog_layout="number" and "date"
 #
@@ -866,14 +868,16 @@ rdiff-backup which are turned on, happen in the order below.
 ###mysql_numfiles=
 
 #
-# days worth of dumps to keep, including the current one
+# days worth of dumps to keep
 #
 # 0 means no days limit (but there may still be a number limit; see
 # mysql_numfiles)
 #
-# dumps older than this many days are removed, first rounding _down_
-# to the nearest day (e.g., if mysql_daysfiles=7, a dump which is 7.5 days
-# old will not be deleted, but a dump which is 8 days old will)
+# dumps this many days old or older are removed
+#
+# (1 day = a full 24 hours; if you run the script once a day, and set
+# mysql_daysfiles=1, the dumps from the previous run will be newer than 24
+# hours by by however long the script took to run, and they will be saved)
 #
 # note: _does_ apply to both "number"/"numberdir" and "date"/"datedir"
 #

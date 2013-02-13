@@ -566,7 +566,11 @@ CONTENTS
           * the script is run in 'systemtest' mode
           * runevery and/or ifrunning is not 0, and timecomptype="date-r"
           * outputlog is not null and outputlog_layout="number"
+          * outputlog is not null, outputlog_layout="date", and dayslogs
+            is not 0
           * [dbms]_dodump="yes" and [dbms]_layout="number" or "numberdir"
+          * [dbms]_dodump="yes", [dbms]_layout="date" or "datedir", and
+            [dbms]_daysfiles is not 0
           * [dbms]_dodump="yes" and [dbms]_usetunnel="yes"
           * do_rsync="yes" and rsync_mode="tunnel"
 
