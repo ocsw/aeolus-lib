@@ -4,10 +4,10 @@ checker script
 
 integrated pg_dumpall -g
 
-rdiff
-*list incr?
-*notes re phases
+rdiff - list incr?
+
 *on_rdb
 
 embedded [@]
-REDO SPARSE
+
+notes on rdiff-backup modes, restores, 1-arg commands (incl nodefault list)
