@@ -651,6 +651,8 @@ rdb_userunafter_default="no"
 # [dbms]_dblist
 # rsync_source
 # rsync_dest
+# rdb_source
+# rdb_dest
 
 # supported DBMSes, separated by spaces
 # must correspond to the relevant variable prefixes

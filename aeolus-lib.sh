@@ -2790,7 +2790,7 @@ do_config () {
   saveclset
 
   # check and source config file
-  if [ "$noconfigfile" = "no" ]; then
+  if [ "$noconfigfile" != "yes" ]; then
     # apply default config file if applicable
     if [ "$configfile" = "" ]; then
       configfile="$defaultconfigfile"
@@ -2800,6 +2800,8 @@ do_config () {
 
     # . won't work with no directory (unless ./ is in the PATH);
     # the cwd has to be specified explicitly
+    # -> this seems not to be true, since I can't get it to fail again;
+    #    leaving the code alone just in case
     if printf "%s\n" "$configfile" | grep -v '/' > /dev/null 2>&1; then
       . "./$configfile"
     else

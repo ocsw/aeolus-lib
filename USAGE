@@ -50,7 +50,7 @@ CONTENTS
         chmod u=rw ~/.aeolus/CONFIG.SAMPLE ~/.aeolus/USAGE
 
    c) To check whether the system supports the necessary utilities, run:
-        aeolus systemtest
+        aeolus -n systemtest
 
       This will use the current PATH; alternatively, you may need to put
       a suitable usepath setting in a config file and run:
