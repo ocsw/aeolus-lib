@@ -301,8 +301,8 @@ configsettings="
   usepath
   useumask
   timecomptype
-  debugme
   printcmds
+  debugme
   on_tunerr
   on_dbreplerr
   on_dblisterr
@@ -318,18 +318,18 @@ configsettings="
   suppressemail
   mailto
   subject
+  quiet
+  usesyslog
+  syslogstat
+  syslogerr
+  syslogtag
+  statuslog
   outputlog
   outputlog_layout
   outputlog_sep
   outputlog_date
   numlogs
   dayslogs
-  usesyslog
-  syslogstat
-  syslogerr
-  syslogtag
-  quiet
-  statuslog
   mysql_dodump
   mysql_usetunnel
   mysql_sshuser
@@ -543,8 +543,8 @@ configsettingtype () {
 
 # default settings: housekeeping
 timecomptype_default="find"
-debugme_default="no"
 printcmds_default="no"
+debugme_default="no"
 on_tunerr_default="phase"
 on_dbreplerr_default="phase"
 on_dblisterr_default="phase"
@@ -567,21 +567,17 @@ else
   mailto_default="root@localhost"
   subject_default="Aeolus alert"
 fi
+quiet_default="no"
+usesyslog_default="yes"
+statuslog_default="/var/log/aeolus.log"  # only if unset
 outputlog_default="/var/log/aeolus-output.log"  # only if unset
 outputlog_layout_default="number"
 outputlog_sep_default="."  # only if unset
 outputlog_date_default="+%Y%m%d"  # only if unset
 numlogs_default="0"
 dayslogs_default="7"
-usesyslog_default="yes"
-quiet_default="no"
-statuslog_default="/var/log/aeolus.log"  # only if unset
 
 # default settings: SSH tunnels (all)
-rsync_localhost_default="localhost"
-rsync_localport_default="8873"
-rsync_remotehost_default="localhost"
-rsync_remoteport_default="873"
 mysql_localhost_default="127.0.0.1"
 mysql_localport_default="4306"
 mysql_remotehost_default="localhost"
@@ -590,6 +586,10 @@ postgres_localhost_default="localhost"
 postgres_localport_default="6432"
 postgres_remotehost_default="localhost"
 postgres_remoteport_default="5432"
+rsync_localhost_default="localhost"
+rsync_localport_default="8873"
+rsync_remotehost_default="localhost"
+rsync_remoteport_default="873"
 sshtimeout_default="15"  # applies to all SSH tunnels
 
 # default settings: DBMSes (all; see also below)
@@ -1112,8 +1112,8 @@ printstatus () {
 applydefaults () {
   # housekeeping
   [ "$timecomptype" = "" ] && timecomptype="$timecomptype_default"
-  [ "$debugme" = "" ] && debugme="$debugme_default"
   [ "$printcmds" = "" ] && printcmds="$printcmds_default"
+  [ "$debugme" = "" ] && debugme="$debugme_default"
   [ "$on_tunerr" = "" ] && on_tunerr="$on_tunerr_default"
   [ "$on_dbreplerr" = "" ] && on_dbreplerr="$on_dbreplerr_default"
   [ "$on_dblisterr" = "" ] && on_dblisterr="$on_dblisterr_default"
@@ -1131,21 +1131,17 @@ applydefaults () {
   [ "$suppressemail" = "" ] && suppressemail="$suppressemail_default"
   [ "$mailto" = "" ] && mailto="$mailto_default"
   [ "$subject" = "" ] && subject="$subject_default"
+  [ "$quiet" = "" ] && quiet="$quiet_default"
+  [ "$usesyslog" = "" ] && usesyslog="$usesyslog_default"
+  [ "${statuslog+X}" = "" ] && statuslog="$statuslog_default"
   [ "${outputlog+X}" = "" ] && outputlog="$outputlog_default"
   [ "$outputlog_layout" = "" ] && outputlog_layout="$outputlog_layout_default"
   [ "${outputlog_sep+X}" = "" ] && outputlog_sep="$outputlog_sep_default"
   [ "${outputlog_date+X}" = "" ] && outputlog_date="$outputlog_date_default"
   [ "$numlogs" = "" ] && numlogs="$numlogs_default"
   [ "$dayslogs" = "" ] && dayslogs="$dayslogs_default"
-  [ "$usesyslog" = "" ] && usesyslog="$usesyslog_default"
-  [ "$quiet" = "" ] && quiet="$quiet_default"
-  [ "${statuslog+X}" = "" ] && statuslog="$statuslog_default"
 
   # SSH tunnels (individual and global defaults)
-  [ "$rsync_localhost" = "" ] && rsync_localhost="$rsync_localhost_default"
-  [ "$rsync_localport" = "" ] && rsync_localport="$rsync_localport_default"
-  [ "$rsync_remotehost" = "" ] && rsync_remotehost="$rsync_remotehost_default"
-  [ "$rsync_remoteport" = "" ] && rsync_remoteport="$rsync_remoteport_default"
   [ "$mysql_localhost" = "" ] && mysql_localhost="$mysql_localhost_default"
   [ "$mysql_localport" = "" ] && mysql_localport="$mysql_localport_default"
   [ "$mysql_remotehost" = "" ] && mysql_remotehost="$mysql_remotehost_default"
@@ -1154,10 +1150,14 @@ applydefaults () {
   [ "$postgres_localport" = "" ] && postgres_localport="$postgres_localport_default"
   [ "$postgres_remotehost" = "" ] && postgres_remotehost="$postgres_remotehost_default"
   [ "$postgres_remoteport" = "" ] && postgres_remoteport="$postgres_remoteport_default"
+  [ "$rsync_localhost" = "" ] && rsync_localhost="$rsync_localhost_default"
+  [ "$rsync_localport" = "" ] && rsync_localport="$rsync_localport_default"
+  [ "$rsync_remotehost" = "" ] && rsync_remotehost="$rsync_remotehost_default"
+  [ "$rsync_remoteport" = "" ] && rsync_remoteport="$rsync_remoteport_default"
   # global
-  [ "$rsync_sshtimeout" = "" ] && rsync_sshtimeout="$sshtimeout_default"
   [ "$mysql_sshtimeout" = "" ] && mysql_sshtimeout="$sshtimeout_default"
   [ "$postgres_sshtimeout" = "" ] && postgres_sshtimeout="$sshtimeout_default"
+  [ "$rsync_sshtimeout" = "" ] && rsync_sshtimeout="$sshtimeout_default"
 
   # DBMSes (global defaults; see also below)
   [ "$mysql_dodump" = "" ] && mysql_dodump="$dbms_dodump_default"
@@ -1260,8 +1260,8 @@ validconf () {
   #
   # note: umask could be symbolic, not going to try to parse it
   validlist "timecomptype" "find" "date-r" "date-d" "awk" "gawk"
-  validlist "debugme" "yes" "no"
   validlist "printcmds" "yes" "no"
+  validlist "debugme" "yes" "no"
   validlist "on_tunerr" "phase" "exit"
   validlist "on_dbreplerr" "phase" "exit"
   validlist "on_dblisterr" "phase" "exit"
@@ -1281,6 +1281,9 @@ validconf () {
     validnotvoid "mailto"
     validnotvoid "subject"
   fi
+  validlist "quiet" "yes" "no"
+  validlist "usesyslog" "yes" "no"
+  [ "$statuslog" != "" ] && validcreate "statuslog" "file"
   if [ "$outputlog" != "" ]; then
     validcreate "outputlog" "file" "rotate"
     validlist "outputlog_layout" "append" "number" "date"
@@ -1295,9 +1298,6 @@ validconf () {
       setexitval "$startup_exitval"
     fi
   fi
-  validlist "usesyslog" "yes" "no"
-  validlist "quiet" "yes" "no"
-  [ "$statuslog" != "" ] && validcreate "statuslog" "file"
 
   # DBMS dumps, including SSH tunnels
   for dbms in $dbmslist; do

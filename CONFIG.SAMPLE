@@ -56,15 +56,6 @@ rdiff-backup which are turned on, happen in the order below.
 ###timecomptype=
 
 #
-# debug the script ("yes" or "no")?
-#
-# currently, turns on shell tracing (set -vx)
-#
-# * if blank or unset, defaults to "no"
-#
-###debugme=
-
-#
 # for key commands, print the actual commands run ("yes" or "no")?
 #
 # this applies to SSH, DBMS, compression, rsync, and rdiff-backup commands
@@ -82,6 +73,15 @@ rdiff-backup which are turned on, happen in the order below.
 # * if blank or unset, defaults to "no"
 #
 ###printcmds=
+
+#
+# debug the script ("yes" or "no")?
+#
+# currently, turns on shell tracing (set -vx)
+#
+# * if blank or unset, defaults to "no"
+#
+###debugme=
 
 #
 # how to handle various errors
@@ -233,6 +233,65 @@ rdiff-backup which are turned on, happen in the order below.
 ###subject=
 
 #
+# suppress printing to stdout/stderr ("yes" or "no")?
+# (see usage notes on output)
+#
+# * if blank or unset, defaults to "no"
+#
+###quiet=
+
+#
+# use syslog ("yes" or "no")?
+# (see usage notes on output)
+#
+# * if blank or unset, defaults to "yes"
+#
+###usesyslog=
+
+#
+# syslog priority to use for status messages
+#
+# "daemon.info" is recommended
+#
+# * ignored if usesyslog="no"
+# * if blank or unset, the system default will be used
+#
+###syslogstat=
+
+#
+# syslog priority to use for alerts/errors
+#
+# "daemon.err" is recommended
+#
+# * ignored if usesyslog="no"
+# * if blank or unset, the system default will be used
+#
+###syslogerr=
+
+#
+# syslog tag to use for status and alert/error messages
+#
+# "aeolus" is recommended
+#
+# * ignored if usesyslog="no"
+# * if blank or unset, the system default will be used
+#
+###syslogtag=
+
+#
+# path to the status log
+# (see usage notes on output)
+#
+# this gets a copy of all intentional script output except what goes in
+# the output log
+#
+# * can be blank for no log
+# * if this is unset (as opposed to just blank), it defaults to
+#   "/var/log/aeolus.log"
+#
+###statuslog=
+
+#
 # path to the output log
 # (see usage notes on output)
 #
@@ -331,65 +390,6 @@ rdiff-backup which are turned on, happen in the order below.
 # * if blank or unset, defaults to "7"
 #
 ###dayslogs=
-
-#
-# use syslog ("yes" or "no")?
-# (see usage notes on output)
-#
-# * if blank or unset, defaults to "yes"
-#
-###usesyslog=
-
-#
-# syslog priority to use for status messages
-#
-# "daemon.info" is recommended
-#
-# * ignored if usesyslog="no"
-# * if blank or unset, the system default will be used
-#
-###syslogstat=
-
-#
-# syslog priority to use for alerts/errors
-#
-# "daemon.err" is recommended
-#
-# * ignored if usesyslog="no"
-# * if blank or unset, the system default will be used
-#
-###syslogerr=
-
-#
-# syslog tag to use for status and alert/error messages
-#
-# "aeolus" is recommended
-#
-# * ignored if usesyslog="no"
-# * if blank or unset, the system default will be used
-#
-###syslogtag=
-
-#
-# suppress printing to stdout/stderr ("yes" or "no")?
-# (see usage notes on output)
-#
-# * if blank or unset, defaults to "no"
-#
-###quiet=
-
-#
-# path to the status log
-# (see usage notes on output)
-#
-# this gets a copy of all intentional script output except what goes in
-# the output log
-#
-# * can be blank for no log
-# * if this is unset (as opposed to just blank), it defaults to
-#   "/var/log/aeolus.log"
-#
-###statuslog=
 
 
 ########################
