@@ -96,11 +96,11 @@ rdiff-backup which are turned on, happen in the order below.
 # (abbreviated below, but the full names must be used in the settings)
 #
 # error       | explanation
-# --------------------------------------------------------------
+# ------------------------------------------------------------
 #   tunerr    | error opening SSH tunnel
 #   dbreplerr | error getting DBMS replication status
 #   dblisterr | error getting database list
-#   dbnameerr | a database name contains a problematic character
+#   dbnameerr | database name contains a problematic character
 #   dbduplerr | database dumpfile already exists
 #   dbdumperr | error dumping database
 #   dbziperr  | error compressing database dump
