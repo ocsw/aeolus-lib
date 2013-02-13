@@ -1377,6 +1377,7 @@ validconf () {
       fi  # if [ "$dbms_usetunnel" = "yes" ]
       [ "$dbms_pwfile" != "" ] && validreadfile "${dbms}_pwfile"
       validlist "${dbms}_dbmode" "all" "include" "exclude"
+      [ "$dbms_dbmode" != "all" ] && validarrnotvoid "${dbms}_dblist"
       unsparsearray "${dbms}_dblist"
       unsparsearray "dbms_dblist"
       validlist "${dbms}_splitdbs" "yes" "no"

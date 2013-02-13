@@ -544,7 +544,6 @@ rdiff-backup which are turned on, happen in the order below.
 #
 # * must be an array (see usage notes on the config file)
 # * ignored if mysql_dbmode="all"
-# * can be empty or unset if mysql_dbmode="include" or "exclude"
 #
 ###mysql_dblist=()
 
