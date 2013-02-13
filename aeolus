@@ -632,6 +632,7 @@ postgres_subdirprefix_default="postgresdump"  # only if unset
 do_rsync_default="no"
 rsync_mode_default="tunnel"
 rsync_pwfile_default="/etc/aeolus/rsync.pw"  # only if unset
+rsync_options_default=(-va --sparse --numeric-ids --delete)  # only if unset
 rsync_userunbefore_default="no"
 rsync_userunafter_default="no"
 
@@ -1216,6 +1217,8 @@ applydefaults () {
   [ "$do_rsync" = "" ] && do_rsync="$do_rsync_default"
   [ "$rsync_mode" = "" ] && rsync_mode="$rsync_mode_default"
   [ "${rsync_pwfile+X}" = "" ] && rsync_pwfile="$rsync_pwfile_default"
+  arrayisunset "rsync_options" && \
+      copyarray "rsync_options_default" "rsync_options"
   [ "$rsync_userunbefore" = "" ] && rsync_userunbefore="$rsync_userunbefore_default"
   [ "$rsync_userunafter" = "" ] && rsync_userunafter="$rsync_userunafter_default"
 
