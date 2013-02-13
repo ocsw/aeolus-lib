@@ -1340,6 +1340,11 @@ rdiff-backup which are turned on, happen in the order below.
 #
 # additional options to pass to the SSH client
 #
+# if rsync_mode="nodaemon", options cannot contain spaces; if you really
+# need to pass options with spaces while in "nodaemon" mode, set them in the
+# ~/.ssh/config file (possibly with a fake hostname which you then use as
+# the host in rsync_source/dest)
+#
 # * must be an array (see usage notes on the config file)
 # * ignored if rsync_mode is not "tunnel" or "nodaemon"
 # * can be empty or unset
@@ -1520,6 +1525,10 @@ rdiff-backup which are turned on, happen in the order below.
 # rdiff-backup passes "-C" (compression) by default; if you set
 # rdb_sshoptions and you want to retain this option, you have to include it
 # in the array
+#
+# options cannot contain spaces; if you really need to pass options with
+# spaces, set them in the ~/.ssh/config file (possibly with a fake hostname
+# which you then use as the host in rdb_source/dest)
 #
 # * must be an array (see usage notes on the config file)
 # * ignored if rdb_mode is "local"

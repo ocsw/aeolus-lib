@@ -4253,6 +4253,8 @@ dbunescape () {
 # "localhost" (or "127.0.0.1" / "::1" / etc.) for the host (in
 # rsync_source/dest) and set rsync_port to the local port of the tunnel
 #
+# rsync_sshoptions can't contain spaces in "nodaemon" mode
+#
 # rsync_sshoptions, rsync_options, and rsync_source must be indexed,
 # non-sparse arrays
 #
@@ -4281,10 +4283,11 @@ rsynccmd () {
       ;;
     nodaemon)
       begincmdprint
-      # argument to -e has to be on one line; use trickery to get
-      # "${rsync_sshoptions[@]}" in quotes inside the outer quotes
-      rsync \
-        -e "ssh ${rsync_sshkeyfile:+-i "$rsync_sshkeyfile"} ${rsync_sshport:+-p "$rsync_sshport"} ${rsync_sshoptions+"${rsync_sshoptions[@]}"}" \
+      # the ssh command has to be on one line, and every way I tried to embed
+      # it had problems; this is the best method I can come up with, although
+      # it breaks with spaces in the options array
+      RSYNC_RSH="ssh ${rsync_sshkeyfile:+-i "$rsync_sshkeyfile"} ${rsync_sshport:+-p "$rsync_sshport"} ${rsync_sshoptions[@]}" \
+        rsync \
         ${rsync_filterfile:+-f "merge $rsync_filterfile"} \
         "${rsync_options[@]}" \
         "${rsync_source[@]}" \
@@ -4308,8 +4311,11 @@ rsynccmd () {
 #
 # run an rdiff-backup command
 #
+# rsync_sshoptions can't contain spaces
+#
 # rdb_sshoptions and rdb_options must be indexed arrays
 #
+# "local" vars: rschemastr
 # global vars: cmdexitval
 # config settings: rdb_mode, rdb_sshkeyfile, rdb_sshport, rdb_sshoptions,
 #                  rdb_options, rdb_source, rdb_dest
@@ -4322,11 +4328,13 @@ rsynccmd () {
 rdbcmd () {
   case "$rdb_mode" in
     remote)
+      # the ssh command has to be on one line, and every way I tried to embed
+      # it had problems; this is the best method I can come up with, although
+      # it breaks with spaces in the options array
+      rschemastr="ssh ${rdb_sshkeyfile:+-i "$rdb_sshkeyfile"} ${rdb_sshport:+-p "$rdb_sshport"} ${rdb_sshoptions[@]} %s rdiff-backup --server"
       begincmdprint
-      # argument to -remote-schema has to be on one line; use trickery to get
-      # "${rdb_sshoptions[@]}" in quotes inside the outer quotes
       rdiff-backup \
-        --remote-schema "ssh ${rdb_sshkeyfile:+-i "$rdb_sshkeyfile"} ${rdb_sshport:+-p "$rdb_sshport"} ${rdb_sshoptions+"${rdb_sshoptions[@]}"} %s rdiff-backup --server" \
+        --remote-schema "$rschemastr" \
         "${rdb_options[@]}" \
         "$rdb_source" \
         "$rdb_dest"
@@ -4348,8 +4356,11 @@ rdbcmd () {
 #
 # run an rdiff-backup prune command
 #
+# rsync_sshoptions can't contain spaces
+#
 # rdb_sshoptions and rdb_options must be indexed arrays
 #
+# "local" vars: rschemastr
 # global vars: cmdexitval
 # config settings: rdb_mode, rdb_sshkeyfile, rdb_sshport, rdb_sshoptions,
 #                  rbd_prune, rdb_options, rdb_dest
@@ -4362,11 +4373,13 @@ rdbcmd () {
 rdbprunecmd () {
   case "$rdb_mode" in
     remote)
+      # the ssh command has to be on one line, and every way I tried to embed
+      # it had problems; this is the best method I can come up with, although
+      # it breaks with spaces in the options array
+      rschemastr="ssh ${rdb_sshkeyfile:+-i "$rdb_sshkeyfile"} ${rdb_sshport:+-p "$rdb_sshport"} ${rdb_sshoptions[@]} %s rdiff-backup --server"
       begincmdprint
-      # argument to -remote-schema has to be on one line; use trickery to get
-      # "${rdb_sshoptions[@]}" in quotes inside the outer quotes
       rdiff-backup \
-        --remote-schema "ssh ${rdb_sshkeyfile:+-i "$rdb_sshkeyfile"} ${rdb_sshport:+-p "$rdb_sshport"} ${rdb_sshoptions+"${rdb_sshoptions[@]}"} %s rdiff-backup --server" \
+        --remote-schema "$rschemastr" \
         "${rdb_options[@]}" \
         --remove-older-than "$rdb_prune" --force \
         "$rdb_dest"
