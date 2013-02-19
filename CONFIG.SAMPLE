@@ -1619,6 +1619,30 @@ rdiff-backup which are turned on, happen in the order below.
 ###rdb_pruneorder=
 
 #
+# how to handle various errors
+#
+# possible options include:
+#   "ignore" = silently ignore the error and continue (not recommended)
+#   "warn" = send/log a warning, but continue
+#   "phase" = warn and skip to the next phase of the backup
+#             (none implemented yet)
+#   "exit" = exit the script with an error
+# (abbreviated below, but the full names must be used in the settings)
+#
+# error      | explanation
+# ----------------------------------
+#   syncerr  | error syncing files
+#   pruneerr | error pruning archive
+#
+# error      | allowed vals | default
+# -----------------------------------
+#   syncerr  | ig wa ph ex  | "phase"
+#   pruneerr | ig wa ph ex  | "phase"
+#
+###rdb_on_syncerr=
+###rdb_on_pruneerr=
+
+#
 # hooks to run functions before and after rdiff-backup
 #
 # this feature allows you to run arbitrary code before and after the

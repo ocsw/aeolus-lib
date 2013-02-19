@@ -456,6 +456,8 @@ configsettings="
   rdb_dest
   rdb_prune
   rdb_pruneorder
+  rdb_on_syncerr
+  rdb_on_pruneerr
   rdb_userunbefore
   rdb_runbefore
   rdb_userunafter
@@ -651,6 +653,8 @@ do_rdb_default="no"
 rdb_mode_default="remote"
 rdb_sshoptions_default=(-C)  # only if unset
 rdb_pruneorder_default="after"
+rdb_on_syncerr_default="phase"
+rdb_on_pruneerr_default="phase"
 rdb_userunbefore_default="no"
 rdb_userunafter_default="no"
 
@@ -697,7 +701,7 @@ dbdump_exitval="42"
 dbzip_exitval="43"
 rsyncsoft_exitval="50"
 rsynchard_exitval="51"
-rdb_exitval="60"
+rdbsync_exitval="60"
 rdbprune_exitval="61"
 userfunc_exitval="230"
 badvarname_exitval="240"
@@ -1262,6 +1266,8 @@ applydefaults () {
   arrayisunset "rdb_sshoptions" && \
       copyarray "rdb_sshoptions_default" "rdb_sshoptions"
   [ "$rdb_pruneorder" = "" ] && rdb_pruneorder="$rdb_pruneorder_default"
+  [ "$rdb_on_syncerr" = "" ] && rdb_on_syncerr="$rdb_on_syncerr_default"
+  [ "$rdb_on_pruneerr" = "" ] && rdb_on_pruneerr="$rdb_on_pruneerr_default"
   [ "$rdb_userunbefore" = "" ] && rdb_userunbefore="$rdb_userunbefore_default"
   [ "$rdb_userunafter" = "" ] && rdb_userunafter="$rdb_userunafter_default"
 }
@@ -1515,6 +1521,8 @@ validconf () {
     validnotvoid "rdb_source"
     validnotvoid "rdb_dest"
     validlist "rdb_pruneorder" "before" "after"
+    validlist "rdb_on_syncerr" "ignore" "warn" "phase" "exit"
+    validlist "rdb_on_pruneerr" "ignore" "warn" "phase" "exit"
     validlist "rdb_userunbefore" "yes" "no"
     [ "$rdb_userunbefore" = "yes" ] && validfunction "rdb_runbefore"
     validlist "rdb_userunafter" "yes" "no"
@@ -2464,6 +2472,67 @@ do_dbdumploop () {
 }
 
 
+######################################
+# core function: rdiff-backup pruning
+######################################
+
+#
+# run rdiff-backup pruning
+#
+# returns 1 to mean "skip to the next phase of the backup", else 0
+#
+# "local" vars: rdbpruneexit
+# global vars: rdbprune_exitval
+# config settings: rdb_on_pruneerr
+# library vars: newline
+# library functions: rdbprunecmd(), logstatusquiet, logstatus(),
+#                    sendalert(), do_exit(), setexitval()
+# utilities: date, printf, [
+# FDs: 3
+#
+do_rdbprune () {
+  # log that we're running the command
+  logstatusquiet "running rdiff-backup pruning command"
+  printf "%s\n" "running rdiff-backup pruning command" >&3
+
+  # starting timestamp
+  printf "%s\n" "rdiff-backup pruning started $(date)" >&3
+
+  # run the command
+  rdbprunecmd >&3 2>&1
+  rdbpruneexit="$?"
+
+  # check status
+  if [ "$rdbpruneexit" != "0" ]; then
+    case "$rdb_on_pruneerr" in
+      exit)
+        sendalert "error running rdiff-backup pruning (status code $rdbpruneexit); exiting" log
+        do_exit "$rdbprune_exitval"
+        ;;
+      phase)
+        sendalert "error running rdiff-backup pruning (status code $rdbpruneexit);${newline}skipping rdiff-backup backup" log
+        setexitval "$rdbprune_exitval"
+        return 1  # skip to the next phase
+        ;;
+      warn)
+        sendalert "error running rdiff-backup pruning (status code $rdbpruneexit); continuing" log
+        setexitval "$rdbprune_exitval"
+        ;;
+      ignore)
+        :  # do nothing
+        ;;
+    esac
+  else
+    logstatus "rdiff-backup pruning completed without errors"
+  fi
+
+  # ending timestamp
+  printf "%s\n" "rdiff-backup pruning finished $(date)" >&3
+
+  return 0
+}
+
+
 ##########################################
 # command line and configuration settings
 ##########################################
@@ -2908,33 +2977,13 @@ while true; do  # only here to allow us to easily skip to the next phase
 
     # pruning, if rdb_pruneorder="before"
     if [ "$rdb_pruneorder" = "before" ]; then
-      # log that we're running the command
-      logstatusquiet "running rdiff-backup pruning command"
-      printf "%s\n" "running rdiff-backup pruning command" >&3
+      do_rdbprune
+      [ "$?" = "1" ] && break;  # skip to the next phase
+    fi
 
-      # starting timestamp
-      printf "%s\n" "rdiff-backup pruning started $(date)" >&3
-
-      # run the command
-      rdbprunecmd >&3 2>&1
-      rdbpruneexit="$?"
-
-      # check status
-      case "$rdbpruneexit" in
-        0)
-          logstatus "rdiff-backup pruning completed without errors"
-          ;;
-        *)
-          sendalert "error running rdiff-backup pruning (status code $rdbpruneexit)" log
-          setexitval "$rdbprune_exitval"
-          ;;
-      esac
-
-      # ending timestamp
-      printf "%s\n" "rdiff-backup pruning finished $(date)" >&3
-    fi  # pruning
-
-    # main rdiff-backup
+    #
+    # begin main rdiff-backup
+    #
 
     # log that we're running the command
     logstatusquiet "running rdiff-backup command"
@@ -2948,44 +2997,41 @@ while true; do  # only here to allow us to easily skip to the next phase
     rdbexit="$?"
 
     # check status
-    case "$rdbexit" in
-      0)
-        logstatus "rdiff-backup completed without errors"
-        ;;
-      *)
-        sendalert "error running rdiff-backup (status code $rdbexit)" log
-        setexitval "$rdb_exitval"
-    esac
+    if [ "$rdbexit" != "0" ]; then
+      case "$rdb_on_syncerr" in
+        exit)
+          sendalert "error running rdiff-backup (status code $rdbexit); exiting" log
+          do_exit "$rdbsync_exitval"
+          ;;
+        phase)
+          sendalert "error running rdiff-backup (status code $rdbexit); skipping rdiff-backup backup" log
+          setexitval "$rdbsync_exitval"
+          break
+          ;;
+        warn)
+          sendalert "error running rdiff-backup (status code $rdbexit); continuing" log
+          setexitval "$rdbsync_exitval"
+          ;;
+        ignore)
+          :  # do nothing
+          ;;
+      esac
+    else
+      logstatus "rdiff-backup completed without errors"
+    fi
 
     # ending timestamp
     printf "%s\n" "rdiff-backup finished $(date)" >&3
 
+    #
+    # end main rdiff-backup
+    #
+
     # pruning, if rdb_pruneorder="after"
     if [ "$rdb_pruneorder" = "after" ]; then
-      # log that we're running the command
-      logstatusquiet "running rdiff-backup pruning command"
-      printf "%s\n" "running rdiff-backup pruning command" >&3
-
-      # starting timestamp
-      printf "%s\n" "rdiff-backup pruning started $(date)" >&3
-
-      # run the command
-      rdbprunecmd >&3 2>&1
-      rdbpruneexit="$?"
-
-      # check status
-      case "$rdbpruneexit" in
-        0)
-          logstatus "rdiff-backup pruning completed without errors"
-          ;;
-        *)
-          sendalert "error running rdiff-backup pruning (status code $rdbpruneexit)" log
-          setexitval "$rdbprune_exitval"
-      esac
-
-      # ending timestamp
-      printf "%s\n" "rdiff-backup pruning finished $(date)" >&3
-    fi  # pruning
+      do_rdbprune
+      [ "$?" = "1" ] && break;  # skip to the next phase
+    fi
 
     # post-phase hook
     if [ "$rdb_userunafter" = "yes" ]; then
