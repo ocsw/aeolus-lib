@@ -108,10 +108,6 @@ esac
 [ "${skip_nodelim_exitval+X}" = "" ] && \
      [ "${nodelim_exitval+X}" = "" ] && nodelim_exitval="241"
 
-# on-error flags
-[ "${skip_on_tunerr+X}" = "" ] && \
-     [ "${on_tunerr+X}" = "" ] && on_tunerr="exit"  # see opensshtunnel()
-
 # names of tempfiles stored in the lockfile directory
 #
 # (note: names are in past tense partly because some shells have issues
@@ -3923,10 +3919,11 @@ killsshtunnel () {
 #
 # returns 0 on success
 # on error, calls sendalert(), then acts according to the value of
-# $on_tunerr:
+# tun_on_err:
 #   "exit": exits with exitval $sshtunnel_exitval
 #   "phase": sets eventual exitval to $sshtunnel_exitval and returns 1
 #            ("skip to the next phase of the script")
+# if tun_on_err is unset or null, it defaults to "exit"
 #
 # FD 3 gets a start message and the actual output (stdout and stderr) of
 # ssh
@@ -3934,8 +3931,8 @@ killsshtunnel () {
 # "local" vars: tunpid_var, tunpid_l, waited, sshexit
 # global vars: (contents of $1, or tunpid, and the corresponding *_descr),
 #              tun_descr
-# config settings: tun_localhost, tun_localport, tun_sshtimeout
-# library vars: newline, on_tunerr, sshtunnel_exitval
+# config settings: tun_localhost, tun_localport, tun_sshtimeout, tun_on_err
+# library vars: newline, sshtunnel_exitval
 # library functions: sshtunnelcmd(), logstatus(), logstatusquiet(),
 #                    sendalert(), addexitcallback(), closesshtunnel(),
 #                    do_exit()
@@ -3982,7 +3979,7 @@ opensshtunnel () {
         # so we know it's not running anymore
         printf -v "$tunpid_var" "%s" ""
 
-        case "$on_tunerr" in
+        case "$tun_on_err" in
           phase)
             sendalert "could not establish SSH tunnel for $tun_descr (timed out);${newline}skipping $tun_descr" log
             setexitval "$sshtunnel_exitval"
@@ -4001,7 +3998,7 @@ opensshtunnel () {
       # so we know it's not running anymore
       printf -v "$tunpid_var" "%s" ""
 
-      case "$on_tunerr" in
+      case "$tun_on_err" in
         phase)
           sendalert "could not establish SSH tunnel for $tun_descr (status code $sshexit);${newline}skipping $tun_descr" log
           setexitval "$sshtunnel_exitval"

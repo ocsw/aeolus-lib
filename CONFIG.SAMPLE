@@ -83,58 +83,6 @@ rdiff-backup which are turned on, happen in the order below.
 #
 ###debugme=
 
-#
-# how to handle various errors
-#
-# possible options include:
-#   "ignore" = silently ignore the error and continue (not recommended)
-#   "warn" = send/log a warning, but continue
-#   "db" = warn and skip to the next database
-#   "phase" = warn and skip to the next phase of the backup
-#             (i.e., the next DBMS or rsync)
-#   "exit" = exit the script with an error
-# (abbreviated below, but the full names must be used in the settings)
-#
-# error       | explanation
-# ------------------------------------------------------------
-#   tunerr    | error opening SSH tunnel
-#   dbreplerr | error getting DBMS replication status
-#   dblisterr | error getting database list
-#   dbnameerr | database name contains a problematic character
-#   dbduplerr | database dumpfile already exists
-#   dbdumperr | error dumping database
-#   dbziperr  | error compressing database dump
-#
-# error       | allowed vals   | default
-# --------------------------------------
-#   tunerr    |          ph ex | "phase"
-#   dbreplerr |          ph ex | "phase"
-#   dblisterr |          ph ex | "phase"
-#   dbnameerr |       db ph ex | "db"
-#   dbduplerr | ig wa db ph ex | "db"
-#   dbdumperr |       db ph ex | "db"
-#   dbziperr  |       db ph ex | "db"
-#
-# note:
-#   -= tunerr applies to all tunnels, including for rsync
-#   -= dbreplerr is also used if the [dbms]_replstatus check fails
-#   -= dbnameerr does not apply if [dbms]_splitdbs=no; see the usage notes
-#      for more information
-#   -= dbduplerr does not apply in single/singledir modes (errors are always
-#      ignored)
-#   -= there is no rsyncerr, because a) there isn't really anything to skip
-#      to, and b) rsync errors are always treated as warnings since they're
-#      usually caused by non-fatal problems like files being deleted during
-#      the backup
-#
-###on_tunerr=
-###on_dbreplerr=
-###on_dblisterr=
-###on_dbnameerr=
-###on_dbduplerr=
-###on_dbdumperr=
-###on_dbziperr=
-
 
 ###############################
 #      checks and logging
@@ -934,6 +882,53 @@ rdiff-backup which are turned on, happen in the order below.
 ###mysql_preserve=
 
 #
+# how to handle various errors
+#
+# possible options include:
+#   "ignore" = silently ignore the error and continue (not recommended)
+#   "warn" = send/log a warning, but continue
+#   "db" = warn and skip to the next database
+#   "phase" = warn and skip to the next phase of the backup
+#             (i.e., the next DBMS, rsync, etc.)
+#   "exit" = exit the script with an error
+# (abbreviated below, but the full names must be used in the settings)
+#
+# error     | explanation
+# ----------------------------------------------------------
+#   tunerr  | error opening SSH tunnel
+#   replerr | error getting MySQL replication status
+#   listerr | error getting database list
+#   nameerr | database name contains a problematic character
+#   duplerr | database dumpfile already exists
+#   dumperr | error dumping database
+#   ziperr  | error compressing database dump
+#
+# error     | allowed vals   | default
+# ------------------------------------
+#   tunerr  |          ph ex | "phase"
+#   replerr |          ph ex | "phase"
+#   listerr |          ph ex | "phase"
+#   nameerr |       db ph ex | "db"
+#   duplerr | ig wa db ph ex | "db"
+#   dumperr | ig wa db ph ex | "db"
+#   ziperr  | ig wa db ph ex | "db"
+#
+# note:
+#   -= replerr is also used if the mysql_replstatus check fails
+#   -= nameerr does not apply if mysql_splitdbs=no; see the usage notes
+#      for more information
+#   -= duplerr does not apply in single/singledir modes (errors are always
+#      ignored)
+#
+###mysql_on_tunerr=
+###mysql_on_replerr=
+###mysql_on_listerr=
+###mysql_on_nameerr=
+###mysql_on_duplerr=
+###mysql_on_dumperr=
+###mysql_on_ziperr=
+
+#
 # hook to run a function after each dump
 #
 # this feature allows you to run arbitrary code after each MySQL dump
@@ -1231,6 +1226,13 @@ rdiff-backup which are turned on, happen in the order below.
 ###postgres_zipmode=
 ###postgres_zipoptions=()
 ###postgres_preserve=
+###postgres_on_tunerr=
+###postgres_on_replerr=
+###postgres_on_listerr=
+###postgres_on_nameerr=
+###postgres_on_duplerr=
+###postgres_on_dumperr=
+###postgres_on_ziperr=
 ###postgres_useaftereach=
 ###postgres_aftereach () { }
 ###postgres_userunbefore=

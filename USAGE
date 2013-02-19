@@ -419,7 +419,7 @@ CONTENTS
 
    a) For technical reasons, databases with names containing / or newline
       characters will not be dumped when [dbms]_splitdbs=yes.  See
-      on_dbnameerr in the sample config file for more information.
+      mysql_on_nameerr in the sample config file for more information.
 
 
 7) Rsync (General)

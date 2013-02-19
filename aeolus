@@ -83,8 +83,7 @@
 # emulate mkdir -p?
 # allow char devs / fifos in cases where we currently test for -f?
 #  (but could cause problems with, e.g., rm...)
-# on_*err -> mysql_*, rsync_*, etc.? (incl. splitting tunerr)
-# add on_rsyncerr/warn?  startup_warn?
+# add on_startup_warn?
 # phone-home check for newer version?
 #   or auto-update?? (e.g., with 2x md5 and global lock)
 #
@@ -121,10 +120,6 @@ esac
 ######################
 # pull in the library
 ######################
-
-# preparatory massaging:
-# we need to know if this was set on the command line or not
-skip_on_tunerr="yes"
 
 # source the library
 if [ "$AEOLUSLIB" != "" ]; then
@@ -304,13 +299,6 @@ configsettings="
   timecomptype
   printcmds
   debugme
-  on_tunerr
-  on_dbreplerr
-  on_dblisterr
-  on_dbnameerr
-  on_dbduplerr
-  on_dbdumperr
-  on_dbziperr
   runevery
   startedfile
   lockfile
@@ -369,6 +357,13 @@ configsettings="
   mysql_zipmode
   mysql_zipoptions
   mysql_preserve
+  mysql_on_tunerr
+  mysql_on_replerr
+  mysql_on_listerr
+  mysql_on_nameerr
+  mysql_on_duplerr
+  mysql_on_dumperr
+  mysql_on_ziperr
   mysql_useaftereach
   mysql_aftereach
   mysql_userunbefore
@@ -412,6 +407,13 @@ configsettings="
   postgres_zipmode
   postgres_zipoptions
   postgres_preserve
+  postgres_on_tunerr
+  postgres_on_replerr
+  postgres_on_listerr
+  postgres_on_nameerr
+  postgres_on_duplerr
+  postgres_on_dumperr
+  postgres_on_ziperr
   postgres_useaftereach
   postgres_aftereach
   postgres_userunbefore
@@ -546,13 +548,6 @@ configsettingtype () {
 timecomptype_default="find"
 printcmds_default="no"
 debugme_default="no"
-on_tunerr_default="phase"
-on_dbreplerr_default="phase"
-on_dblisterr_default="phase"
-on_dbnameerr_default="db"
-on_dbduplerr_default="db"
-on_dbdumperr_default="db"
-on_dbziperr_default="db"
 
 # default settings: checks and logging
 runevery_default="0"
@@ -605,6 +600,13 @@ dbms_numfiles_default="0"
 dbms_daysfiles_default="7"
 dbms_zipmode_default="gzip"
 dbms_preserve_default="data"
+dbms_on_tunerr_default="phase"
+dbms_on_replerr_default="phase"
+dbms_on_listerr_default="phase"
+dbms_on_nameerr_default="db"
+dbms_on_duplerr_default="db"
+dbms_on_dumperr_default="db"
+dbms_on_ziperr_default="db"
 dbms_useaftereach_default="no"
 dbms_userunbefore_default="no"
 dbms_userunafter_default="no"
@@ -789,11 +791,11 @@ sendalert_body () {
 # global vars: tun_prefix, tun_descr, tun_sshuser, tun_sshhost,
 #              tun_sshkeyfile, tun_sshport, tun_localhost, tun_localport,
 #              tun_remotehost, tun_remoteport, tun_sshoptions,
-#              tun_sshtimeout
+#              tun_sshtimeout, tun_on_err
 # config settings: [tun]_sshuser, [tun]_sshhost, [tun]_sshkeyfile,
 #                  [tun]_sshport, [tun]_localhost, [tun]_localport,
 #                  [tun]_remotehost, [tun]_remoteport, [tun]_sshoptions,
-#                  [tun]_sshtimeout
+#                  [tun]_sshtimeout, [tun]_on_tunerr
 # library functions: copyvar(), copyarray()
 #
 switchtunnel () {
@@ -809,6 +811,7 @@ switchtunnel () {
   copyvar "${1}_remoteport" "tun_remoteport" exact
   copyarray "${1}_sshoptions" "tun_sshoptions" exact
   copyvar "${1}_sshtimeout" "tun_sshtimeout" exact
+  copyvar "${1}_on_tunerr" "tun_on_err" exact
 }
 
 #
@@ -835,7 +838,9 @@ switchtunnel () {
 #              dbms_layout, dbms_fileprefix, dbms_filesuffix,
 #              dbms_subdirprefix, dbms_filedirsep, dbms_filedirdate,
 #              dbms_numfiles, dbms_daysfiles, dbms_zipmode, dbms_zipoptions,
-#              dbms_preserve, dbms_useaftereach, dbms_userunbefore,
+#              dbms_preserve, dbms_on_replerr, dbms_on_listerr,
+#              dbms_on_nameerr, dbms_on_duplerr, dbms_on_dumperr,
+#              dbms_on_ziperr, dbms_useaftereach, dbms_userunbefore,
 #              dbms_userunafter, dbms_datestring
 # config settings: [dbms]_dodump, [dbms]_usetunnel, [dbms]_user,
 #                  [dbms]_pwfile, [dbms]_protocol, [dbms]_host, [dbms]_port,
@@ -848,6 +853,8 @@ switchtunnel () {
 #                  [dbms]_subdirprefix, [dbms]_filedirsep,
 #                  [dbms]_filedirdate, [dbms]_numfiles, [dbms]_daysfiles,
 #                  [dbms]_zipmode, [dbms]_zipoptions, [dbms]_preserve,
+#                  [dbms]_on_replerr, [dbms]_on_listerr, [dbms]_on_nameerr,
+#                  [dbms]_on_duplerr, [dbms]_on_dumperr, [dbms]_on_ziperr,
 #                  [dbms]_useaftereach, [dbms]_userunbfore,
 #                  [dbms]_userunafter
 # library functions: copyvar(), copyarray()
@@ -885,6 +892,12 @@ switchdbms () {
   copyvar "${1}_zipmode" "dbms_zipmode" exact
   copyarray "${1}_zipoptions" "dbms_zipoptions" exact
   copyvar "${1}_preserve" "dbms_preserve" exact
+  copyvar "${1}_on_replerr" "dbms_on_replerr" exact
+  copyvar "${1}_on_listerr" "dbms_on_listerr" exact
+  copyvar "${1}_on_nameerr" "dbms_on_nameerr" exact
+  copyvar "${1}_on_duplerr" "dbms_on_duplerr" exact
+  copyvar "${1}_on_dumperr" "dbms_on_dumperr" exact
+  copyvar "${1}_on_ziperr" "dbms_on_ziperr" exact
   copyvar "${1}_useaftereach" "dbms_useaftereach" exact
   copyvar "${1}_userunbefore" "dbms_userunbefore" exact
   copyvar "${1}_userunafter" "dbms_userunafter" exact
@@ -1118,13 +1131,6 @@ applydefaults () {
   [ "$timecomptype" = "" ] && timecomptype="$timecomptype_default"
   [ "$printcmds" = "" ] && printcmds="$printcmds_default"
   [ "$debugme" = "" ] && debugme="$debugme_default"
-  [ "$on_tunerr" = "" ] && on_tunerr="$on_tunerr_default"
-  [ "$on_dbreplerr" = "" ] && on_dbreplerr="$on_dbreplerr_default"
-  [ "$on_dblisterr" = "" ] && on_dblisterr="$on_dblisterr_default"
-  [ "$on_dbnameerr" = "" ] && on_dbnameerr="$on_dbnameerr_default"
-  [ "$on_dbduplerr" = "" ] && on_dbduplerr="$on_dbduplerr_default"
-  [ "$on_dbdumperr" = "" ] && on_dbdumperr="$on_dbdumperr_default"
-  [ "$on_dbziperr" = "" ] && on_dbziperr="$on_dbziperr_default"
 
   # checks and logging
   [ "$runevery" = "" ] && runevery="$runevery_default"
@@ -1175,6 +1181,13 @@ applydefaults () {
   [ "$mysql_daysfiles" = "" ] && mysql_daysfiles="$dbms_daysfiles_default"
   [ "$mysql_zipmode" = "" ] && mysql_zipmode="$dbms_zipmode_default"
   [ "$mysql_preserve" = "" ] && mysql_preserve="$dbms_preserve_default"
+  [ "$mysql_on_tunerr" = "" ] && mysql_on_tunerr="$dbms_on_tunerr_default"
+  [ "$mysql_on_replerr" = "" ] && mysql_on_replerr="$dbms_on_replerr_default"
+  [ "$mysql_on_listerr" = "" ] && mysql_on_listerr="$dbms_on_listerr_default"
+  [ "$mysql_on_nameerr" = "" ] && mysql_on_nameerr="$dbms_on_nameerr_default"
+  [ "$mysql_on_duplerr" = "" ] && mysql_on_duplerr="$dbms_on_duplerr_default"
+  [ "$mysql_on_dumperr" = "" ] && mysql_on_dumperr="$dbms_on_dumperr_default"
+  [ "$mysql_on_ziperr" = "" ] && mysql_on_ziperr="$dbms_on_ziperr_default"
   [ "$mysql_useaftereach" = "" ] && mysql_useaftereach="$dbms_useaftereach_default"
   [ "$mysql_userunbefore" = "" ] && mysql_userunbefore="$dbms_userunbefore_default"
   [ "$mysql_userunafter" = "" ] && mysql_userunafter="$dbms_userunafter_default"
@@ -1189,6 +1202,13 @@ applydefaults () {
   [ "$postgres_daysfiles" = "" ] && postgres_daysfiles="$dbms_daysfiles_default"
   [ "$postgres_zipmode" = "" ] && postgres_zipmode="$dbms_zipmode_default"
   [ "$postgres_preserve" = "" ] && postgres_preserve="$dbms_preserve_default"
+  [ "$postgres_on_tunerr" = "" ] && postgres_on_tunerr="$dbms_on_tunerr_default"
+  [ "$postgres_on_replerr" = "" ] && postgres_on_replerr="$dbms_on_replerr_default"
+  [ "$postgres_on_listerr" = "" ] && postgres_on_listerr="$dbms_on_listerr_default"
+  [ "$postgres_on_nameerr" = "" ] && postgres_on_nameerr="$dbms_on_nameerr_default"
+  [ "$postgres_on_duplerr" = "" ] && postgres_on_duplerr="$dbms_on_duplerr_default"
+  [ "$postgres_on_dumperr" = "" ] && postgres_on_dumperr="$dbms_on_dumperr_default"
+  [ "$postgres_on_ziperr" = "" ] && postgres_on_ziperr="$dbms_on_ziperr_default"
   [ "$postgres_useaftereach" = "" ] && postgres_useaftereach="$dbms_useaftereach_default"
   [ "$postgres_userunbefore" = "" ] && postgres_userunbefore="$dbms_userunbefore_default"
   [ "$postgres_userunafter" = "" ] && postgres_userunafter="$dbms_userunafter_default"
@@ -1268,13 +1288,6 @@ validconf () {
   validlist "timecomptype" "find" "date-r" "date-d" "awk" "gawk"
   validlist "printcmds" "yes" "no"
   validlist "debugme" "yes" "no"
-  validlist "on_tunerr" "phase" "exit"
-  validlist "on_dbreplerr" "phase" "exit"
-  validlist "on_dblisterr" "phase" "exit"
-  validlist "on_dbnameerr" "db" "phase" "exit"
-  validlist "on_dbduplerr" "ignore" "warn" "db" "phase" "exit"
-  validlist "on_dbdumperr" "db" "phase" "exit"
-  validlist "on_dbziperr" "db" "phase" "exit"
 
   # checks and logging
   validnum "runevery"
@@ -1423,6 +1436,13 @@ validconf () {
       unsparsearray "${dbms}_zipoptions"
       unsparsearray "dbms_zipoptions"
       validlist "${dbms}_preserve" "data" "space"
+      validlist "${dbms}_on_tunerr" "phase" "exit"
+      validlist "${dbms}_on_replerr" "phase" "exit"
+      validlist "${dbms}_on_listerr" "phase" "exit"
+      validlist "${dbms}_on_nameerr" "db" "phase" "exit"
+      validlist "${dbms}_on_duplerr" "ignore" "warn" "db" "phase" "exit"
+      validlist "${dbms}_on_dumperr" "ignore" "warn" "db" "phase" "exit"
+      validlist "${dbms}_on_ziperr" "ignore" "warn" "db" "phase" "exit"
       validlist "${dbms}_useaftereach" "yes" "no"
       [ "$dbms_useaftereach" = "yes" ] && validfunction "${dbms}_aftereach"
       validlist "${dbms}_userunbefore" "yes" "no"
@@ -1695,9 +1715,9 @@ dbdumpallcmd () {
 # but not all of them will necessarily work; see the code
 #
 # "local" vars: replexit, replval
-# global vars: dbms_prefix, dbms_replstatus, replstatus, dbrepl_exitval,
-#              internal_exitval
-# config settings: lockfile, on_dbreplerr
+# global vars: dbms_prefix, dbms_replstatus, dbms_on_replerr, replstatus,
+#              dbrepl_exitval, internal_exitval
+# config settings: lockfile
 # library vars: newline
 # library functions: dbcmd(), logstatusquiet(), logstatus(), sendalert(),
 #                    do_exit(), setexitval()
@@ -1742,7 +1762,7 @@ checkdbmsrepl () {
 
   # check status
   if [ "$replexit" != "0" ]; then
-    case "$on_dbreplerr" in
+    case "$dbms_on_replerr" in
       exit)
         sendalert "could not get the replication status of the $dbms_prefix DBMS (status code $replexit); exiting" log
         do_exit "$getdbrepl_exitval"
@@ -1781,7 +1801,7 @@ checkdbmsrepl () {
 
       # check against threshold
       if [ "$replval" -gt "$dbms_replstatus" ]; then
-        case "$on_dbreplerr" in
+        case "$dbms_on_replerr" in
           exit)
             logstatus "$dbms_prefix Seconds_Behind_Master ($replval) is greater than ${dbms_prefix}_replstatus ($dbms_replstatus); exiting"
             do_exit "$no_error_exitval"
@@ -1812,9 +1832,9 @@ checkdbmsrepl () {
 # dbms_prefix must be one of the accepted values (see dbmslist)
 #
 # "local" vars: listexit
-# global vars: dbms_prefix, dbms_dbmode, dbms_splitdbs, alldbs,
-#              getdblist_exitval
-# config settings: lockfile, on_dblisterr
+# global vars: dbms_prefix, dbms_dbmode, dbms_splitdbs, dbms_on_listerr,
+#              alldbs, getdblist_exitval
+# config settings: lockfile
 # library vars: newline
 # library functions: dblistcmd(), logstatusquiet(), logstatus(), sendalert(),
 #                    do_exit(), setexitval()
@@ -1851,7 +1871,7 @@ getdblist () {
 
   # check status
   if [ "$listexit" != "0" ]; then
-    case "$on_dblisterr" in
+    case "$dbms_on_listerr" in
       exit)
         sendalert "could not get the list of $dbms_prefix databases (status code $listexit); exiting" log
         do_exit "$getdblist_exitval"
@@ -1988,9 +2008,9 @@ getdumppaths () {
 # global vars: dbnames, dumptmp, dumpprefix, dumpsuffix, rotateprefix,
 #              rotatesep, rotatesuffix, dbms_prefix, dbms_layout,
 #              dbms_numfiles, dbms_daysfiles, dbms_zipmode, dbms_zipoptions,
-#              dbms_preserve, cmdexitval, dumpexists_exitval,
-#              dbdump_exitval, dbzip_exitval
-# config settings: on_duplerr, on_dbdumperr, on_dbziperr
+#              dbms_preserve, dbms_on_nameerr, dbms_on_duplerr,
+#              dbms_on_dumperr, dbms_on_ziperr, cmdexitval,
+#              dumpexists_exitval, dbdump_exitval, dbzip_exitval
 # library vars: newline
 # library functions: rotatenumfiles(), prunefiles(), existsfilezip(),
 #                    removefilezip(), dbdumponecmd(), dbdumpmultcmd(),
@@ -2014,7 +2034,7 @@ do_dbdump () {
   #
   if [ "$dumptype" = "one" ] && \
      [ "$(printf "%sX\n" "$dbname" | tr -d '/\n')" != "${dbname}X" ]; then
-    case "$on_dbnameerr" in
+    case "$dbms_on_nameerr" in
       exit)
         sendalert "$dbms_prefix database name '$dbname' contains a problematic character; exiting" log
         do_exit "$dbname_exitval"
@@ -2047,7 +2067,7 @@ do_dbdump () {
   fi
 
   if [ "$fileexists" = "yes" ]; then
-    case "$on_dbduplerr" in
+    case "$dbms_on_duplerr" in
       exit)
         if [ "$dbname" != "" ]; then
           sendalert "dumpfile for $dbms_prefix database '$dbname' already exists; exiting" log
@@ -2156,7 +2176,7 @@ do_dbdump () {
 
   # check status
   if [ "$dumpexit" != "0" ]; then
-    case "$on_dbdumperr" in
+    case "$dbms_on_dumperr" in
       exit)
         if [ "$dbname" != "" ]; then
           sendalert "error dumping $dbms_prefix database '$dbname' (status code $dumpexit); exiting" log
@@ -2182,6 +2202,17 @@ do_dbdump () {
         fi
         setexitval "$dbdump_exitval"
         return 2  # skip to the next DB
+        ;;
+      warn)
+        if [ "$dbname" != "" ]; then
+          sendalert "error dumping $dbms_prefix database '$dbname' (status code $dumpexit); continuing" log
+        else
+          sendalert "error dumping $dbms_prefix database(s) (status code $dumpexit); continuing" log
+        fi
+        setexitval "$dbdump_exitval"
+        ;;
+      ignore)
+        :  # do nothing
         ;;
     esac
   else
@@ -2235,7 +2266,7 @@ do_dbdump () {
 
     # check status
     if [ "$zipexit" != "0" ]; then
-      case "$on_dbziperr" in
+      case "$dbms_on_ziperr" in
         exit)
           if [ "$dbname" != "" ]; then
             sendalert "error compressing $dbms_prefix database '$dbname' (status code $zipexit); exiting" log
@@ -2261,6 +2292,17 @@ do_dbdump () {
           fi
           setexitval "$dbzip_exitval"
           return 2  # skip to the next DB
+          ;;
+        warn)
+          if [ "$dbname" != "" ]; then
+            sendalert "error compressing $dbms_prefix database '$dbname' (status code $zipexit); continuing" log
+          else
+            sendalert "error compressing $dbms_prefix database(s) (status code $zipexit); continuing" log
+          fi
+          setexitval "$dbzip_exitval"
+          ;;
+        ignore)
+          :  # do nothing
           ;;
       esac
     else
