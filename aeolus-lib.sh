@@ -2211,7 +2211,8 @@ printconfig () {
 	Current Settings:
 	-----------------
 
-	(check quoting before re-using)
+	(check quoting before re-using; list includes settings
+	that are currently ignored, and may not be valid)
 
 	Config file: $cfgfilestring
 	CWD: $(pwd)

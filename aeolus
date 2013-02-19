@@ -1328,7 +1328,7 @@ validconf () {
     # are passing, e.g., "mysql_dodump",
     # but lines like
     #   if [ "$dbms_dodump" = "yes" ]; then
-    # are referencing the dbms_dodump variable...
+    # are referencing the dbms_dodump variable
 
     # mirror all changes to the ${dbms}_ vars in the dbms_ vars, in case
     # we need them further down (and on principle); same with tun_
