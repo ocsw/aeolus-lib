@@ -1446,6 +1446,33 @@ rdiff-backup which are turned on, happen in the order below.
 ###rsync_dest=
 
 #
+# how to handle warnings and errors
+#
+# possible options include:
+#   "ignore" = silently ignore the error and continue (not recommended)
+#   "warn" = send/log a warning, but continue
+#   "phase" = warn and skip to the next phase of the backup
+#             (i.e., rdiff-backup)
+#   "exit" = exit the script with an error
+# (abbreviated below, but the full names must be used in the settings)
+#
+# error     | explanation
+# -------------------------------------------------
+#   tunerr  | error opening SSH tunnel
+#   softerr | rsync "errors" that are probably fine
+#   harderr | more serious rsync errors
+#
+# error     | allowed vals | default
+# ----------------------------------
+#   tunerr  |       ph ex  | "phase"
+#   softerr | ig wa ph ex  | "warn"
+#   harderr | ig wa ph ex  | "warn"
+#
+###rsync_on_tunerr=
+###rsync_on_softerr=
+###rsync_on_harderr=
+
+#
 # hooks to run functions before and after rsync backups
 #
 # this feature allows you to run arbitrary code before and after the rsync

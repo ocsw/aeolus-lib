@@ -30,7 +30,8 @@
 #   42  = error dumping DB
 #   43  = error compressing DB dump
 #
-#   50  = rsync error
+#   50  = rsync error (soft)
+#   51  = rsync error (hard)
 #
 #   60  = rdiff-backup error
 #   61  = rdiff-backup pruning error
@@ -438,6 +439,9 @@ configsettings="
   rsync_options
   rsync_source
   rsync_dest
+  rsync_on_tunerr
+  rsync_on_softerr
+  rsync_on_harderr
   rsync_userunbefore
   rsync_runbefore
   rsync_userunafter
@@ -636,6 +640,9 @@ do_rsync_default="no"
 rsync_mode_default="tunnel"
 rsync_pwfile_default="/etc/aeolus/rsync.pw"  # only if unset
 rsync_options_default=(-va --sparse --numeric-ids --delete)  # only if unset
+rsync_on_tunerr_default="phase"
+rsync_on_softerr_default="warn"
+rsync_on_harderr_default="warn"
 rsync_userunbefore_default="no"
 rsync_userunafter_default="no"
 
@@ -688,7 +695,8 @@ dbname_exitval="40"
 dumpexists_exitval="41"
 dbdump_exitval="42"
 dbzip_exitval="43"
-rsync_exitval="50"
+rsyncsoft_exitval="50"
+rsynchard_exitval="51"
 rdb_exitval="60"
 rdbprune_exitval="61"
 userfunc_exitval="230"
@@ -1242,6 +1250,9 @@ applydefaults () {
   [ "${rsync_pwfile+X}" = "" ] && rsync_pwfile="$rsync_pwfile_default"
   arrayisunset "rsync_options" && \
       copyarray "rsync_options_default" "rsync_options"
+  [ "$rsync_on_tunerr" = "" ] && rsync_on_tunerr="$rsync_on_tunerr_default"
+  [ "$rsync_on_softerr" = "" ] && rsync_on_softerr="$rsync_on_softerr_default"
+  [ "$rsync_on_harderr" = "" ] && rsync_on_harderr="$rsync_on_harderr_default"
   [ "$rsync_userunbefore" = "" ] && rsync_userunbefore="$rsync_userunbefore_default"
   [ "$rsync_userunafter" = "" ] && rsync_userunafter="$rsync_userunafter_default"
 
@@ -1482,6 +1493,9 @@ validconf () {
     validarrnonulls "rsync_source"
     unsparsearray "rsync_source"
     validnotvoid "rsync_dest"
+    validlist "rsync_on_tunerr" "phase" "exit"
+    validlist "rsync_on_softerr" "ignore" "warn" "phase" "exit"
+    validlist "rsync_on_harderr" "ignore" "warn" "phase" "exit"
     validlist "rsync_userunbefore" "yes" "no"
     [ "$rsync_userunbefore" = "yes" ] && validfunction "rsync_runbefore"
     validlist "rsync_userunafter" "yes" "no"
@@ -2798,12 +2812,46 @@ while true; do  # only here to allow us to easily skip to the next phase
         logstatus "rsync completed without errors"
         ;;
       24|25)
-        sendalert "warning: rsync finished with errors (status code $rsyncexit); please check the log" log
-        setexitval "$rsync_exitval"
+        case "$rsync_on_softerr" in
+          exit)
+            sendalert "rsync finished with possible errors (status code $rsyncexit); exiting" log
+            do_exit "$rsyncsoft_exitval"
+            ;;
+          phase)
+            sendalert "rsync finished with possible errors (status code $rsyncexit); skipping rsync backup" log
+            setexitval "$rsyncsoft_exitval"
+            skip_rsync
+            break
+            ;;
+          warn)
+            sendalert "rsync finished with possible errors (status code $rsyncexit); continuing" log
+            setexitval "$rsyncsoft_exitval"
+            ;;
+          ignore)
+            :  # do nothing
+            ;;
+        esac
         ;;
       *)
-        sendalert "error running rsync (status code $rsyncexit)" log
-        setexitval "$rsync_exitval"
+        case "$rsync_on_harderr" in
+          exit)
+            sendalert "error running rsync (status code $rsyncexit); exiting" log
+            do_exit "$rsynchard_exitval"
+            ;;
+          phase)
+            sendalert "error running rsync (status code $rsyncexit); skipping rsync backup" log
+            setexitval "$rsynchard_exitval"
+            skip_rsync
+            break
+            ;;
+          warn)
+            sendalert "error running rsync (status code $rsyncexit); continuing" log
+            setexitval "$rsynchard_exitval"
+            ;;
+          ignore)
+            :  # do nothing
+            ;;
+        esac
     esac
 
     # ending timestamp
