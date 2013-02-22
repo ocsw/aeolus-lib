@@ -1,0 +1,51 @@
+--------------------------
+Aeolus modification notes:
+--------------------------
+
+
+1) settings
+
+   any change to the setting variables (additions, deletions, name changes,
+   type changes, etc.) must be reflected in the following, as appropriate:
+   the sample config file, $configsettings, configsettingtype(), the default
+   settings section, switch*(), applydefaults(), and validconf()
+
+
+2) utilities
+
+   all external commands used should be listed in $externalcmds and the
+   usage notes (including those used in library functions)
+
+
+3) adding a DBMS
+
+   add vars to the sample config file, modeling after MySQL (but split up
+     [dbms]_dump*options if necessary, and note any nonexistent settings)
+   add vars to the relevant variables/functions (see above)
+   add any nonexistent settings to bogusconfig and configsettingtype()
+   add to dbdump*cmd(), checkdbmsrepl(), getdblist()
+   add to the database functions in the library
+     add to dbmslist
+   add to usage notes on setup and portability
+
+
+4) files
+
+   lockfile dir is used for the following files:
+     $lfalertssilenced, $scriptdisabled, $timetemp, $logfifo,
+     ${DBMSes}-$replstatus, ${DBMSes}-$alldbs
+
+   all files should be in printstatus()
+
+
+5) exit values
+
+   if the exit values are changed, update the top of the script and the
+   *_exitval variables
+
+
+6) other synced values
+
+   see notes in the hardcoded variables section for other things that should
+   be kept in sync (e.g., the name of the script and $scriptname, the values
+   of the defaults and the comments in the sample config file, etc.)
