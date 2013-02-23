@@ -1743,7 +1743,7 @@ checkdbmsrepl () {
         do_exit "$getdbrepl_exitval"
         ;;
       phase)
-        sendalert "could not get the replication status of the $dbms_prefix DBMS (status code $replexit);${newline}skipping $dbms_prefix dumps" log
+        sendalert "could not get the replication status of the $dbms_prefix DBMS (status code $replexit);${newline}aborting $dbms_prefix dumps" log
         setexitval "$getdbrepl_exitval"
         return 1  # skip to the next phase
         ;;
@@ -1782,7 +1782,7 @@ checkdbmsrepl () {
             do_exit "$no_error_exitval"
             ;;
           phase)
-            logstatus "$dbms_prefix Seconds_Behind_Master ($replval) is greater than ${dbms_prefix}_replstatus ($dbms_replstatus);${newline}skipping $dbms_prefix dumps"
+            logstatus "$dbms_prefix Seconds_Behind_Master ($replval) is greater than ${dbms_prefix}_replstatus ($dbms_replstatus);${newline}aborting $dbms_prefix dumps"
             return 1  # skip to the next phase
             ;;
         esac
@@ -1852,7 +1852,7 @@ getdblist () {
         do_exit "$getdblist_exitval"
         ;;
       phase)
-        sendalert "could not get the list of $dbms_prefix databases (status code $listexit);${newline}skipping $dbms_prefix dumps" log
+        sendalert "could not get the list of $dbms_prefix databases (status code $listexit);${newline}aborting $dbms_prefix dumps" log
         setexitval "$getdblist_exitval"
         return 1  # skip to the next phase
         ;;
@@ -2015,7 +2015,7 @@ do_dbdump () {
         do_exit "$dbname_exitval"
         ;;
       phase)
-        sendalert "$dbms_prefix database name '$dbname' contains a problematic character;${newline}skipping $dbms_prefix dumps" log
+        sendalert "$dbms_prefix database name '$dbname' contains a problematic character;${newline}aborting $dbms_prefix dumps" log
         setexitval "$dbname_exitval"
         return 1  # skip to the next phase
         ;;
@@ -2053,9 +2053,9 @@ do_dbdump () {
         ;;
       phase)
         if [ "$dbname" != "" ]; then
-          sendalert "dumpfile for $dbms_prefix database '$dbname' already exists;${newline}skipping $dbms_prefix dumps" log
+          sendalert "dumpfile for $dbms_prefix database '$dbname' already exists;${newline}aborting $dbms_prefix dumps" log
         else
-          sendalert "dumpfile for $dbms_prefix database(s) already exists;${newline}skipping $dbms_prefix dumps" log
+          sendalert "dumpfile for $dbms_prefix database(s) already exists;${newline}aborting $dbms_prefix dumps" log
         fi
         setexitval "$dumpexists_exitval"
         return 1  # skip to the next phase
@@ -2162,9 +2162,9 @@ do_dbdump () {
         ;;
       phase)
         if [ "$dbname" != "" ]; then
-          sendalert "error dumping $dbms_prefix database '$dbname' (status code $dumpexit);${newline}skipping $dbms_prefix dumps" log
+          sendalert "error dumping $dbms_prefix database '$dbname' (status code $dumpexit);${newline}aborting $dbms_prefix dumps" log
         else
-          sendalert "error dumping $dbms_prefix database(s) (status code $dumpexit);${newline}skipping $dbms_prefix dumps" log
+          sendalert "error dumping $dbms_prefix database(s) (status code $dumpexit);${newline}aborting $dbms_prefix dumps" log
         fi
         setexitval "$dbdump_exitval"
         return 1  # skip to the next phase
@@ -2252,9 +2252,9 @@ do_dbdump () {
           ;;
         phase)
           if [ "$dbname" != "" ]; then
-            sendalert "error compressing $dbms_prefix database '$dbname' (status code $zipexit);${newline}skipping $dbms_prefix dumps" log
+            sendalert "error compressing $dbms_prefix database '$dbname' (status code $zipexit);${newline}aborting $dbms_prefix dumps" log
           else
-            sendalert "error compressing $dbms_prefix database(s) (status code $zipexit);${newline}skipping $dbms_prefix dumps" log
+            sendalert "error compressing $dbms_prefix database(s) (status code $zipexit);${newline}aborting $dbms_prefix dumps" log
           fi
           setexitval "$dbzip_exitval"
           return 1  # skip to the next phase
@@ -2463,7 +2463,7 @@ do_rdbprune () {
         do_exit "$rdbprune_exitval"
         ;;
       phase)
-        sendalert "error running rdiff-backup pruning (status code $rdbpruneexit);${newline}skipping rdiff-backup backup" log
+        sendalert "error running rdiff-backup pruning (status code $rdbpruneexit);${newline}aborting rdiff-backup backup" log
         setexitval "$rdbprune_exitval"
         return 1  # skip to the next phase
         ;;
@@ -2678,12 +2678,39 @@ do_something="no"  # set this to yes later if we do something
 # DB dumps
 ###########
 
+#
 # pull out cleanup for use when we skip to the next phase
 # note: skip will have already been logged
-skip_dbms () {
+#
+# $1 = 1 if we're skipping to the next phase, 0 otherwise
+#
+endphase_dbms () {
+  # close the SSH tunnel if we had one
   if [ "$dbms_usetunnel" = "yes" ]; then
     closesshtunnel
   fi
+
+  # post-phase hook
+  if [ "$dbms_userunafter" = "yes" ]; then
+    logstatus "running user-supplied ${dbms_prefix}_runafter() function"
+    "${dbms_prefix}_runafter" "$1"
+    case "$?" in
+      2)  # abort the script
+        do_exit "$userfunc_exitval"
+        ;;
+    esac
+    logstatus "${dbms_prefix}_runafter() complete"
+  fi
+
+  # log status
+  case "$1" in
+    0)
+      logstatus "$dbms_prefix dump sequence complete"
+      ;;
+    1)
+      logstatus "$dbms_prefix dump sequence aborted"
+      ;;
+  esac
 }
 
 for dbms in $dbmslist; do
@@ -2700,7 +2727,7 @@ for dbms in $dbmslist; do
       "${dbms_prefix}_runbefore"
       case "$?" in
         1)  # skip to the next phase
-          skip_dbms
+          endphase_dbms 1
           continue
           ;;
         2)  # abort the script
@@ -2714,16 +2741,16 @@ for dbms in $dbmslist; do
     if [ "$dbms_usetunnel" = "yes" ]; then
       switchtunnel "$dbms" "$dbms dumps"
       opensshtunnel
-      [ "$?" = "1" ] && { skip_dbms; continue; }  # skip to the next phase
+      [ "$?" = "1" ] && { endphase_dbms 1; continue; }  # skip to next phase
     fi
 
     # check the DBMS replication status if necessary
     checkdbmsrepl
-    [ "$?" = "1" ] && { skip_dbms; continue; }  # skip to the next phase
+    [ "$?" = "1" ] && { endphase_dbms 1; continue; }  # skip to next phase
 
     # get the list of all DBs if necessary
     getdblist
-    [ "$?" = "1" ] && { skip_dbms; continue; }  # skip to the next phase
+    [ "$?" = "1" ] && { endphase_dbms 1; continue; }  # skip to next phase
 
     # get the path information for the DB dump(s), and create the
     # subdirectory if necessary (including rotation)
@@ -2741,7 +2768,7 @@ for dbms in $dbmslist; do
 
     # do the actual dump(s)
     do_dbdumploop
-    [ "$?" = "1" ] && { skip_dbms; continue; }  # skip to the next phase
+    [ "$?" = "1" ] && { endphase_dbms 1; continue; }  # skip to next phase
 
     # prune old files ("dir" layouts, "data" preservation mode; see above)
     if [ "$dbms_preserve" = "data" ]; then
@@ -2753,24 +2780,8 @@ for dbms in $dbmslist; do
       esac
     fi
 
-    # close the SSH tunnel if we had one
-    if [ "$dbms_usetunnel" = "yes" ]; then
-      closesshtunnel
-    fi
-
-    # post-phase hook
-    if [ "$dbms_userunafter" = "yes" ]; then
-      logstatus "running user-supplied ${dbms_prefix}_runafter() function"
-      "${dbms_prefix}_runafter"
-      case "$?" in
-        2)  # abort the script
-          do_exit "$userfunc_exitval"
-          ;;
-      esac
-      logstatus "${dbms_prefix}_runafter() complete"
-    fi
-
-    logstatus "$dbms_prefix dump sequence complete"
+    # clean up
+    endphase_dbms 0
   fi
 done
 
@@ -2779,13 +2790,39 @@ done
 # rsync
 ########
 
+#
 # pull out cleanup for use when we skip to the next phase
 # note: skip will have already been logged
-skip_rsync () {
+#
+# $1 = 1 if we're skipping to the next phase, 0 otherwise
+#
+endphase_rsync () {
   # close the SSH tunnel
   if [ "$rsync_mode" = "tunnel" ]; then
     closesshtunnel
   fi
+
+  # post-phase hook
+  if [ "$rsync_userunafter" = "yes" ]; then
+    logstatus "running user-supplied rsync_runafter() function"
+    rsync_runafter "$1"
+    case "$?" in
+      2)  # abort the script
+        do_exit "$userfunc_exitval"
+        ;;
+    esac
+    logstatus "rsync_runafter() complete"
+  fi
+
+  # log status
+  case "$1" in
+    0)
+      logstatus "rsync backup sequence complete"
+      ;;
+    1)
+      logstatus "rsync backup sequence aborted"
+      ;;
+  esac
 }
 
 while true; do  # only here to allow us to easily skip to the next phase
@@ -2800,7 +2837,7 @@ while true; do  # only here to allow us to easily skip to the next phase
       rsync_runbefore
       case "$?" in
         1)  # skip to the next phase
-          skip_rsync
+          endphase_rsync 1
           break
           ;;
         2)  # abort the script
@@ -2814,7 +2851,7 @@ while true; do  # only here to allow us to easily skip to the next phase
     if [ "$rsync_mode" = "tunnel" ]; then
       switchtunnel "rsync" "rsync backup"
       opensshtunnel
-      [ "$?" = "1" ] && { skip_rsync; break; }  # skip to the next phase
+      [ "$?" = "1" ] && { endphase_rsync 1; break; }  # skip to next phase
     fi
 
     # log that we're running the command
@@ -2840,9 +2877,9 @@ while true; do  # only here to allow us to easily skip to the next phase
             do_exit "$rsyncsoft_exitval"
             ;;
           phase)
-            sendalert "rsync finished with possible errors (status code $rsyncexit); skipping rsync backup" log
+            sendalert "rsync finished with possible errors (status code $rsyncexit); aborting rsync backup" log
             setexitval "$rsyncsoft_exitval"
-            skip_rsync
+            endphase_rsync 1
             break
             ;;
           warn)
@@ -2861,9 +2898,9 @@ while true; do  # only here to allow us to easily skip to the next phase
             do_exit "$rsynchard_exitval"
             ;;
           phase)
-            sendalert "error running rsync (status code $rsyncexit); skipping rsync backup" log
+            sendalert "error running rsync (status code $rsyncexit); aborting rsync backup" log
             setexitval "$rsynchard_exitval"
-            skip_rsync
+            endphase_rsync 1
             break
             ;;
           warn)
@@ -2879,24 +2916,9 @@ while true; do  # only here to allow us to easily skip to the next phase
     # ending timestamp
     printf "%s\n" "rsync finished $(date)" >&3
 
-    # close the SSH tunnel
-    if [ "$rsync_mode" = "tunnel" ]; then
-      closesshtunnel
-    fi
 
-    # post-phase hook
-    if [ "$rsync_userunafter" = "yes" ]; then
-      logstatus "running user-supplied rsync_runafter() function"
-      rsync_runafter "$rsyncexit"
-      case "$?" in
-        2)  # abort the script
-          do_exit "$userfunc_exitval"
-          ;;
-      esac
-      logstatus "rsync_runafter() complete"
-    fi
-
-    logstatus "rsync backup sequence complete"
+    # clean up
+    endphase_rsync 0
   fi
 
   break  # don't actually loop
@@ -2906,6 +2928,36 @@ done
 ###############
 # rdiff-backup
 ###############
+
+#
+# pull out cleanup for use when we skip to the next phase
+# note: skip will have already been logged
+#
+# $1 = 1 if we're skipping to the next phase, 0 otherwise
+#
+endphase_rdb () {
+  # post-phase hook
+  if [ "$rdb_userunafter" = "yes" ]; then
+    logstatus "running user-supplied rdb_runafter() function"
+    rdb_runafter "$1"
+    case "$?" in
+      2)  # abort the script
+        do_exit "$userfunc_exitval"
+        ;;
+    esac
+    logstatus "rdb_runafter() complete"
+  fi
+
+  # log status
+  case "$1" in
+    0)
+      logstatus "rdiff-backup sequence complete"
+      ;;
+    1)
+      logstatus "rdiff-backup sequence aborted"
+      ;;
+  esac
+}
 
 while true; do  # only here to allow us to easily skip to the next phase
   if [ "$do_rdb" = "yes" ]; then
@@ -2919,6 +2971,7 @@ while true; do  # only here to allow us to easily skip to the next phase
       rdb_runbefore
       case "$?" in
         1)  # skip to the next phase
+          endphase_rdb 1
           break
           ;;
         2)  # abort the script
@@ -2931,7 +2984,7 @@ while true; do  # only here to allow us to easily skip to the next phase
     # pruning, if rdb_pruneorder="before"
     if [ "$rdb_pruneorder" = "before" ]; then
       do_rdbprune
-      [ "$?" = "1" ] && break;  # skip to the next phase
+      [ "$?" = "1" ] && { endphase_rdb 1; break; }  # skip to next phase
     fi
 
     #
@@ -2947,22 +3000,23 @@ while true; do  # only here to allow us to easily skip to the next phase
 
     # run the command
     rdbcmd >&3 2>&1
-    rdbexit="$?"
+    rdbsyncexit="$?"
 
     # check status
-    if [ "$rdbexit" != "0" ]; then
+    if [ "$rdbsyncexit" != "0" ]; then
       case "$rdb_on_syncerr" in
         exit)
-          sendalert "error running rdiff-backup (status code $rdbexit); exiting" log
+          sendalert "error running rdiff-backup (status code $rdbsyncexit); exiting" log
           do_exit "$rdbsync_exitval"
           ;;
         phase)
-          sendalert "error running rdiff-backup (status code $rdbexit); skipping rdiff-backup backup" log
+          sendalert "error running rdiff-backup (status code $rdbsyncexit); aborting rdiff-backup backup" log
           setexitval "$rdbsync_exitval"
+          endphase_rdb 1
           break
           ;;
         warn)
-          sendalert "error running rdiff-backup (status code $rdbexit); continuing" log
+          sendalert "error running rdiff-backup (status code $rdbsyncexit); continuing" log
           setexitval "$rdbsync_exitval"
           ;;
         ignore)
@@ -2983,22 +3037,11 @@ while true; do  # only here to allow us to easily skip to the next phase
     # pruning, if rdb_pruneorder="after"
     if [ "$rdb_pruneorder" = "after" ]; then
       do_rdbprune
-      [ "$?" = "1" ] && break;  # skip to the next phase
+      [ "$?" = "1" ] && { endphase_rdb 1; break; }  # skip to next phase
     fi
 
-    # post-phase hook
-    if [ "$rdb_userunafter" = "yes" ]; then
-      logstatus "running user-supplied rdb_runafter() function"
-      rdb_runafter "$rdbexit"
-      case "$?" in
-        2)  # abort the script
-          do_exit "$userfunc_exitval"
-          ;;
-      esac
-      logstatus "rdb_runafter() complete"
-    fi
-
-    logstatus "rdiff-backup sequence complete"
+    # clean up
+    endphase_rdb 0
   fi
 
   break  # don't actually loop

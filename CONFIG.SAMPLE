@@ -887,10 +887,14 @@ rdiff-backup which are turned on, happen in the order below.
 # possible options include:
 #   "ignore" = silently ignore the error and continue (not recommended)
 #   "warn" = send/log a warning, but continue
-#   "db" = warn and skip to the next database
-#   "phase" = warn and skip to the next phase of the backup
-#             (i.e., the next DBMS, rsync, etc.)
-#   "exit" = exit the script with an error
+#   "db" = warn and skip to the next database; mysql_aftereach is called
+#          first, if appropriate
+#   "phase" = warn and skip to the next phase of the backup (i.e., the next
+#             DBMS, rsync, etc.); mysql_aftereach and mysql_runafter are
+#             called first, if appropriate
+#   "exit" = exit the script with an error; neither mysql_aftereach nor
+#            mysql_runafter is called first (see the addexitcallback library
+#            function if that is a problem)
 # (abbreviated below, but the full names must be used in the settings)
 #
 # error     | explanation
@@ -984,10 +988,15 @@ rdiff-backup which are turned on, happen in the order below.
 #
 # mysql_runbefore takes no parameters, and can return:
 #   0 = success
-#   1 = skip the MySQL phase
-#   2 = abort the script completely
+#   1 = skip the MySQL phase (mysql_runafter is called first, if
+#       appropriate)
+#   2 = abort the script completely (mysql_runafter is not called; see the
+#       addexitcallback library function if that is a problem)
 #
-# mysql_runafter takes no parameters, and can return:
+# mysql_runafter takes one parameter, which can be:
+#   0 = MySQL dump phase finished normally
+#   1 = MySQL dump phase was aborted (skipped)
+# it can return:
 #   0 = success
 #   2 = abort the script
 #
@@ -1451,9 +1460,10 @@ rdiff-backup which are turned on, happen in the order below.
 # possible options include:
 #   "ignore" = silently ignore the error and continue (not recommended)
 #   "warn" = send/log a warning, but continue
-#   "phase" = warn and skip to the next phase of the backup
-#             (i.e., rdiff-backup)
-#   "exit" = exit the script with an error
+#   "phase" = warn and skip to the next phase of the backup (i.e.,
+#             rdiff-backup); rsync_runafter is called first, if appropriate
+#   "exit" = exit the script with an error; rsync_runafter is not called
+#            (see the addexitcallback library function if that is a problem)
 # (abbreviated below, but the full names must be used in the settings)
 #
 # error     | explanation
@@ -1485,17 +1495,24 @@ rdiff-backup which are turned on, happen in the order below.
 #
 # rsync_runbefore takes no parameters, and can return:
 #   0 = success
-#   1 = skip the rsync phase
-#   2 = abort the script completely
+#   1 = skip the rsync phase (rsync_runafter is called first, if
+#       appropriate)
+#   2 = abort the script completely (rsync_runafter is not called; see the
+#       addexitcallback library function if that is a problem)
 #
-# rsync_runafter takes one parameter, the return value of the rsync,
-# and can return:
+# rsync_runafter takes one parameter, which can be:
+#   0 = rsync phase finished normally
+#   1 = rsync phase was aborted (skipped)
+# it can return:
 #   0 = success
 #   2 = abort the script
 #
 # your functions can access any of the internal variables of the script;
 # it is recommended to study the script and library code, and to use the
 # available logging tools
+#
+# (in particular, if rsync has been run, its return value will be in
+# rsyncexit; otherwise, rsyncexit will be unset)
 #
 # see mysql_aftereach for an example that includes some useful techniques;
 # the addexitcallback library function may also be useful in case you need
@@ -1624,9 +1641,10 @@ rdiff-backup which are turned on, happen in the order below.
 # possible options include:
 #   "ignore" = silently ignore the error and continue (not recommended)
 #   "warn" = send/log a warning, but continue
-#   "phase" = warn and skip to the next phase of the backup
-#             (none implemented yet)
-#   "exit" = exit the script with an error
+#   "phase" = warn and skip to the next phase of the backup (none
+#             implemented yet); rdb_runafter is called first, if appropriate
+#   "exit" = exit the script with an error; rdb_runafter is not called
+#            (see the addexitcallback library function if that is a problem)
 # (abbreviated below, but the full names must be used in the settings)
 #
 # error      | explanation
@@ -1656,17 +1674,24 @@ rdiff-backup which are turned on, happen in the order below.
 #
 # rdb_runbefore takes no parameters, and can return:
 #   0 = success
-#   1 = skip the rdiff-backup phase
-#   2 = abort the script completely
+#   1 = skip the rsync phase (rdb_runafter is called first, if appropriate)
+#   2 = abort the script completely (rdb_runafter is not called; see the
+#       addexitcallback library function if that is a problem)
 #
-# rdb_runafter takes one parameter, the return value of the rdiff-backup,
-# and can return:
+# rdb_runafter takes one parameter, which can be:
+#   0 = rsync phase finished normally
+#   1 = rsync phase was aborted (skipped)
+# it can return:
 #   0 = success
 #   2 = abort the script
 #
 # your functions can access any of the internal variables of the script;
 # it is recommended to study the script and library code, and to use the
 # available logging tools
+#
+# (in particular, if rdiff-backup has been run, its return value will be in
+# rdbsyncexit (otherwise, rdbsyncexit will be unset); similarly, the return
+# value from the pruning will be in rdbpruneexit if it has been run)
 #
 # see mysql_aftereach for an example that includes some useful techniques;
 # the addexitcallback library function may also be useful in case you need

@@ -3963,7 +3963,7 @@ opensshtunnel () {
 
         case "$tun_on_err" in
           phase)
-            sendalert "could not establish SSH tunnel for $tun_descr (timed out);${newline}skipping $tun_descr" log
+            sendalert "could not establish SSH tunnel for $tun_descr (timed out);${newline}aborting $tun_descr" log
             setexitval "$sshtunnel_exitval"
             return 1  # skip to the next phase
             ;;
