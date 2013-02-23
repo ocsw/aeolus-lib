@@ -1,0 +1,23 @@
+git (gitolite?  github?)
+versioning
+checker script
+pull out todos
+
+pull out wrapper?
+
+percona backup?
+
+integrated pg_dumpall -g
+
+notes on rdiff-backup modes, restores, 1-arg commands (incl nodefault list)
+
+rdiff - list incr?
+
+no dbs, empty dbnames, etc.
+
+separate tun exit vals?
+
+"skip/abort"
+"rdiff-backup {,backup}"
+
+on_err: status values (reasons for phase/etc)
