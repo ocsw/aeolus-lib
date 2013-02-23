@@ -12,7 +12,8 @@
 # exit values:
 #
 #   0   = no error (e.g., runevery hasn't expired, or backup was completed
-#         without errors)
+#         without errors, or backup was skipped because replicaton is
+#         further behind than the threshold)
 #
 #   10  = problem with the script invocation, the config file, or a setting
 #         (also used in command modes like 'disable' as a generic error
@@ -22,7 +23,7 @@
 #
 #   20  = error opening SSH tunnel
 #
-#   30  = error getting DBMS replication status
+#   30  = error getting DBMS replication status (only actual errors; see 0)
 #   31  = error getting DB list
 #
 #   40  = DB name contains a problematic character
