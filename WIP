@@ -2,7 +2,7 @@ git (gitolite?  github?)
 versioning
 checker script
 pull out todos
-LICENSE, README.md, .gitignore
+README.md
 
 pull out wrapper?
 
@@ -15,9 +15,5 @@ notes on rdiff-backup modes, restores, 1-arg commands (incl nodefault list)
 rdiff - list incr?
 
 no dbs, empty dbnames, etc.
-
-separate tun exit vals?
-
-"rdiff-backup {,backup}"
 
 on_err: status values (reasons for phase/etc)

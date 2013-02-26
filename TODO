@@ -11,5 +11,6 @@ allow char devs / fifos in cases where we currently test for -f?
 add on_startup_warn?
 phone-home check for newer version?
   or auto-update?? (e.g., with 2x md5 and global lock)
+separate tun exit vals?
 
 do more to protect against leading - in settings?
