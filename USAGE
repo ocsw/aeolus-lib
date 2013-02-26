@@ -1,6 +1,6 @@
 Usage Notes for Aeolus, by Daniel Malament
-run 'aeolus license' for license info
-------------------------------------------
+for license info, run 'aeolus license', or see the LICENSE file
+---------------------------------------------------------------
 
 CONTENTS
 --------
@@ -174,7 +174,7 @@ CONTENTS
       postgres_dbmode="all" and postgres_splitdbs="no".  Pg_dumpall not only
       needs to access the databases, but to access global data which is not
       stored in a database (e.g., roles and tablespaces; see
-      postgres_dumpalloptions in the sample config file for more
+      postgres_dumpalloptions in the CONFIG.SAMPLE file for more
       information).
 
       Further, from the pg_dumpall man page:
@@ -259,14 +259,14 @@ CONTENTS
       dumps/rsyncs/etc.; this is so that backups will be eventually be done
       even on systems that aren't always on.  Alternatively, the script can
       be set to simply perform a backup every time it's invoked; see
-      runevery in the sample config file for more information.
+      runevery in the CONFIG.SAMPLE file for more information.
 
    c) It's a good idea to run the script manually the first time, with
       quiet="no", especially on a new system; this will help catch
       incompatibilities and errors in the config settings.
 
    d) Phases of the script (DBMSes, rsync, rdiff-backup) take place in the
-      order in which their settings are listed in the sample config file.
+      order in which their settings are listed in the CONFIG.SAMPLE file.
 
 
 4) How To Use The Config File
@@ -278,7 +278,7 @@ CONTENTS
       or arrays:
         variable=(value1 value2 etc.)
       No spaces are allowed around the =; extra spaces are ignored within
-      the parentheses.  The notes in the sample config file indicate which
+      the parentheses.  The notes in the CONFIG.SAMPLE file indicate which
       settings are arrays, and the 'create' mode will include parentheses
       on the appropriate lines.
 
@@ -298,7 +298,7 @@ CONTENTS
         variable=''
       This is not the same as leaving the variable unset (i.e., not setting
       it at all); these two cases are treated differently for some settings.
-      See the sample config file for more information.
+      See the CONFIG.SAMPLE file for more information.
 
       To leave an array empty, define it with no elements:
         variable=()
@@ -306,7 +306,7 @@ CONTENTS
       variable in some cases.
 
    b) The usage of some settings requires the definition of shell functions;
-      see the sample config file for examples, and the bash documentation
+      see the CONFIG.SAMPLE file for examples, and the bash documentation
       for further assistance.
 
    c) Comments beginning with # are allowed on their own lines or after
@@ -336,7 +336,7 @@ CONTENTS
 
    The script offers many forms of output and logging, most of which can be
    turned off or configured.  Not every option is mentioned here; see the
-   sample config file for more information.
+   CONFIG.SAMPLE file for more information.
 
    a) Printing To stdout And stderr (Standard Output / Error Output)
 
@@ -396,7 +396,7 @@ CONTENTS
 
       These contain the printed output (*) from the ssh command, the
       database commands, rsync, and rdiff-backup, and are rotated by the
-      script.  See numlogs and dayslogs in the sample config file for
+      script.  See numlogs and dayslogs in the CONFIG.SAMPLE file for
       rotation options.
 
       (*) stdout and/or stderr, depending on the command
@@ -419,7 +419,7 @@ CONTENTS
 
    a) For technical reasons, databases with names containing / or newline
       characters will not be dumped when [dbms]_splitdbs=yes.  See
-      mysql_on_nameerr in the sample config file for more information.
+      mysql_on_nameerr in the CONFIG.SAMPLE file for more information.
 
 
 7) Rsync (General)
@@ -641,7 +641,7 @@ CONTENTS
         xz: see gzip
 
    d) Some utilities must support particular options, e.g.:
-        * see the timecomptype setting in the sample config file for more
+        * see the timecomptype setting in the CONFIG.SAMPLE file for more
           specific requirements for awk/gawk, find and date, depending on
           the value of that setting
         * nc must accept -z

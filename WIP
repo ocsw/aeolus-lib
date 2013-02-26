@@ -2,6 +2,7 @@ git (gitolite?  github?)
 versioning
 checker script
 pull out todos
+LICENSE, README.md, .gitignore
 
 pull out wrapper?
 
@@ -17,7 +18,6 @@ no dbs, empty dbnames, etc.
 
 separate tun exit vals?
 
-"skip/abort"
 "rdiff-backup {,backup}"
 
 on_err: status values (reasons for phase/etc)

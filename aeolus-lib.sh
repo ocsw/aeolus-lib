@@ -3,12 +3,17 @@
 #######################################################################
 # Aeolus library (originally factored out of the Aeolus backup script)
 # by Daniel Malament
-# see ae_license() for license info
 #######################################################################
 
+#
+# see the ae_license() function or the LICENSE file for license info
+#
+
+#
 # all variables and functions can be skipped by setting the corresponding
 # skip_* variable; this allows the library to be overridden easily,
 # even with definitions made before it's sourced
+#
 
 
 ############################################################################
@@ -3904,7 +3909,7 @@ killsshtunnel () {
 # tun_on_err:
 #   "exit": exits with exitval $sshtunnel_exitval
 #   "phase": sets eventual exitval to $sshtunnel_exitval and returns 1
-#            ("skip to the next phase of the script")
+#            ("abort this phase of the script")
 # if tun_on_err is unset or null, it defaults to "exit"
 #
 # FD 3 gets a start message and the actual output (stdout and stderr) of
@@ -3965,7 +3970,7 @@ opensshtunnel () {
           phase)
             sendalert "could not establish SSH tunnel for $tun_descr (timed out);${newline}aborting $tun_descr" log
             setexitval "$sshtunnel_exitval"
-            return 1  # skip to the next phase
+            return 1  # abort this phase of the script
             ;;
           *)  # exit
             sendalert "could not establish SSH tunnel for $tun_descr (timed out); exiting" log
@@ -3982,9 +3987,9 @@ opensshtunnel () {
 
       case "$tun_on_err" in
         phase)
-          sendalert "could not establish SSH tunnel for $tun_descr (status code $sshexit);${newline}skipping $tun_descr" log
+          sendalert "could not establish SSH tunnel for $tun_descr (status code $sshexit);${newline}aborting $tun_descr" log
           setexitval "$sshtunnel_exitval"
-          return 1  # skip to the next phase
+          return 1  # abort this phase of the script
           ;;
         *)  # exit
           sendalert "could not establish SSH tunnel for $tun_descr (status code $sshexit); exiting" log

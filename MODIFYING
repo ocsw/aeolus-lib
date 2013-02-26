@@ -7,7 +7,7 @@ Aeolus modification notes:
 
    any change to the setting variables (additions, deletions, name changes,
    type changes, etc.) must be reflected in the following, as appropriate:
-   the sample config file, $configsettings, configsettingtype(), the default
+   the CONFIG.SAMPLE file, $configsettings, configsettingtype(), the default
    settings section, switch*(), applydefaults(), and validconf()
 
 
@@ -19,7 +19,7 @@ Aeolus modification notes:
 
 3) adding a DBMS
 
-   add vars to the sample config file, modeling after MySQL (but split up
+   add vars to the CONFIG.SAMPLE file, modeling after MySQL (but split up
      [dbms]_dump*options if necessary, and note any nonexistent settings)
    add vars to the relevant variables/functions (see above)
    add any nonexistent settings to bogusconfig and configsettingtype()
@@ -48,4 +48,4 @@ Aeolus modification notes:
 
    see notes in the hardcoded variables section for other things that should
    be kept in sync (e.g., the name of the script and $scriptname, the values
-   of the defaults and the comments in the sample config file, etc.)
+   of the defaults and the comments in the CONFIG.SAMPLE file, etc.)

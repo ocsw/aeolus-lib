@@ -4,11 +4,16 @@
 # Aeolus
 # a portable, super-configurable, failsafe database dump and backup script
 # by Daniel Malament
-# see license() for license info
 ###########################################################################
 
-# see usage() and the usage and sample config files for usage notes
+#
+# see the usage() function and the USAGE and CONFIG.SAMPLE files for
+# usage notes
+# see the MODIFYING file for modification notes
+# see the license() function or the LICENSE file for license info
+#
 
+#
 # exit values:
 #
 #   0   = no error (e.g., runevery hasn't expired, or backup was completed
@@ -43,6 +48,7 @@
 #   250 = internal error; should never happen
 #
 # if there are multiple errors, the first one to occur is used
+#
 
 
 ################
@@ -243,7 +249,8 @@ externalcmds="
 # default path to the config file, if one isn't specified
 defaultconfigfile="/etc/aeolus/aeolus.conf"
 
-# path to sample config file with full descriptions of settings
+# path to the sample config file with full descriptions
+# of all of the settings
 sampleconfigfile="/etc/aeolus/CONFIG.SAMPLE"
 
 # names of all config file settings, in logical order
@@ -501,7 +508,7 @@ configsettingtype () {
 #
 # default settings
 #
-# change comments in sample config file if you change these
+# change the comments in the CONFIG.SAMPLE file if you change these
 #
 
 # default settings: housekeeping
@@ -955,6 +962,8 @@ EOF
 
 #
 # print a license message to stderr
+#
+# (keep this in sync with the LICENSE file)
 #
 # utilities: cat
 #
@@ -1685,7 +1694,7 @@ dbdumpallcmd () {
 # can be used to not dump old data, or to let the DBMS catch up before
 # performing dumps which might make it even further behind
 #
-# returns 1 to mean "skip to the next phase of the backup", else 0
+# returns 1 to mean "abort this phase of the backup", else 0
 #
 # dbms_prefix must be one of the accepted values (see dbmslist),
 # but not all of them will necessarily work; see the code
@@ -1746,7 +1755,7 @@ checkdbmsrepl () {
       phase)
         sendalert "could not get the replication status of the $dbms_prefix DBMS (status code $replexit);${newline}aborting $dbms_prefix dumps" log
         setexitval "$getdbrepl_exitval"
-        return 1  # skip to the next phase
+        return 1  # abort this phase of the backup
         ;;
     esac
   else
@@ -1784,7 +1793,7 @@ checkdbmsrepl () {
             ;;
           phase)
             logstatus "$dbms_prefix Seconds_Behind_Master ($replval) is greater than ${dbms_prefix}_replstatus ($dbms_replstatus);${newline}aborting $dbms_prefix dumps"
-            return 1  # skip to the next phase
+            return 1  # abort this phase of the backup
             ;;
         esac
       else
@@ -1803,7 +1812,7 @@ checkdbmsrepl () {
 #
 # get the list of all DBs if necessary
 #
-# returns 1 to mean "skip to the next phase of the backup", else 0
+# returns 1 to mean "abort this phase of the backup", else 0
 #
 # dbms_prefix must be one of the accepted values (see dbmslist)
 #
@@ -1855,7 +1864,7 @@ getdblist () {
       phase)
         sendalert "could not get the list of $dbms_prefix databases (status code $listexit);${newline}aborting $dbms_prefix dumps" log
         setexitval "$getdblist_exitval"
-        return 1  # skip to the next phase
+        return 1  # abort this phase of the backup
         ;;
     esac
   else
@@ -1972,8 +1981,8 @@ getdumppaths () {
 # if $1 is "mult", the names of the databases to dump must be in the dbnames
 # array
 #
-# returns 1 to mean "skip to the next phase of the backup",
-# 2 to mean "we have skipped this dump",
+# returns 1 to mean "abort this phase of the backup",
+# 2 to mean "this dump was aborted",
 # else 0
 #
 # see getdumppaths() for info about dumpprefix/dumpsuffix
@@ -2018,12 +2027,12 @@ do_dbdump () {
       phase)
         sendalert "$dbms_prefix database name '$dbname' contains a problematic character;${newline}aborting $dbms_prefix dumps" log
         setexitval "$dbname_exitval"
-        return 1  # skip to the next phase
+        return 1  # abort this phase of the backup
         ;;
       db)
-        sendalert "$dbms_prefix database name '$dbname' contains a problematic character;${newline}skipping this database" log
+        sendalert "$dbms_prefix database name '$dbname' contains a problematic character;${newline}aborting this dump" log
         setexitval "$dbname_exitval"
-        return 2  # skip to the next DB
+        return 2  # abort this dump
         ;;
     esac
   fi
@@ -2059,16 +2068,16 @@ do_dbdump () {
           sendalert "dumpfile for $dbms_prefix database(s) already exists;${newline}aborting $dbms_prefix dumps" log
         fi
         setexitval "$dumpexists_exitval"
-        return 1  # skip to the next phase
+        return 1  # abort this phase of the backup
         ;;
       db)
         if [ "$dbname" != "" ]; then
-          sendalert "dumpfile for $dbms_prefix database '$dbname' already exists;${newline}skipping this database" log
+          sendalert "dumpfile for $dbms_prefix database '$dbname' already exists;${newline}aborting this dump" log
         else
-          sendalert "dumpfile for $dbms_prefix database(s) already exists;${newline}skipping this dump" log
+          sendalert "dumpfile for $dbms_prefix database(s) already exists;${newline}aborting this dump" log
         fi
         setexitval "$dumpexists_exitval"
-        return 2  # skip to the next DB
+        return 2  # abort this dump
         ;;
       warn)
         if [ "$dbname" != "" ]; then
@@ -2168,16 +2177,16 @@ do_dbdump () {
           sendalert "error dumping $dbms_prefix database(s) (status code $dumpexit);${newline}aborting $dbms_prefix dumps" log
         fi
         setexitval "$dbdump_exitval"
-        return 1  # skip to the next phase
+        return 1  # abort this phase of the backup
         ;;
       db)
         if [ "$dbname" != "" ]; then
-          sendalert "error dumping $dbms_prefix database '$dbname' (status code $dumpexit);${newline}skipping this database" log
+          sendalert "error dumping $dbms_prefix database '$dbname' (status code $dumpexit);${newline}aborting this dump" log
         else
-          sendalert "error dumping $dbms_prefix database(s) (status code $dumpexit);${newline}skipping this dump" log
+          sendalert "error dumping $dbms_prefix database(s) (status code $dumpexit);${newline}aborting this dump" log
         fi
         setexitval "$dbdump_exitval"
-        return 2  # skip to the next DB
+        return 2  # abort this dump
         ;;
       warn)
         if [ "$dbname" != "" ]; then
@@ -2258,16 +2267,16 @@ do_dbdump () {
             sendalert "error compressing $dbms_prefix database(s) (status code $zipexit);${newline}aborting $dbms_prefix dumps" log
           fi
           setexitval "$dbzip_exitval"
-          return 1  # skip to the next phase
+          return 1  # abort this phase of the backup
           ;;
         db)
           if [ "$dbname" != "" ]; then
-            sendalert "error compressing $dbms_prefix database '$dbname' (status code $zipexit);${newline}skipping this database" log
+            sendalert "error compressing $dbms_prefix database '$dbname' (status code $zipexit);${newline}aborting this dump" log
           else
-            sendalert "error compressing $dbms_prefix database(s) (status code $zipexit);${newline}skipping this dump" log
+            sendalert "error compressing $dbms_prefix database(s) (status code $zipexit);${newline}aborting this dump" log
           fi
           setexitval "$dbzip_exitval"
-          return 2  # skip to the next DB
+          return 2  # abort this dump
           ;;
         warn)
           if [ "$dbname" != "" ]; then
@@ -2328,7 +2337,7 @@ do_dbdump_wrapper () {
 # handle the different modes of DB dumps
 # (split/unsplit, all/include/exclude)
 #
-# returns 1 to mean "skip to the next phase of the backup", else 0
+# returns 1 to mean "abort this phase of the backup", else 0
 #
 # dbms_dblist must be an indexed, non-sparse array
 #
@@ -2349,13 +2358,13 @@ do_dbdumploop () {
       all)
         do_dbdump_wrapper "all"
 
-        [ "$?" = "1" ] && return 1  # skip to the next phase
+        [ "$?" = "1" ] && return 1  # abort this phase of the backup
         ;;
       include)
         copyarray "dbms_dblist" "dbnames" exact
 
         do_dbdump_wrapper "mult"
-        [ "$?" = "1" ] && return 1  # skip to the next phase
+        [ "$?" = "1" ] && return 1  # abort this phase of the backup
         ;;
       exclude)
         dbnames=()
@@ -2376,7 +2385,7 @@ do_dbdumploop () {
         IFS="$OLDIFS"
 
         do_dbdump_wrapper "mult"
-        [ "$?" = "1" ] && return 1  # skip to the next phase
+        [ "$?" = "1" ] && return 1  # abort this phase of the backup
         ;;
     esac  # case "$dbms_dbmode"
   else  # dbms_splitdbs="yes"
@@ -2388,7 +2397,7 @@ do_dbdumploop () {
           dbname=$(dbunescape "$dbname_esc")
 
           do_dbdump_wrapper "one" "$dbname"
-          [ "$?" = "1" ] && return 1  # skip to the next phase
+          [ "$?" = "1" ] && return 1  # abort this phase of the backup
 
           IFS=""
         done < "$lockfile/${dbms_prefix}-$alldbs"
@@ -2397,7 +2406,7 @@ do_dbdumploop () {
       include)
         for dbname in "${dbms_dblist[@]}"; do
           do_dbdump_wrapper "one" "$dbname"
-          [ "$?" = "1" ] && return 1  # skip to the next phase
+          [ "$?" = "1" ] && return 1  # abort this phase of the backup
         done
         ;;
       exclude)
@@ -2413,7 +2422,7 @@ do_dbdumploop () {
           done
 
           do_dbdump_wrapper "one" "$dbname"
-          [ "$?" = "1" ] && return 1  # skip to the next phase
+          [ "$?" = "1" ] && return 1  # abort this phase of the backup
 
           IFS=""
         done < "$lockfile/${dbms_prefix}-$alldbs"
@@ -2433,7 +2442,7 @@ do_dbdumploop () {
 #
 # run rdiff-backup pruning
 #
-# returns 1 to mean "skip to the next phase of the backup", else 0
+# returns 1 to mean "abort this phase of the backup", else 0
 #
 # "local" vars: rdbpruneexit
 # global vars: rdbprune_exitval
@@ -2466,7 +2475,7 @@ do_rdbprune () {
       phase)
         sendalert "error running rdiff-backup pruning (status code $rdbpruneexit);${newline}aborting rdiff-backup backup" log
         setexitval "$rdbprune_exitval"
-        return 1  # skip to the next phase
+        return 1  # abort this phase of the backup
         ;;
       warn)
         sendalert "error running rdiff-backup pruning (status code $rdbpruneexit); continuing" log
@@ -2680,10 +2689,11 @@ do_something="no"  # set this to yes later if we do something
 ###########
 
 #
-# pull out cleanup for use when we skip to the next phase
-# note: skip will have already been logged
+# finish this phase of the backup
 #
-# $1 = 1 if we're skipping to the next phase, 0 otherwise
+# $1 = 1 if we're aborting the phase, 0 otherwise
+#
+# note: abort will have already been logged
 #
 endphase_dbms () {
   # close the SSH tunnel if we had one
@@ -2727,7 +2737,7 @@ for dbms in $dbmslist; do
       logstatus "running user-supplied ${dbms_prefix}_runbefore() function"
       "${dbms_prefix}_runbefore"
       case "$?" in
-        1)  # skip to the next phase
+        1)  # abort this phase of the backup
           endphase_dbms 1
           continue
           ;;
@@ -2742,16 +2752,16 @@ for dbms in $dbmslist; do
     if [ "$dbms_usetunnel" = "yes" ]; then
       switchtunnel "$dbms" "$dbms dumps"
       opensshtunnel
-      [ "$?" = "1" ] && { endphase_dbms 1; continue; }  # skip to next phase
+      [ "$?" = "1" ] && { endphase_dbms 1; continue; }  # abort this phase
     fi
 
     # check the DBMS replication status if necessary
     checkdbmsrepl
-    [ "$?" = "1" ] && { endphase_dbms 1; continue; }  # skip to next phase
+    [ "$?" = "1" ] && { endphase_dbms 1; continue; }  # abort this phase
 
     # get the list of all DBs if necessary
     getdblist
-    [ "$?" = "1" ] && { endphase_dbms 1; continue; }  # skip to next phase
+    [ "$?" = "1" ] && { endphase_dbms 1; continue; }  # abort this phase
 
     # get the path information for the DB dump(s), and create the
     # subdirectory if necessary (including rotation)
@@ -2769,7 +2779,7 @@ for dbms in $dbmslist; do
 
     # do the actual dump(s)
     do_dbdumploop
-    [ "$?" = "1" ] && { endphase_dbms 1; continue; }  # skip to next phase
+    [ "$?" = "1" ] && { endphase_dbms 1; continue; }  # abort this phase
 
     # prune old files ("dir" layouts, "data" preservation mode; see above)
     if [ "$dbms_preserve" = "data" ]; then
@@ -2792,10 +2802,11 @@ done
 ########
 
 #
-# pull out cleanup for use when we skip to the next phase
-# note: skip will have already been logged
+# finish this phase of the backup
 #
-# $1 = 1 if we're skipping to the next phase, 0 otherwise
+# $1 = 1 if we're aborting the phase, 0 otherwise
+#
+# note: abort will have already been logged
 #
 endphase_rsync () {
   # close the SSH tunnel
@@ -2826,7 +2837,7 @@ endphase_rsync () {
   esac
 }
 
-while true; do  # only here to allow us to easily skip to the next phase
+while true; do  # only here to allow us to easily abort this phase
   if [ "$do_rsync" = "yes" ]; then
     do_something="yes"
 
@@ -2837,7 +2848,7 @@ while true; do  # only here to allow us to easily skip to the next phase
       logstatus "running user-supplied rsync_runbefore() function"
       rsync_runbefore
       case "$?" in
-        1)  # skip to the next phase
+        1)  # abort this phase of the backup
           endphase_rsync 1
           break
           ;;
@@ -2852,7 +2863,7 @@ while true; do  # only here to allow us to easily skip to the next phase
     if [ "$rsync_mode" = "tunnel" ]; then
       switchtunnel "rsync" "rsync backup"
       opensshtunnel
-      [ "$?" = "1" ] && { endphase_rsync 1; break; }  # skip to next phase
+      [ "$?" = "1" ] && { endphase_rsync 1; break; }  # abort this phase
     fi
 
     # log that we're running the command
@@ -2931,10 +2942,11 @@ done
 ###############
 
 #
-# pull out cleanup for use when we skip to the next phase
-# note: skip will have already been logged
+# finish this phase of the backup
 #
-# $1 = 1 if we're skipping to the next phase, 0 otherwise
+# $1 = 1 if we're aborting the phase, 0 otherwise
+#
+# note: abort will have already been logged
 #
 endphase_rdb () {
   # post-phase hook
@@ -2960,7 +2972,7 @@ endphase_rdb () {
   esac
 }
 
-while true; do  # only here to allow us to easily skip to the next phase
+while true; do  # only here to allow us to easily abort this phase
   if [ "$do_rdb" = "yes" ]; then
     do_something="yes"
 
@@ -2971,7 +2983,7 @@ while true; do  # only here to allow us to easily skip to the next phase
       logstatus "running user-supplied rdb_runbefore() function"
       rdb_runbefore
       case "$?" in
-        1)  # skip to the next phase
+        1)  # abort this phase of the backup
           endphase_rdb 1
           break
           ;;
@@ -2985,7 +2997,7 @@ while true; do  # only here to allow us to easily skip to the next phase
     # pruning, if rdb_pruneorder="before"
     if [ "$rdb_pruneorder" = "before" ]; then
       do_rdbprune
-      [ "$?" = "1" ] && { endphase_rdb 1; break; }  # skip to next phase
+      [ "$?" = "1" ] && { endphase_rdb 1; break; }  # abort this phase
     fi
 
     #
@@ -3038,7 +3050,7 @@ while true; do  # only here to allow us to easily skip to the next phase
     # pruning, if rdb_pruneorder="after"
     if [ "$rdb_pruneorder" = "after" ]; then
       do_rdbprune
-      [ "$?" = "1" ] && { endphase_rdb 1; break; }  # skip to next phase
+      [ "$?" = "1" ] && { endphase_rdb 1; break; }  # abort this phase
     fi
 
     # clean up
