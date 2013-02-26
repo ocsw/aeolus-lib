@@ -1668,7 +1668,7 @@ $             mysql_aftereach and mysql_runafter are called first, if
 ###rdb_on_pruneerr=
 
 #
-# hooks to run functions before and after rdiff-backup
+# hooks to run functions before and after rdiff-backup backups
 #
 # this feature allows you to run arbitrary code before and after the
 # rdiff-backup phase of the script; it is particularly helpful for

@@ -39,7 +39,7 @@
 #   50  = rsync error (soft)
 #   51  = rsync error (hard)
 #
-#   60  = rdiff-backup error
+#   60  = rdiff-backup sync error
 #   61  = rdiff-backup pruning error
 #
 #   230 = abort from user-supplied function
@@ -2964,10 +2964,10 @@ endphase_rdb () {
   # log status
   case "$1" in
     0)
-      logstatus "rdiff-backup sequence complete"
+      logstatus "rdiff-backup backup sequence complete"
       ;;
     1)
-      logstatus "rdiff-backup sequence aborted"
+      logstatus "rdiff-backup backup sequence aborted"
       ;;
   esac
 }
@@ -2976,7 +2976,7 @@ while true; do  # only here to allow us to easily abort this phase
   if [ "$do_rdb" = "yes" ]; then
     do_something="yes"
 
-    logstatus "starting rdiff-backup sequence"
+    logstatus "starting rdiff-backup backup sequence"
 
     # pre-phase hook
     if [ "$rdb_userunbefore" = "yes" ]; then
