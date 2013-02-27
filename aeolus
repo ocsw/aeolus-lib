@@ -2033,6 +2033,7 @@ do_dbdump () {
         ;;
       db)
         sendalert "$dbms_prefix database name '$dbname' contains a problematic character;${newline}aborting this dump" log
+        dberr="$dbname_exitval"
         return 2  # abort this dump
         ;;
     esac
@@ -2077,6 +2078,7 @@ do_dbdump () {
         else
           sendalert "dumpfile for $dbms_prefix database(s) already exists;${newline}aborting this dump" log
         fi
+        dberr="$dumpexists_exitval"
         return 2  # abort this dump
         ;;
       warn)
@@ -2184,6 +2186,7 @@ do_dbdump () {
         else
           sendalert "error dumping $dbms_prefix database(s) (status code $dumpexit);${newline}aborting this dump" log
         fi
+        dberr="$dbdump_exitval"
         return 2  # abort this dump
         ;;
       warn)
@@ -2272,6 +2275,7 @@ do_dbdump () {
           else
             sendalert "error compressing $dbms_prefix database(s) (status code $zipexit);${newline}aborting this dump" log
           fi
+          dberr="$dbzip_exitval"
           return 2  # abort this dump
           ;;
         warn)

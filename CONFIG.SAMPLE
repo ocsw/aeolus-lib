@@ -953,6 +953,9 @@ $             mysql_aftereach and mysql_runafter are called first, if
 #            will contain the exit value that would have been used for the
 #            relevant error; see the top of the script for a list)
 #        2 = this dump was skipped / aborted
+#            the dberr variable will contain the exit value that would have
+#            been used for the relevant error; see the top of the script for
+#            a list
 #
 # your function can access any of the internal variables of the script;
 # it is recommended to study the script and library code, and to use the
