@@ -1710,8 +1710,9 @@ dbdumpallcmd () {
 # but not all of them will necessarily work; see the code
 #
 # "local" vars: replexit, replval
-# global vars: dbms_prefix, dbms_replstatus, dbms_on_replerr, replstatus,
-#              dbrepl_exitval, internal_exitval
+# global vars: dbms_prefix, dbms_replstatus, dbms_on_replerr,
+#              dbms_on_replstat, replstatus, getdbrepl_exitval,
+#              dbreplstat_extival, phaseerr
 # config settings: lockfile
 # library vars: newline
 # library functions: dbcmd(), logstatusquiet(), logstatus(), sendalert(),
@@ -1835,7 +1836,7 @@ checkdbmsrepl () {
 #
 # "local" vars: listexit
 # global vars: dbms_prefix, dbms_dbmode, dbms_splitdbs, dbms_on_listerr,
-#              alldbs, getdblist_exitval
+#              alldbs, getdblist_exitval, phaseerr
 # config settings: lockfile
 # library vars: newline
 # library functions: dblistcmd(), logstatusquiet(), logstatus(), sendalert(),
@@ -2011,8 +2012,9 @@ getdumppaths () {
 #              rotatesep, rotatesuffix, dbms_prefix, dbms_layout,
 #              dbms_numfiles, dbms_daysfiles, dbms_zipmode, dbms_zipoptions,
 #              dbms_preserve, dbms_on_nameerr, dbms_on_duplerr,
-#              dbms_on_dumperr, dbms_on_ziperr, cmdexitval,
-#              dumpexists_exitval, dbdump_exitval, dbzip_exitval
+#              dbms_on_dumperr, dbms_on_ziperr, cmdexitval, dbname_exitval,
+#              dumpexists_exitval, dbdump_exitval, dbzip_exitval, phaseerr,
+#              dberr
 # library vars: newline
 # library functions: rotatenumfiles(), prunefiles(), existsfilezip(),
 #                    removefilezip(), dbdumponecmd(), dbdumpmultcmd(),
@@ -2459,7 +2461,7 @@ do_dbdumploop () {
 # returns 1 to mean "abort this phase of the backup", else 0
 #
 # "local" vars: rdbpruneexit
-# global vars: rdbprune_exitval
+# global vars: rdbprune_exitval, phaseerr
 # config settings: rdb_on_pruneerr
 # library vars: newline
 # library functions: rdbprunecmd(), logstatusquiet, logstatus(),

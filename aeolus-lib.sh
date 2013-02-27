@@ -2695,7 +2695,7 @@ validfunction () {
 # of a bogus setting and prints "scalar", "array", or "function"
 #
 # "local" vars: bogus
-# global vars: bogusconfig, startup_exitval
+# global vars: bogusconfig
 # library vars: newline
 # user-defined functions: configsettingtype()
 # library functions: isset(), arrayisset(), funcisdefined(), sendalert()
@@ -3890,7 +3890,7 @@ killsshtunnel () {
 #
 # "local" vars: tunpid_var, tunpid_l, waited, sshexit
 # global vars: (contents of $1, or tunpid, and the corresponding *_descr),
-#              tun_descr
+#              tun_descr, phaseerr
 # config settings: tun_localhost, tun_localport, tun_sshtimeout, tun_on_err
 # library vars: newline, sshtunnel_exitval
 # library functions: sshtunnelcmd(), logstatus(), logstatusquiet(),
