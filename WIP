@@ -3,17 +3,10 @@ versioning
 checker script
 pull out todos
 README.md
-
-pull out wrapper?
-
-percona backup?
+install.sh
+pull out wrapper
 
 integrated pg_dumpall -g
 
-notes on rdiff-backup modes, restores, 1-arg commands (incl nodefault list)
-
-rdiff - list incr?
-
-no dbs, empty dbnames, etc.
-
-on_err: status values (reasons for phase/etc)
+notes on rdiff-backup restores / 1-arg commands
+rdb/rsync "restore" modes?
