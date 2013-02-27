@@ -1830,7 +1830,10 @@ checkdbmsrepl () {
 #
 # get the list of all DBs if necessary
 #
-# returns 1 to mean "abort this phase of the backup", else 0
+# returns:
+# 1 to mean "abort this phase of the backup",
+# 2 to mean "there are no DBs, end this phase cleanly",
+# else 0
 #
 # dbms_prefix must be one of the accepted values (see dbmslist)
 #
@@ -1887,6 +1890,12 @@ getdblist () {
     esac
   else
     logstatus "obtained the list of $dbms_prefix databases"
+  fi
+
+  # make sure there are DBs
+  if [ ! -s "$lockfile/${dbms_prefix}-$alldbs" ]; then
+    sendalert "warning: there are no databases in this $dbms_prefix installation" log
+    return 2
   fi
 
   return 0
@@ -1999,7 +2008,8 @@ getdumppaths () {
 # if $1 is "mult", the names of the databases to dump must be in the dbnames
 # array
 #
-# returns 1 to mean "abort this phase of the backup",
+# returns:
+# 1 to mean "abort this phase of the backup",
 # 2 to mean "this dump was aborted",
 # else 0
 #
@@ -2353,7 +2363,10 @@ do_dbdump_wrapper () {
 # handle the different modes of DB dumps
 # (split/unsplit, all/include/exclude)
 #
-# returns 1 to mean "abort this phase of the backup", else 0
+# returns:
+# 1 to mean "abort this phase of the backup",
+# 2 to mean "there are no DBs to dump, end this phase cleanly",
+# else 0
 #
 # dbms_dblist must be an indexed, non-sparse array
 #
@@ -2400,6 +2413,12 @@ do_dbdumploop () {
         done < "$lockfile/${dbms_prefix}-$alldbs"
         IFS="$OLDIFS"
 
+        # make sure we have something to do
+        if arrayisempty "dbnames"; then
+          sendalert "warning: all of the databases in this $dbms_prefix installation have been excluded" log
+          return 2  # there are no DBs to dump
+        fi
+
         do_dbdump_wrapper "mult"
         [ "$?" = "1" ] && return 1  # abort this phase of the backup
         ;;
@@ -2426,6 +2445,7 @@ do_dbdumploop () {
         done
         ;;
       exclude)
+        called_dbdump="no"
         IFS=""
         while read -r dbname_esc; do  # < "$lockfile/${dbms_prefix}-$alldbs"
           IFS="$OLDIFS"
@@ -2439,11 +2459,18 @@ do_dbdumploop () {
 
           do_dbdump_wrapper "one" "$dbname"
           [ "$?" = "1" ] && return 1  # abort this phase of the backup
+          called_dbdump="yes"
 
           IFS=""
         done < "$lockfile/${dbms_prefix}-$alldbs"
         IFS="$OLDIFS"
-       ;;
+
+        # check if we did anything
+        if [ "$called_dbdump" = "no" ]; then
+          sendalert "warning: all of the databases in this $dbms_prefix installation have been excluded" log
+          return 2  # there are no DBs to dump
+        fi
+        ;;
     esac  # case "$dbms_dbmode"
   fi  # if [ "$dbms_splitdbs" = "no" ]
 
@@ -2777,7 +2804,16 @@ for dbms in $dbmslist; do
 
     # get the list of all DBs if necessary
     getdblist
-    [ "$?" = "1" ] && { endphase_dbms 1; continue; }  # abort this phase
+    case "$?" in
+      1)  # abort this phase
+        endphase_dbms 1
+        continue
+        ;;
+      2)  # there are no DBs; nothing else to do
+        endphase_dbms 0
+        continue
+        ;;
+    esac
 
     # get the path information for the DB dump(s), and create the
     # subdirectory if necessary (including rotation)
@@ -2795,7 +2831,16 @@ for dbms in $dbmslist; do
 
     # do the actual dump(s)
     do_dbdumploop
-    [ "$?" = "1" ] && { endphase_dbms 1; continue; }  # abort this phase
+    case "$?" in
+      1)  # abort this phase
+        endphase_dbms 1
+        continue
+        ;;
+      2)  # there are no DBs to dump; nothing else to do
+        endphase_dbms 0
+        continue
+        ;;
+    esac
 
     # prune old files ("dir" layouts, "data" preservation mode; see above)
     if [ "$dbms_preserve" = "data" ]; then
