@@ -1782,7 +1782,7 @@ checkdbmsrepl () {
       # is it even acting as a replication slave?
       # -> slave configured but down?
       if [ "$replval" = "NULL" ]; then
-        sendalert "warning: $dbms_prefix DBMS is configured as a replication slave but is not${newline}actually replicating, and ${dbms_prefix}_replstatus is set;${newline}continuing with $dbms_prefix dumps" log
+        sendalert "warning: $dbms_prefix DBMS is configured as a replication slave but is not${newline}actually replicating, and ${dbms_prefix}_replstatus is set; continuing" log
         return 0
       fi
 
@@ -1791,7 +1791,7 @@ checkdbmsrepl () {
       # use extra [0-9] to avoid having to use egrep
       if printf "%s\n" "$replval" | \
            grep -v '^[0-9][0-9]*$' >/dev/null 2>&1; then
-        sendalert "warning: $dbms_prefix DBMS is not acting as a replication slave, but ${dbms_prefix}_replstatus is set;${newline}continuing with $dbms_prefix dumps" log
+        sendalert "warning: $dbms_prefix DBMS is not acting as a replication slave, but ${dbms_prefix}_replstatus is set; continuing" log
         return 0
       fi
 
@@ -1808,7 +1808,7 @@ checkdbmsrepl () {
             return 1  # abort this phase of the backup
             ;;
           warn)
-            sendalert "$dbms_prefix Seconds_Behind_Master ($replval) is greater than ${dbms_prefix}_replstatus ($dbms_replstatus); continuing" log
+            sendalert "warning: $dbms_prefix Seconds_Behind_Master ($replval) is greater than ${dbms_prefix}_replstatus ($dbms_replstatus); continuing" log
             ;;
           ignore)
             :  # do nothing
@@ -2208,9 +2208,9 @@ do_dbdump () {
         ;;
       warn)
         if [ "$dbname" != "" ]; then
-          sendalert "error dumping $dbms_prefix database '$dbname' (status code $dumpexit); continuing" log
+          sendalert "warning: error dumping $dbms_prefix database '$dbname' (status code $dumpexit); continuing" log
         else
-          sendalert "error dumping $dbms_prefix database(s) (status code $dumpexit); continuing" log
+          sendalert "warning: error dumping $dbms_prefix database(s) (status code $dumpexit); continuing" log
         fi
         ;;
       ignore)
@@ -2297,9 +2297,9 @@ do_dbdump () {
           ;;
         warn)
           if [ "$dbname" != "" ]; then
-            sendalert "error compressing $dbms_prefix database '$dbname' (status code $zipexit); continuing" log
+            sendalert "warning: error compressing $dbms_prefix database '$dbname' (status code $zipexit); continuing" log
           else
-            sendalert "error compressing $dbms_prefix database(s) (status code $zipexit); continuing" log
+            sendalert "warning: error compressing $dbms_prefix database(s) (status code $zipexit); continuing" log
           fi
           ;;
         ignore)
@@ -2494,7 +2494,7 @@ do_rdbprune () {
         return 1  # abort this phase of the backup
         ;;
       warn)
-        sendalert "error running rdiff-backup pruning (status code $rdbpruneexit); continuing" log
+        sendalert "warning: error running rdiff-backup pruning (status code $rdbpruneexit); continuing" log
         ;;
       ignore)
         :  # do nothing
@@ -2912,7 +2912,7 @@ while true; do  # only here to allow us to easily abort this phase
             break
             ;;
           warn)
-            sendalert "rsync finished with possible errors (status code $rsyncexit); continuing" log
+            sendalert "warning: rsync finished with possible errors (status code $rsyncexit); continuing" log
             ;;
           ignore)
             :  # do nothing
@@ -2932,7 +2932,7 @@ while true; do  # only here to allow us to easily abort this phase
             break
             ;;
           warn)
-            sendalert "error running rsync (status code $rsyncexit); continuing" log
+            sendalert "warning: error running rsync (status code $rsyncexit); continuing" log
             ;;
           ignore)
             :  # do nothing
@@ -3045,7 +3045,7 @@ while true; do  # only here to allow us to easily abort this phase
           break
           ;;
         warn)
-          sendalert "error running rdiff-backup (status code $rdbsyncexit); continuing" log
+          sendalert "warning: error running rdiff-backup (status code $rdbsyncexit); continuing" log
           ;;
         ignore)
           :  # do nothing
