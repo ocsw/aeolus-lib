@@ -949,9 +949,10 @@ $             mysql_aftereach and mysql_runafter are called first, if
 #   $1 = the database name if the dump was of a single database, else blank
 #   $2 = the return value from db_dodump():
 #        0 = dump was successful (or errors were ignored based on settings)
-#        1 = the entire MySQL dump phase was aborted (the phaseerr variable
-#            will contain the exit value that would have been used for the
-#            relevant error; see the top of the script for a list)
+#        1 = the entire MySQL dump phase was aborted
+#            the phaseerr variable will contain the exit value that would
+#            have been used for the relevant error; see the top of the
+#            script for a list
 #        2 = this dump was skipped / aborted
 #            the dberr variable will contain the exit value that would have
 #            been used for the relevant error; see the top of the script for
@@ -1005,9 +1006,10 @@ $             mysql_aftereach and mysql_runafter are called first, if
 #
 # mysql_runafter takes one parameter, which can be:
 #   0 = MySQL dump phase finished normally
-#   1 = MySQL dump phase was aborted (the phaseerr variable will contain the
-#       exit value that would have been used for the relevant error; see the
-#       top of the script for a list)
+#   1 = MySQL dump phase was aborted
+#       the phaseerr variable will contain the exit value that would have
+#       been used for the relevant error; see the top of the script for a
+#       list
 # it can return:
 #   0 = success
 #   2 = abort the script
@@ -1515,9 +1517,10 @@ $             mysql_aftereach and mysql_runafter are called first, if
 #
 # rsync_runafter takes one parameter, which can be:
 #   0 = rsync phase finished normally
-#   1 = rsync phase was aborted (the phaseerr variable will contain the exit
-#       value that would have been used for the relevant error; see the top
-#       of the script for a list)
+#   1 = rsync phase was aborted
+#       the phaseerr variable will contain the exit value that would have
+#       been used for the relevant error; see the top of the script for a
+#       list
 # it can return:
 #   0 = success
 #   2 = abort the script
@@ -1697,9 +1700,10 @@ $             mysql_aftereach and mysql_runafter are called first, if
 #
 # rdb_runafter takes one parameter, which can be:
 #   0 = rdiff-backup phase finished normally
-#   1 = rdiff-backup phase was aborted (the phaseerr variable will contain
-#       the exit value that would have been used for the relevant error; see
-#       the top of the script for a list)
+#   1 = rdiff-backup phase was aborted
+#       the phaseerr variable will contain the exit value that would have
+#       been used for the relevant error; see the top of the script for a
+#       list
 # it can return:
 #   0 = success
 #   2 = abort the script
