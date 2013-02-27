@@ -1280,9 +1280,22 @@ $             mysql_aftereach and mysql_runafter are called first, if
 #
 # if "no", the rest of the rsync settings are ignored
 #
+# * ignored if rsync_only is "yes" (and isn't ignored)
 # * if blank or unset, defaults to "no"
 #
 ###do_rsync=
+
+#
+# only do rsync ("yes" or "no")?
+#
+# this turns off all other phases of the script (e.g. DBMS dumps) and forces
+# do_rsync="yes"; it is intended to be a useful shorthand, used from the
+# command line or a wrapper, when restoring files
+#
+# * ignored if rdb_only is "yes"
+# * if blank or unset, defaults to "no"
+#
+###rsync_only=
 
 #
 # mode of operation ("tunnel", "direct", "nodaemon", or "local")
@@ -1562,9 +1575,22 @@ $             mysql_aftereach and mysql_runafter are called first, if
 #
 # if "no", the rest of the rdiff-backup settings are ignored
 #
+# * ignored if rdb_only is "yes"
 # * if blank or unset, defaults to "no"
 #
 ###do_rdb=
+
+#
+# only do rdb sync ("yes" or "no")?
+#
+# this turns off all other phases of the script (e.g. DBMS dumps) and forces
+# do_rdb="yes" and rdb_prune=""; it is intended to be a useful shorthand,
+# used from the command line or a wrapper, when restoring files or running
+# rdiff-backup "commands" such as '--list-increment-sizes' or '--verify'
+#
+# * if blank or unset, defaults to "no"
+#
+###rdb_only=
 
 #
 # mode of operation ("remote" or "local")

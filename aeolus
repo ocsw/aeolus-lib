@@ -388,6 +388,7 @@ configsettings="
   postgres_userunafter
   postgres_runafter
   do_rsync
+  rsync_only
   rsync_mode
   rsync_sshuser
   rsync_sshhost
@@ -413,6 +414,7 @@ configsettings="
   rsync_userunafter
   rsync_runafter
   do_rdb
+  rdb_only
   rdb_mode
   rdb_sshkeyfile
   rdb_sshport
@@ -608,6 +610,7 @@ postgres_subdirprefix_default="postgresdump"  # only if unset
 
 # default settings: rsync
 do_rsync_default="no"
+rsync_only_default="no"
 rsync_mode_default="tunnel"
 rsync_pwfile_default="/etc/aeolus/rsync.pw"  # only if unset
 rsync_options_default=(-va --sparse --numeric-ids --delete)  # only if unset
@@ -619,6 +622,7 @@ rsync_userunafter_default="no"
 
 # default settings: rdiff-backup
 do_rdb_default="no"
+rdb_only_default="no"
 rdb_mode_default="remote"
 rdb_sshoptions_default=(-C)  # only if unset
 rdb_pruneorder_default="after"
@@ -1224,6 +1228,7 @@ applydefaults () {
 
   # rsync
   [ "$do_rsync" = "" ] && do_rsync="$do_rsync_default"
+  [ "$rsync_only" = "" ] && rsync_only="$rsync_only_default"
   [ "$rsync_mode" = "" ] && rsync_mode="$rsync_mode_default"
   [ "${rsync_pwfile+X}" = "" ] && rsync_pwfile="$rsync_pwfile_default"
   arrayisunset "rsync_options" && \
@@ -1236,6 +1241,7 @@ applydefaults () {
 
   # rdiff-backup
   [ "$do_rdb" = "" ] && do_rdb="$do_rdb_default"
+  [ "$rdb_only" = "" ] && rdb_only="$rdb_only_default"
   [ "$rdb_mode" = "" ] && rdb_mode="$rdb_mode_default"
   arrayisunset "rdb_sshoptions" && \
       copyarray "rdb_sshoptions_default" "rdb_sshoptions"
@@ -1306,6 +1312,25 @@ validconf () {
     if [ "$outputlog_layout" = "date" ] && [ "$numlogs" != "0" ]; then
       sendalert "warning: outputlog_layout=date; ignoring non-0 numlogs" log
     fi
+  fi
+
+  # *_only overrides
+  validlist "rsync_only" "yes" "no"
+  if [ "$rsync_only" = "yes" ]; then
+    for dbms in $dbmslist; do
+      printf -v "${dbms}_dodump" "%s" "no"
+    done
+    do_rdb="no"
+    db_rsync="yes"
+  fi
+  validlist "rdb_only" "yes" "no"
+  if [ "$rdb_only" = "yes" ]; then
+    for dbms in $dbmslist; do
+      printf -v "${dbms}_dodump" "%s" "no"
+    done
+    do_rsync="no"
+    do_rdb="yes"
+    rdb_prune=""
   fi
 
   # DBMS dumps, including SSH tunnels
