@@ -3941,6 +3941,7 @@ opensshtunnel () {
         case "$tun_on_err" in
           phase)
             sendalert "could not establish SSH tunnel for $tun_descr (timed out);${newline}aborting $tun_descr" log
+            phaseerr="$sshtunnel_exitval"
             return 1  # abort this phase of the script
             ;;
           *)  # exit
@@ -3959,6 +3960,7 @@ opensshtunnel () {
       case "$tun_on_err" in
         phase)
           sendalert "could not establish SSH tunnel for $tun_descr (status code $sshexit);${newline}aborting $tun_descr" log
+          phaseerr="$sshtunnel_exitval"
           return 1  # abort this phase of the script
           ;;
         *)  # exit

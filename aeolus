@@ -1755,6 +1755,7 @@ checkdbmsrepl () {
         ;;
       phase)
         sendalert "could not get the replication status of the $dbms_prefix DBMS (status code $replexit);${newline}aborting $dbms_prefix dumps" log
+        phaseerr="$getdbrepl_exitval"
         return 1  # abort this phase of the backup
         ;;
     esac
@@ -1793,6 +1794,7 @@ checkdbmsrepl () {
             ;;
           phase)
             logstatus "$dbms_prefix Seconds_Behind_Master ($replval) is greater than ${dbms_prefix}_replstatus ($dbms_replstatus);${newline}aborting $dbms_prefix dumps"
+            phaseerr="$no_error_exitval"
             return 1  # abort this phase of the backup
             ;;
         esac
@@ -1863,6 +1865,7 @@ getdblist () {
         ;;
       phase)
         sendalert "could not get the list of $dbms_prefix databases (status code $listexit);${newline}aborting $dbms_prefix dumps" log
+        phaseerr="$getdblist_exitval"
         return 1  # abort this phase of the backup
         ;;
     esac
@@ -2025,6 +2028,7 @@ do_dbdump () {
         ;;
       phase)
         sendalert "$dbms_prefix database name '$dbname' contains a problematic character;${newline}aborting $dbms_prefix dumps" log
+        phaseerr="$dbname_exitval"
         return 1  # abort this phase of the backup
         ;;
       db)
@@ -2064,6 +2068,7 @@ do_dbdump () {
         else
           sendalert "dumpfile for $dbms_prefix database(s) already exists;${newline}aborting $dbms_prefix dumps" log
         fi
+        phaseerr="$dumpexists_exitval"
         return 1  # abort this phase of the backup
         ;;
       db)
@@ -2170,6 +2175,7 @@ do_dbdump () {
         else
           sendalert "error dumping $dbms_prefix database(s) (status code $dumpexit);${newline}aborting $dbms_prefix dumps" log
         fi
+        phaseerr="$dbdump_exitval"
         return 1  # abort this phase of the backup
         ;;
       db)
@@ -2257,6 +2263,7 @@ do_dbdump () {
           else
             sendalert "error compressing $dbms_prefix database(s) (status code $zipexit);${newline}aborting $dbms_prefix dumps" log
           fi
+          phaseerr="$dbzip_exitval"
           return 1  # abort this phase of the backup
           ;;
         db)
@@ -2462,6 +2469,7 @@ do_rdbprune () {
         ;;
       phase)
         sendalert "error running rdiff-backup pruning (status code $rdbpruneexit);${newline}aborting rdiff-backup backup" log
+        phaseerr="$rdbprune_exitval"
         return 1  # abort this phase of the backup
         ;;
       warn)
@@ -2724,6 +2732,7 @@ for dbms in $dbmslist; do
       "${dbms_prefix}_runbefore"
       case "$?" in
         1)  # abort this phase of the backup
+          phaseerr="$userfunc_exitval"
           endphase_dbms 1
           continue
           ;;
@@ -2835,6 +2844,7 @@ while true; do  # only here to allow us to easily abort this phase
       rsync_runbefore
       case "$?" in
         1)  # abort this phase of the backup
+          phaseerr="$userfunc_exitval"
           endphase_rsync 1
           break
           ;;
@@ -2876,6 +2886,7 @@ while true; do  # only here to allow us to easily abort this phase
             ;;
           phase)
             sendalert "rsync finished with possible errors (status code $rsyncexit); aborting rsync backup" log
+            phaseerr="$rsyncsoft_exitval"
             endphase_rsync 1
             break
             ;;
@@ -2895,6 +2906,7 @@ while true; do  # only here to allow us to easily abort this phase
             ;;
           phase)
             sendalert "error running rsync (status code $rsyncexit); aborting rsync backup" log
+            phaseerr="$rsynchard_exitval"
             endphase_rsync 1
             break
             ;;
@@ -2966,6 +2978,7 @@ while true; do  # only here to allow us to easily abort this phase
       rdb_runbefore
       case "$?" in
         1)  # abort this phase of the backup
+          phaseerr="$userfunc_exitval"
           endphase_rdb 1
           break
           ;;
@@ -3006,6 +3019,7 @@ while true; do  # only here to allow us to easily abort this phase
           ;;
         phase)
           sendalert "error running rdiff-backup (status code $rdbsyncexit); aborting rdiff-backup backup" log
+          phaseerr="$rdbsync_exitval"
           endphase_rdb 1
           break
           ;;
