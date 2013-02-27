@@ -418,6 +418,7 @@ configsettings="
   rdb_sshport
   rdb_sshoptions
   rdb_options
+  rdb_cmdopt
   rdb_source
   rdb_dest
   rdb_prune
@@ -498,7 +499,7 @@ configsettingtype () {
       ;;
 
     # rdiff-backup
-    rdb_sshoptions|rdb_options)
+    rdb_sshoptions|rdb_options|rdb_cmdopt)
       echo "array"
       ;;
     rdb_runbefore|rdb_runafter)
@@ -1490,6 +1491,7 @@ validconf () {
       unsparsearray "rdb_sshoptions"
     fi
     unsparsearray "rdb_options"
+    unsparsearray "rdb_cmdopt"
     # don't check rdb_source, so we can omit it for running commands on
     # the archive (e.g., -l, or --list-increment-sizes)
     #validnotvoid "rdb_source"

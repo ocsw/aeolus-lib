@@ -4286,8 +4286,9 @@ rdbcmd () {
   # use a copy so we don't change the real array, below
   copyarray "rdb_cmdopt" "rdb_cmdopt_tmp" exact
 
-  # put rdb_source in the rdb_cmdopt array; this lets us omit it completely
-  # with "${[@]}" instead of leaving a "" in the command, if it's not set
+  # put rdb_source in the rdb_cmdopt_tmp array; this lets us omit it
+  # completely with "${[@]}" instead of leaving a "" in the command,
+  # if it's not set
   if [ "$rdb_source" != "" ]; then
     rdb_cmdopt_tmp+=("$rdb_source")
   fi
