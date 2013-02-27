@@ -633,7 +633,6 @@ rdb_userunafter_default="no"
 # [dbms]_dblist
 # rsync_source
 # rsync_dest
-# rdb_source
 # rdb_dest
 
 # supported DBMSes, separated by spaces
@@ -1491,7 +1490,9 @@ validconf () {
       unsparsearray "rdb_sshoptions"
     fi
     unsparsearray "rdb_options"
-    validnotvoid "rdb_source"
+    # don't check rdb_source, so we can omit it for running commands on
+    # the archive (e.g., -l, or --list-increment-sizes)
+    #validnotvoid "rdb_source"
     validnotvoid "rdb_dest"
     validlist "rdb_pruneorder" "before" "after"
     validlist "rdb_on_syncerr" "ignore" "warn" "phase" "exit"

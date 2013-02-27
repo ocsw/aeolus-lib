@@ -4272,17 +4272,26 @@ rsynccmd () {
 #
 # rdb_sshoptions and rdb_options must be indexed arrays
 #
-# "local" vars: rschemastr
+# "local" vars: rdb_cmdopt_tmp, rschemastr
 # global vars: cmdexitval
 # config settings: rdb_mode, rdb_sshkeyfile, rdb_sshport, rdb_sshoptions,
-#                  rdb_options, rdb_source, rdb_dest
-# library functions: begincmdprint(), endcmdprint()
-# utilities: rdiff-backup, ssh
+#                  rdb_options, rdb_cmdopt, rdb_source, rdb_dest
+# library functions: copyarray(), begincmdprint(), endcmdprint()
+# utilities: rdiff-backup, ssh, [
 # files: $rdb_sshkeyfile
-# bashisms: arrays
+# bashisms: arrays, array+=() [v3.1]
 #
 [ "${skip_rdbcmd+X}" = "" ] && \
 rdbcmd () {
+  # use a copy so we don't change the real array, below
+  copyarray "rdb_cmdopt" "rdb_cmdopt_tmp" exact
+
+  # put rdb_source in the rdb_cmdopt array; this lets us omit it completely
+  # with "${[@]}" instead of leaving a "" in the command, if it's not set
+  if [ "$rdb_source" != "" ]; then
+    rdb_cmdopt_tmp+=("$rdb_source")
+  fi
+
   case "$rdb_mode" in
     remote)
       # the ssh command has to be on one line, and every way I tried to embed
@@ -4293,7 +4302,7 @@ rdbcmd () {
       rdiff-backup \
         --remote-schema "$rschemastr" \
         "${rdb_options[@]}" \
-        "$rdb_source" \
+        "${rdb_cmdopt_tmp[@]}" \
         "$rdb_dest"
       endcmdprint 2>/dev/null
       ;;
@@ -4301,7 +4310,7 @@ rdbcmd () {
       begincmdprint
       rdiff-backup \
         "${rdb_options[@]}" \
-        "$rdb_source" \
+        "${rdb_cmdopt_tmp[@]}" \
         "$rdb_dest"
       endcmdprint 2>/dev/null
       ;;
@@ -4311,46 +4320,24 @@ rdbcmd () {
 }
 
 #
-# run an rdiff-backup prune command
+# run an rdiff-backup prune command; this is a wrapper around rdbcmd()
 #
-# rsync_sshoptions can't contain spaces
-#
-# rdb_sshoptions and rdb_options must be indexed arrays
-#
-# "local" vars: rschemastr
-# global vars: cmdexitval
-# config settings: rdb_mode, rdb_sshkeyfile, rdb_sshport, rdb_sshoptions,
-#                  rbd_prune, rdb_options, rdb_dest
-# library functions: begincmdprint(), endcmdprint()
-# utilities: rdiff-backup, ssh
-# files: $rdb_sshkeyfile
+# "local" vars: rdbcmdexit, rdb_cmdopt_bak, rdb_source_bak
+# config settings: rdb_cmdopt, rdb_source, rdb_prune
+# library functions: copyarray(), rdbcmd()
 # bashisms: arrays
 #
 [ "${skip_rdbprunecmd+X}" = "" ] && \
 rdbprunecmd () {
-  case "$rdb_mode" in
-    remote)
-      # the ssh command has to be on one line, and every way I tried to embed
-      # it had problems; this is the best method I can come up with, although
-      # it breaks with spaces in the options array
-      rschemastr="ssh ${rdb_sshkeyfile:+-i "$rdb_sshkeyfile"} ${rdb_sshport:+-p "$rdb_sshport"} ${rdb_sshoptions[@]} %s rdiff-backup --server"
-      begincmdprint
-      rdiff-backup \
-        --remote-schema "$rschemastr" \
-        "${rdb_options[@]}" \
-        --remove-older-than "$rdb_prune" --force \
-        "$rdb_dest"
-      endcmdprint 2>/dev/null
-      ;;
-    local)
-      begincmdprint
-      rdiff-backup \
-        "${rdb_options[@]}" \
-        --remove-older-than "$rdb_prune" --force \
-        "$rdb_dest"
-      endcmdprint 2>/dev/null
-      ;;
-  esac
+  copyarray "rdb_cmdopt" "rdb_cmdopt_bak" exact
+  rdb_cmdopt=(--remove-older-than "$rdb_prune" --force)
+  rdb_source_bak="$rdb_source"
+  rdb_source=""
 
-  return "$cmdexitval"
+  rdbcmd
+  rdbcmdexit="$?"
+
+  rdb_source="$rdb_source_bak"
+  copyarray "rdb_cmdopt_bak" "rdb_cmdopt" exact
+  return "$rdbcmdexit"
 }

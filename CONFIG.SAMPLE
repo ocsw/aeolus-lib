@@ -1624,6 +1624,9 @@ $             mysql_aftereach and mysql_runafter are called first, if
 # source directory
 # (see usage notes on rdiff-backup modes)
 #
+# * can be blank or unset, in order to run commands on the archive (such as
+#   (-l , or --list-increment-sizes; see usage notes on rdiff-backup)
+#
 ###rdb_source=
 
 #
