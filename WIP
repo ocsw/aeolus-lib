@@ -7,6 +7,3 @@ install.sh
 pull out wrapper
 
 integrated pg_dumpall -g
-
-notes on rdiff-backup restores / 1-arg commands
-rdb/rsync "restore" modes?
