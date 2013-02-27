@@ -83,6 +83,7 @@ esac
 # exit values
 [ "${skip_no_error_exitval+X}" = "" ] && \
      [ "${no_error_exitval+X}" = "" ] && no_error_exitval="0"
+# keep this value in sync with the library-sourcing section
 [ "${skip_startup_exitval+X}" = "" ] && \
      [ "${startup_exitval+X}" = "" ] && startup_exitval="10"
 [ "${skip_lockfile_exitval+X}" = "" ] && \

@@ -654,7 +654,7 @@ dumptmp=".tmp"
 # and the exit values for the bash check and the library sourcing, and take
 # http://tldp.org/LDP/abs/html/exitcodes.html into account)
 no_error_exitval="0"
-startup_exitval="10"
+startup_exitval="10"  # keep in sync with the library-sourcing section
 lockfile_exitval="11"
 sshtunnel_exitval="20"
 getdbrepl_exitval="30"
