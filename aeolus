@@ -17,8 +17,7 @@
 # exit values:
 #
 #   0   = no error (e.g., runevery hasn't expired, or backup was completed
-#         without errors, or backup was skipped because replicaton is
-#         further behind than the threshold)
+#         without errors)
 #
 #   10  = problem with the script invocation, the config file, or a setting
 #         (also used in command modes like 'disable' as a generic error
@@ -28,8 +27,10 @@
 #
 #   20  = error opening SSH tunnel
 #
-#   30  = error getting DBMS replication status (only actual errors; see 0)
-#   31  = error getting DB list
+#   30  = error getting DBMS replication status
+#   31  = DBMS replication status does not meet requirement in
+#         [dbms]_replstatus setting
+#   32  = error getting DB list
 #
 #   40  = DB name contains a problematic character
 #   41  = DB dumpfile already exists
@@ -324,6 +325,7 @@ configsettings="
   mysql_preserve
   mysql_on_tunerr
   mysql_on_replerr
+  mysql_on_replstat
   mysql_on_listerr
   mysql_on_nameerr
   mysql_on_duplerr
@@ -442,6 +444,7 @@ bogusconfig="
   postgres_replstatus
   postgres_dumpoptions
   postgres_dumpmultoptions
+  postgres_on_replstat
 "
 
 #
@@ -572,6 +575,7 @@ dbms_zipmode_default="gzip"
 dbms_preserve_default="data"
 dbms_on_tunerr_default="phase"
 dbms_on_replerr_default="phase"
+dbms_on_replstat_default="phase"
 dbms_on_listerr_default="phase"
 dbms_on_nameerr_default="db"
 dbms_on_duplerr_default="db"
@@ -658,7 +662,8 @@ startup_exitval="10"  # keep in sync with the library-sourcing section
 lockfile_exitval="11"
 sshtunnel_exitval="20"
 getdbrepl_exitval="30"
-getdblist_exitval="31"
+dbreplstat_exitval="31"
+getdblist_exitval="32"
 dbname_exitval="40"
 dumpexists_exitval="41"
 dbdump_exitval="42"
@@ -814,10 +819,10 @@ switchtunnel () {
 #              dbms_layout, dbms_fileprefix, dbms_filesuffix,
 #              dbms_subdirprefix, dbms_filedirsep, dbms_filedirdate,
 #              dbms_numfiles, dbms_daysfiles, dbms_zipmode, dbms_zipoptions,
-#              dbms_preserve, dbms_on_replerr, dbms_on_listerr,
-#              dbms_on_nameerr, dbms_on_duplerr, dbms_on_dumperr,
-#              dbms_on_ziperr, dbms_useaftereach, dbms_userunbefore,
-#              dbms_userunafter, dbms_datestring
+#              dbms_preserve, dbms_on_replerr, dbm_on_replstat,
+#              dbms_on_listerr, dbms_on_nameerr, dbms_on_duplerr,
+#              dbms_on_dumperr, dbms_on_ziperr, dbms_useaftereach,
+#              dbms_userunbefore, dbms_userunafter, dbms_datestring
 # config settings: [dbms]_dodump, [dbms]_usetunnel, [dbms]_user,
 #                  [dbms]_pwfile, [dbms]_protocol, [dbms]_host, [dbms]_port,
 #                  [dbms]_socketfile, [dbms]_connectdb, [dbms]_replstatus,
@@ -829,10 +834,10 @@ switchtunnel () {
 #                  [dbms]_subdirprefix, [dbms]_filedirsep,
 #                  [dbms]_filedirdate, [dbms]_numfiles, [dbms]_daysfiles,
 #                  [dbms]_zipmode, [dbms]_zipoptions, [dbms]_preserve,
-#                  [dbms]_on_replerr, [dbms]_on_listerr, [dbms]_on_nameerr,
-#                  [dbms]_on_duplerr, [dbms]_on_dumperr, [dbms]_on_ziperr,
-#                  [dbms]_useaftereach, [dbms]_userunbfore,
-#                  [dbms]_userunafter
+#                  [dbms]_on_replerr, [dbms]_on_replstat, [dbms]_on_listerr,
+#                  [dbms]_on_nameerr, [dbms]_on_duplerr, [dbms]_on_dumperr,
+#                  [dbms]_on_ziperr, [dbms]_useaftereach,
+#                  [dbms]_userunbfore, [dbms]_userunafter
 # library functions: copyvar(), copyarray()
 #
 switchdbms () {
@@ -869,6 +874,7 @@ switchdbms () {
   copyarray "${1}_zipoptions" "dbms_zipoptions" exact
   copyvar "${1}_preserve" "dbms_preserve" exact
   copyvar "${1}_on_replerr" "dbms_on_replerr" exact
+  copyvar "${1}_on_replstat" "dbms_on_replstat" exact
   copyvar "${1}_on_listerr" "dbms_on_listerr" exact
   copyvar "${1}_on_nameerr" "dbms_on_nameerr" exact
   copyvar "${1}_on_duplerr" "dbms_on_duplerr" exact
@@ -1161,6 +1167,7 @@ applydefaults () {
   [ "$mysql_preserve" = "" ] && mysql_preserve="$dbms_preserve_default"
   [ "$mysql_on_tunerr" = "" ] && mysql_on_tunerr="$dbms_on_tunerr_default"
   [ "$mysql_on_replerr" = "" ] && mysql_on_replerr="$dbms_on_replerr_default"
+  [ "$mysql_on_replstat" = "" ] && mysql_on_replstat="$dbms_on_replstat_default"
   [ "$mysql_on_listerr" = "" ] && mysql_on_listerr="$dbms_on_listerr_default"
   [ "$mysql_on_nameerr" = "" ] && mysql_on_nameerr="$dbms_on_nameerr_default"
   [ "$mysql_on_duplerr" = "" ] && mysql_on_duplerr="$dbms_on_duplerr_default"
@@ -1182,6 +1189,7 @@ applydefaults () {
   [ "$postgres_preserve" = "" ] && postgres_preserve="$dbms_preserve_default"
   [ "$postgres_on_tunerr" = "" ] && postgres_on_tunerr="$dbms_on_tunerr_default"
   [ "$postgres_on_replerr" = "" ] && postgres_on_replerr="$dbms_on_replerr_default"
+  # no postgres_on_replstat setting
   [ "$postgres_on_listerr" = "" ] && postgres_on_listerr="$dbms_on_listerr_default"
   [ "$postgres_on_nameerr" = "" ] && postgres_on_nameerr="$dbms_on_nameerr_default"
   [ "$postgres_on_duplerr" = "" ] && postgres_on_duplerr="$dbms_on_duplerr_default"
@@ -1324,6 +1332,7 @@ validconf () {
       case "$dbms" in
         mysql)
           [ "$mysql_replstatus" != "" ] && validnum "mysql_replstatus"
+          validlist "mysql_on_replstat" "ignore" "warn" "phase" "exit"
           ;;
 
         postgres)
@@ -1787,15 +1796,21 @@ checkdbmsrepl () {
 
       # check against threshold
       if [ "$replval" -gt "$dbms_replstatus" ]; then
-        case "$dbms_on_replerr" in
+        case "$dbms_on_replstat" in
           exit)
-            logstatus "$dbms_prefix Seconds_Behind_Master ($replval) is greater than ${dbms_prefix}_replstatus ($dbms_replstatus); exiting"
-            do_exit "$no_error_exitval"
+            sendalert "$dbms_prefix Seconds_Behind_Master ($replval) is greater than ${dbms_prefix}_replstatus ($dbms_replstatus); exiting" log
+            do_exit "$dbreplstat_exitval"
             ;;
           phase)
-            logstatus "$dbms_prefix Seconds_Behind_Master ($replval) is greater than ${dbms_prefix}_replstatus ($dbms_replstatus);${newline}aborting $dbms_prefix dumps"
-            phaseerr="$no_error_exitval"
+            sendalert "$dbms_prefix Seconds_Behind_Master ($replval) is greater than ${dbms_prefix}_replstatus ($dbms_replstatus);${newline}aborting $dbms_prefix dumps" log
+            phaseerr="$dbreplstat_exitval"
             return 1  # abort this phase of the backup
+            ;;
+          warn)
+            sendalert "$dbms_prefix Seconds_Behind_Master ($replval) is greater than ${dbms_prefix}_replstatus ($dbms_replstatus); continuing" log
+            ;;
+          ignore)
+            :  # do nothing
             ;;
         esac
       else

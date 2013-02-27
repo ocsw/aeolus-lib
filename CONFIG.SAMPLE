@@ -902,28 +902,29 @@ $             mysql_aftereach and mysql_runafter are called first, if
 #            function if that is a problem)
 # (abbreviated below, but the full names must be used in the settings)
 #
-# error     | explanation
-# ----------------------------------------------------------
-#   tunerr  | error opening SSH tunnel
-#   replerr | error getting MySQL replication status
-#   listerr | error getting database list
-#   nameerr | database name contains a problematic character
-#   duplerr | database dumpfile already exists
-#   dumperr | error dumping database
-#   ziperr  | error compressing database dump
+# error      | explanation
+# --------------------------------------------------------------
+#   tunerr   | error opening SSH tunnel
+#   replerr  | error getting MySQL replication status
+#   replstat | MySQL Seconds Behind Master is > mysql_replstatus
+#   listerr  | error getting database list
+#   nameerr  | database name contains a problematic character
+#   duplerr  | database dumpfile already exists
+#   dumperr  | error dumping database
+#   ziperr   | error compressing database dump
 #
-# error     | allowed vals   | default
-# ------------------------------------
-#   tunerr  |          ph ex | "phase"
-#   replerr |          ph ex | "phase"
-#   listerr |          ph ex | "phase"
-#   nameerr |       db ph ex | "db"
-#   duplerr | ig wa db ph ex | "db"
-#   dumperr | ig wa db ph ex | "db"
-#   ziperr  | ig wa db ph ex | "db"
+# error      | allowed vals   | default
+# -------------------------------------
+#   tunerr   |          ph ex | "phase"
+#   replerr  |          ph ex | "phase"
+#   replstat | ig wa    ph ex | "phase"
+#   listerr  |          ph ex | "phase"
+#   nameerr  |       db ph ex | "db"
+#   duplerr  | ig wa db ph ex | "db"
+#   dumperr  | ig wa db ph ex | "db"
+#   ziperr   | ig wa db ph ex | "db"
 #
 # note:
-#   -= replerr is also used if the mysql_replstatus check fails
 #   -= nameerr does not apply if mysql_splitdbs=no; see the usage notes
 #      for more information
 #   -= duplerr does not apply in single/singledir modes (errors are always
@@ -931,6 +932,7 @@ $             mysql_aftereach and mysql_runafter are called first, if
 #
 ###mysql_on_tunerr=
 ###mysql_on_replerr=
+###mysql_on_replstat=
 ###mysql_on_listerr=
 ###mysql_on_nameerr=
 ###mysql_on_duplerr=
@@ -1256,6 +1258,11 @@ $             mysql_aftereach and mysql_runafter are called first, if
 ###postgres_on_duplerr=
 ###postgres_on_dumperr=
 ###postgres_on_ziperr=
+
+#
+# [there is no postgres_on_replstat setting]
+#
+
 ###postgres_useaftereach=
 ###postgres_aftereach () { }
 ###postgres_userunbefore=
