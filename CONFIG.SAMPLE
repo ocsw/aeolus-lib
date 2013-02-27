@@ -1568,7 +1568,13 @@ $             mysql_aftereach and mysql_runafter are called first, if
 
 #
 # mode of operation ("remote" or "local")
-# (see usage notes on rdiff-backup modes)
+#
+# in "local" mode, rdb_sshkeyfile, rdb_sshport, and rdb_sshoptions are
+# ignored, and rdb_source and rdb_dest may not be on remote hosts
+# (/local/path vs. user@host::/remote/path)
+#
+# in "remote" mode, the ssh options are used, and if neither rdb_source
+# nor rdb_dest is on a remote host, rdiff-backup emits a warning
 #
 # * if blank or unset, defaults to "remote"
 #
@@ -1621,17 +1627,30 @@ $             mysql_aftereach and mysql_runafter are called first, if
 ###rdb_options=()
 
 #
+# "command" options to rdiff-backup
+#
+# this is intended to be used from the command line or a wrapper, to run
+# rdiff-backup "commands" like '--list-increment-sizes' or '--verify' on the
+# archive; rdb_source generally must be blank or unset for this purpose, and
+# rdb_prune should typically be blank or unset as well
+#
+# * must be an array (see usage notes on the config file)
+# * can be empty or unset
+#
+###rdb_cmdopt=()
+
+#
 # source directory
-# (see usage notes on rdiff-backup modes)
+# (see rdb_mode)
 #
 # * can be blank or unset, in order to run commands on the archive (such as
-#   (-l , or --list-increment-sizes; see usage notes on rdiff-backup)
+#   '--list-increment-sizes' or 'verify'; see rdb_cmdopt)
 #
 ###rdb_source=
 
 #
 # destination
-# (see usage notes on rdiff-backup modes)
+# (see rdb_mode)
 #
 ###rdb_dest=
 
