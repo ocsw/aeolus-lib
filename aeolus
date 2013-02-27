@@ -2500,6 +2500,11 @@ do_dbdumploop () {
 # FDs: 3
 #
 do_rdbprune () {
+  if [ "$rdb_prune" = "" ]; then
+    logstatus "rdb_prune is unset or blank; the archive will not be pruned"
+    return 0
+  fi
+
   # log that we're running the command
   logstatusquiet "running rdiff-backup pruning command"
   printf "%s\n" "running rdiff-backup pruning command" >&3
