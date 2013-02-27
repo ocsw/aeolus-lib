@@ -47,7 +47,10 @@
 #   241 = error finding a delimiter for a string
 #   250 = internal error; should never happen
 #
-# if there are multiple errors, the first one to occur is used
+# these only apply to errors that actually cause the script to exit;
+# in particular, if a [phase]_*err setting (e.g. mysql_tunerr) is set to
+# anything other than "exit", that error condition will not affect the
+# script's exit value (see CONFIG.SAMPLE for more information)
 #
 
 
@@ -1294,7 +1297,6 @@ validconf () {
     fi
     if [ "$outputlog_layout" = "date" ] && [ "$numlogs" != "0" ]; then
       sendalert "warning: outputlog_layout=date; ignoring non-0 numlogs" log
-      setexitval "$startup_exitval"
     fi
   fi
 
@@ -1410,7 +1412,6 @@ validconf () {
       if { [ "$dbms_layout" = "date" ] || [ "$dbms_layout" = "datedir" ]; } && \
          [ "$dbms_numfiles" != "0" ]; then
         sendalert "warning: ${dbms}_layout=$dbms_layout; ignoring non-0 ${dbms}_numfiles" log
-        setexitval "$startup_exitval"
       fi
       validlist "${dbms}_zipmode" "none" "gzip" "pigz" "bzip2" "lzip" "xz"
       unsparsearray "${dbms}_zipoptions"
@@ -1705,7 +1706,7 @@ dbdumpallcmd () {
 # config settings: lockfile
 # library vars: newline
 # library functions: dbcmd(), logstatusquiet(), logstatus(), sendalert(),
-#                    do_exit(), setexitval()
+#                    do_exit()
 # utilities: rm, grep, sed, printf, [
 # files: $lockfile/${dbms_prefix}-$replstatus
 # FDs: 3
@@ -1754,7 +1755,6 @@ checkdbmsrepl () {
         ;;
       phase)
         sendalert "could not get the replication status of the $dbms_prefix DBMS (status code $replexit);${newline}aborting $dbms_prefix dumps" log
-        setexitval "$getdbrepl_exitval"
         return 1  # abort this phase of the backup
         ;;
     esac
@@ -1822,7 +1822,7 @@ checkdbmsrepl () {
 # config settings: lockfile
 # library vars: newline
 # library functions: dblistcmd(), logstatusquiet(), logstatus(), sendalert(),
-#                    do_exit(), setexitval()
+#                    do_exit()
 # utilities: rm, printf, [
 # files: $lockfile/${dbms_prefix}-$alldbs
 # FDs: 3
@@ -1863,7 +1863,6 @@ getdblist () {
         ;;
       phase)
         sendalert "could not get the list of $dbms_prefix databases (status code $listexit);${newline}aborting $dbms_prefix dumps" log
-        setexitval "$getdblist_exitval"
         return 1  # abort this phase of the backup
         ;;
     esac
@@ -2001,7 +2000,7 @@ getdumppaths () {
 #                    removefilezip(), dbdumponecmd(), dbdumpmultcmd(),
 #                    dbdumpallcmd(), sendalert(), logstatus(),
 #                    logstatusquiet(), begincmdprint(), endcmdprint(),
-#                    do_exit(), setexitval()
+#                    do_exit()
 # utilities: (allowed values of $dbms_zipmode), rm, mv, date, printf, [
 # FDs: 3
 # bashisms: arrays
@@ -2026,12 +2025,10 @@ do_dbdump () {
         ;;
       phase)
         sendalert "$dbms_prefix database name '$dbname' contains a problematic character;${newline}aborting $dbms_prefix dumps" log
-        setexitval "$dbname_exitval"
         return 1  # abort this phase of the backup
         ;;
       db)
         sendalert "$dbms_prefix database name '$dbname' contains a problematic character;${newline}aborting this dump" log
-        setexitval "$dbname_exitval"
         return 2  # abort this dump
         ;;
     esac
@@ -2067,7 +2064,6 @@ do_dbdump () {
         else
           sendalert "dumpfile for $dbms_prefix database(s) already exists;${newline}aborting $dbms_prefix dumps" log
         fi
-        setexitval "$dumpexists_exitval"
         return 1  # abort this phase of the backup
         ;;
       db)
@@ -2076,7 +2072,6 @@ do_dbdump () {
         else
           sendalert "dumpfile for $dbms_prefix database(s) already exists;${newline}aborting this dump" log
         fi
-        setexitval "$dumpexists_exitval"
         return 2  # abort this dump
         ;;
       warn)
@@ -2085,7 +2080,6 @@ do_dbdump () {
         else
           sendalert "warning: dumpfile for $dbms_prefix database(s) already exists; overwriting" log
         fi
-        setexitval "$dumpexists_exitval"
         ;;
       ignore)
         :  # do nothing
@@ -2176,7 +2170,6 @@ do_dbdump () {
         else
           sendalert "error dumping $dbms_prefix database(s) (status code $dumpexit);${newline}aborting $dbms_prefix dumps" log
         fi
-        setexitval "$dbdump_exitval"
         return 1  # abort this phase of the backup
         ;;
       db)
@@ -2185,7 +2178,6 @@ do_dbdump () {
         else
           sendalert "error dumping $dbms_prefix database(s) (status code $dumpexit);${newline}aborting this dump" log
         fi
-        setexitval "$dbdump_exitval"
         return 2  # abort this dump
         ;;
       warn)
@@ -2194,7 +2186,6 @@ do_dbdump () {
         else
           sendalert "error dumping $dbms_prefix database(s) (status code $dumpexit); continuing" log
         fi
-        setexitval "$dbdump_exitval"
         ;;
       ignore)
         :  # do nothing
@@ -2266,7 +2257,6 @@ do_dbdump () {
           else
             sendalert "error compressing $dbms_prefix database(s) (status code $zipexit);${newline}aborting $dbms_prefix dumps" log
           fi
-          setexitval "$dbzip_exitval"
           return 1  # abort this phase of the backup
           ;;
         db)
@@ -2275,7 +2265,6 @@ do_dbdump () {
           else
             sendalert "error compressing $dbms_prefix database(s) (status code $zipexit);${newline}aborting this dump" log
           fi
-          setexitval "$dbzip_exitval"
           return 2  # abort this dump
           ;;
         warn)
@@ -2284,7 +2273,6 @@ do_dbdump () {
           else
             sendalert "error compressing $dbms_prefix database(s) (status code $zipexit); continuing" log
           fi
-          setexitval "$dbzip_exitval"
           ;;
         ignore)
           :  # do nothing
@@ -2449,7 +2437,7 @@ do_dbdumploop () {
 # config settings: rdb_on_pruneerr
 # library vars: newline
 # library functions: rdbprunecmd(), logstatusquiet, logstatus(),
-#                    sendalert(), do_exit(), setexitval()
+#                    sendalert(), do_exit()
 # utilities: date, printf, [
 # FDs: 3
 #
@@ -2474,12 +2462,10 @@ do_rdbprune () {
         ;;
       phase)
         sendalert "error running rdiff-backup pruning (status code $rdbpruneexit);${newline}aborting rdiff-backup backup" log
-        setexitval "$rdbprune_exitval"
         return 1  # abort this phase of the backup
         ;;
       warn)
         sendalert "error running rdiff-backup pruning (status code $rdbpruneexit); continuing" log
-        setexitval "$rdbprune_exitval"
         ;;
       ignore)
         :  # do nothing
@@ -2890,13 +2876,11 @@ while true; do  # only here to allow us to easily abort this phase
             ;;
           phase)
             sendalert "rsync finished with possible errors (status code $rsyncexit); aborting rsync backup" log
-            setexitval "$rsyncsoft_exitval"
             endphase_rsync 1
             break
             ;;
           warn)
             sendalert "rsync finished with possible errors (status code $rsyncexit); continuing" log
-            setexitval "$rsyncsoft_exitval"
             ;;
           ignore)
             :  # do nothing
@@ -2911,13 +2895,11 @@ while true; do  # only here to allow us to easily abort this phase
             ;;
           phase)
             sendalert "error running rsync (status code $rsyncexit); aborting rsync backup" log
-            setexitval "$rsynchard_exitval"
             endphase_rsync 1
             break
             ;;
           warn)
             sendalert "error running rsync (status code $rsyncexit); continuing" log
-            setexitval "$rsynchard_exitval"
             ;;
           ignore)
             :  # do nothing
@@ -3024,13 +3006,11 @@ while true; do  # only here to allow us to easily abort this phase
           ;;
         phase)
           sendalert "error running rdiff-backup (status code $rdbsyncexit); aborting rdiff-backup backup" log
-          setexitval "$rdbsync_exitval"
           endphase_rdb 1
           break
           ;;
         warn)
           sendalert "error running rdiff-backup (status code $rdbsyncexit); continuing" log
-          setexitval "$rdbsync_exitval"
           ;;
         ignore)
           :  # do nothing

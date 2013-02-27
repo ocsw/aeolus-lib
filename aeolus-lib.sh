@@ -1102,28 +1102,9 @@ endcmdprintbg () {
 }
 
 
-###########################
-# shutdown and exit values
-###########################
-
-#
-# update an exit value for the script
-#
-# $1 = exit value
-#
-# if the value has already been set, don't change it,
-# so that we can return the value corresponding to
-# the first error encountered
-#
-# global vars: exitval
-# utilities: [
-#
-[ "${skip_setexitval+X}" = "" ] && \
-setexitval () {
-  if [ "${exitval:+X}" = "" ]; then
-    exitval="$1"
-  fi
-}
+################################
+# shutdown, including callbacks
+################################
 
 #
 # add a function to the list of functions to call before exiting the script
@@ -1222,17 +1203,14 @@ removeexitcallback () {
 #
 # exit the script in an orderly fashion
 #
-# before exiting:
-#   * calls callbacks (starting with the most recently added;
-#     see addexitcallback())
-#   * updates exit value (see setexitval())
+# before exiting, calls callbacks (starting with the most recently added;
+# see addexitcallback())
 #
 # $1 = exit value (required)
 #
 # "local" vars: ecbkeys, ecbkey
-# global vars: exitcallbacks, exitcallbackarg1 through 8, exitval
+# global vars: exitcallbacks, exitcallbackarg1 through 8
 # user-defined functions: (contents of exitcallbacks)
-# library functions: setexitval()
 # utilities: printf, sort, [
 # bashisms: arrays, ${!array[@]} [v3.0]
 #
@@ -1258,9 +1236,7 @@ do_exit () {
     fi
   done
 
-  setexitval "$1"
-
-  exit "$exitval"
+  exit "$1"
 }
 
 #
@@ -2721,8 +2697,7 @@ validfunction () {
 # global vars: bogusconfig, startup_exitval
 # library vars: newline
 # user-defined functions: configsettingtype()
-# library functions: isset(), arrayisset(), funcisdefined(), sendalert(),
-#                    setexitval()
+# library functions: isset(), arrayisset(), funcisdefined(), sendalert()
 # utilities: [
 # bashisms: unset
 #
@@ -2741,7 +2716,6 @@ warnbogusconf () {
          arrayisset "$bogus"; \
        }; then
       sendalert "warning: variable '$bogus' is set, but there is no such setting;${newline}value will be ignored" log
-      setexitval "$startup_exitval"
       unset "$bogus"
     fi
 
@@ -2749,7 +2723,6 @@ warnbogusconf () {
        && \
        funcisdefined "$bogus"; then
       sendalert "warning: function '${bogus}()' is defined, but there is no such hook;${newline}definition will be ignored" log
-      setexitval "$startup_exitval"
       unset "$bogus"
     fi
   done
@@ -3907,9 +3880,8 @@ killsshtunnel () {
 # returns 0 on success
 # on error, calls sendalert(), then acts according to the value of
 # tun_on_err:
-#   "exit": exits with exitval $sshtunnel_exitval
-#   "phase": sets eventual exitval to $sshtunnel_exitval and returns 1
-#            ("abort this phase of the script")
+#   "exit": exits the script with exitval $sshtunnel_exitval
+#   "phase": returns 1 ("abort this phase of the script")
 # if tun_on_err is unset or null, it defaults to "exit"
 #
 # FD 3 gets a start message and the actual output (stdout and stderr) of
@@ -3969,7 +3941,6 @@ opensshtunnel () {
         case "$tun_on_err" in
           phase)
             sendalert "could not establish SSH tunnel for $tun_descr (timed out);${newline}aborting $tun_descr" log
-            setexitval "$sshtunnel_exitval"
             return 1  # abort this phase of the script
             ;;
           *)  # exit
@@ -3988,7 +3959,6 @@ opensshtunnel () {
       case "$tun_on_err" in
         phase)
           sendalert "could not establish SSH tunnel for $tun_descr (status code $sshexit);${newline}aborting $tun_descr" log
-          setexitval "$sshtunnel_exitval"
           return 1  # abort this phase of the script
           ;;
         *)  # exit
