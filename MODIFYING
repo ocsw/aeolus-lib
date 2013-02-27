@@ -7,8 +7,8 @@ Aeolus modification notes:
 
    any change to the setting variables (additions, deletions, name changes,
    type changes, etc.) must be reflected in the following, as appropriate:
-   the CONFIG.SAMPLE file, $configsettings, configsettingtype(), the default
-   settings section, switch*(), applydefaults(), and validconf()
+   the CONFIG.SAMPLE file, $configsettings, $bogusconf, configsettingtype(),
+   the default settings section, switch*(), applydefaults(), and validconf()
 
 
 2) utilities
