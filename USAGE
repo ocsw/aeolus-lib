@@ -4,16 +4,15 @@ for license info, run 'aeolus license', or see the LICENSE file
 
 CONTENTS
 --------
- 1) Installation
- 2) Setup And Permissions
- 3) Running The Script
- 4) How To Use The Config File
- 5) Script Output
- 6) Database Dumps
- 7) Rsync (General)
- 8) Rsync Modes
- 9) Rdiff-backup
-10) Portability
+1) Installation
+2) Setup And Permissions
+3) Running The Script
+4) How To Use The Config File
+5) Script Output
+6) Database Dumps
+7) Rsync Modes
+8) Restores and Other Archive Operations
+9) Portability
 
 
 1) Installation
@@ -422,16 +421,7 @@ CONTENTS
       mysql_on_nameerr in the CONFIG.SAMPLE file for more information.
 
 
-7) Rsync (General)
-------------------
-
-   a) The best way to restore files is to use the same config file as the
-      backup, and specify rsync_source and rsync_dest on the command line;
-      this will, among other things, use the same lockfile as the backups,
-      preventing backups and restores from interfering with each other.
-
-
-8) Rsync Modes
+7) Rsync Modes
 --------------
 
    There are four main ways to use rsync (see the man page for more info):
@@ -530,16 +520,28 @@ CONTENTS
         * rsync_dest="local path"
 
 
-9) Rdiff-backup
----------------
+8) Restores and Other Archive Operations
+----------------------------------------
 
-   a) 
+   a) The best way to restore files is to use the same config file as the
+      backups, and add or override some options on the command line or in
+      a wrapper.  This will, in addition to providing convenience and
+      logging, use the same lockfile as the backups, preventing backups and
+      restores from interfering with each other.
 
-   b) 
+      For rsync:
+        * set rsync_only="yes"
+        * set rsync_source and rsync_dest
+
+      For rdiff-backup (both restores, and "commands" like
+      '--list-increment-sizes' or '--verify'):
+        * set rdb_only="yes"
+        * set rdb_cmdopt
+        * set rdb_source="" (in most cases)
 
 
-10) Portability
----------------
+9) Portability
+--------------
 
    a) The script must be run with bash version 3.1 or later, and assumes
       bash is located in /bin.  If you don't have (or don't want to use)
