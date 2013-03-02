@@ -500,6 +500,10 @@
 ###mysql_dblist=()
 
 #
+# [there is no mysql_globals setting]
+#
+
+#
 # put each database in a separate file ("yes"), or put all of the dumped
 # databases in one file ("no")?
 #
@@ -1150,7 +1154,34 @@ $             mysql_aftereach and mysql_runafter are called first, if
 #
 
 ###postgres_dbmode=
+
+#
+# list of databases
+#
+# * can be blank or unset if postgres_dbmode is "include" and
+#   postgres_globals is not blank or unset; this allows you to use the
+#   script to dump just the globals, no databases
+#
 ###postgres_dblist=()
+
+#
+# should we dump the non-database globals separately?
+#
+# if this is blank or unset, no separate dump is performed; otherwise, this
+# setting must contain a string which will be used in place of a database
+# name in the name of the dumpfile ("GLOBALS" is suggested)
+#
+# this dump will be run and named as if postgres_splitdbs is "yes",
+# regardless of the value of the setting; pg_dumpall will be used, with the
+# options in postgres_dumpglobalsoptions, plus "-g"
+#
+# if postgres_useaftereach is "yes", postgres_aftereach will be called
+# after the dump with the value of this setting as the "database name"
+#
+# * can be blank or unset
+#
+###postgres_globals=
+
 ###postgres_splitdbs=  # may only be "no" if postgres_dbmode="all"
 
 #
@@ -1166,21 +1197,31 @@ $             mysql_aftereach and mysql_runafter are called first, if
 #
 # options to pass to the pg_dump / pg_dumpall utilities
 #
-# pg_dumpall (and therefore postgres_dumpalloptions) is only used if
-# postgres_dbmode="all" and postgres_splitdbs="no" (which is the default);
+# pg_dumpall is used in two cases:
+#
+#   - if postgres_dbmode="all" and postgres_splitdbs="no" (which is the
+#     default), the main dumps are done with pg_dumpall, using
+#     postgres_dumpalloptions
+#
+#   - if postgres_globals is not blank or unset, the globals dump is done
+#     with pg_dumpall, using postgres_dumpglobalsoptions
+#
+# all other dumps are done with pg_dump, using postgres_dumponeoptions
+#
+# (postgres_options will NOT be included in any of these cases)
+#
 # there are several differences in behavior between pg_dump and pg_dumpall
 # beyond simply dumping all of the databases at once vs. one database at
 # a time:
 #
 #   - PostgreSQL maintains some information outside of any database,
 #     including roles and tablespaces; pg_dumpall includes this information
-#     by default, but there is apparently no way to get it using pg_dump,
-#     so if you need to dump the databases separately but you also need the
-#     global data, you will need to do a second dump using pg_dumpall with
-#     the "-g" option (see below)
-#     [an option to do this automatically will eventually be added to the
-#     script; currently you will need a separate invocation of the script
-#     with the appropriate options]
+#     by default, but there is apparently no way to get it using pg_dump
+#
+#     if you need to dump the databases individually but you also need the
+#     global data, use the postgres_globals setting; this allows you to do
+#     a separate dump using pg_dumpall with the "-g" option (see above for
+#     postgres_globals, below for "-g")
 #
 #   - pg_dumpall always adds commands to the dump to create and connect to
 #     the databases (the equivalent of "-C", see below); this is generally
@@ -1188,6 +1229,7 @@ $             mysql_aftereach and mysql_runafter are called first, if
 #     when working with individual databases, it makes it harder to reload
 #     a particular database while changing its name (e.g. to make an old
 #     version accessible while not destroying a live version)
+#
 #     this is also why "-C" is not included in the default for
 #     postgres_dumponeoptions
 #
@@ -1197,11 +1239,9 @@ $             mysql_aftereach and mysql_runafter are called first, if
 #     only one database at a time, you will need to use separate dumps for
 #     each database
 #
-# postgres_options will NOT be included
-#
-# the only option usually needed is "-c" (drop databases/tables/etc. before
-# recreating; see above), but some other (potentially) useful options
-# include:
+# the only option usually needed for either pg_dump or pg_dumpall is "-c"
+# (drop databases/tables/etc. before recreating; see above), but some other
+# (potentially) useful options include:
 #
 # "--lock-wait-timeout=N": N is the maximum number of milliseconds to wait
 #                          for a lock to be obtained before dumping
@@ -1209,7 +1249,8 @@ $             mysql_aftereach and mysql_runafter are called first, if
 # "-a": only include the data, not the schema
 # "-s": only include the schema, not the data
 # "-g": only include global data such as roles and tablespaces, no databases
-#       (only applies to postgres_dumpalloptions; see above)
+#       (only applies to postgres_dumpalloptions (see above); see also
+#       postgres_globals)
 # "-C": add commands to the dump to create and connect to the database (only
 #       applies to postgres_dumponeoptions; see above)
 # "-x": don't include the permissions with the database(s) (dumps usually
@@ -1230,6 +1271,7 @@ $             mysql_aftereach and mysql_runafter are called first, if
 #
 ###postgres_dumponeoptions=()
 ###postgres_dumpalloptions=()
+###postgres_dumpglobalsoptions=()
 
 #
 # [there are no postgres_dumpoptions or postgres_dumpmultoptions settings

@@ -356,10 +356,12 @@ configsettings="
   postgres_connectdb
   postgres_dbmode
   postgres_dblist
+  postgres_globals
   postgres_splitdbs
   postgres_options
   postgres_dumponeoptions
   postgres_dumpalloptions
+  postgres_dumpglobalsoptions
   postgres_usealtopts
   postgres_altopts
   postgres_dumpdir
@@ -439,9 +441,11 @@ configsettings="
 # see also warnbogusconf() in the library
 bogusconfig="
   mysql_connectdb
+  mysql_globals
   mysql_dumponeoptions
   mysql_dumpmultoptions
   mysql_dumpalloptions
+  mysql_dumpglobalsoptions
   postgres_protocol
   postgres_socketfile
   postgres_replstatus
@@ -471,7 +475,7 @@ configsettingtype () {
     mysql_dumponeoptions|mysql_dumpmultoptions|mysql_dumpalloptions)
       echo "array"
       ;;
-    mysql_zipoptions)
+    mysql_dumpglobalsoptions|mysql_zipoptions)
       echo "array"
       ;;
     mysql_altopts|mysql_aftereach|mysql_runbefore|mysql_runafter)
@@ -485,7 +489,7 @@ configsettingtype () {
     postgres_dumponeoptions|postgres_dumpmultoptions|postgres_dumpalloptions)
       echo "array"
       ;;
-    postgres_zipoptions)
+    postgres_dumpglobalsoptions|postgres_zipoptions)
       echo "array"
       ;;
     postgres_altopts|postgres_aftereach|postgres_runbefore|postgres_runafter)
@@ -604,6 +608,7 @@ postgres_dbmode_default="all"
 postgres_splitdbs_default="no"
 postgres_dumponeoptions_default=(-c)  # only if unset
 postgres_dumpalloptions_default=(-c)  # only if unset
+postgres_dumpglobalsoptions_default=(-c)  # only if unset
 postgres_usealtopts_default="no"
 postgres_fileprefix_default="postgresdump"  # only if unset
 postgres_subdirprefix_default="postgresdump"  # only if unset
@@ -817,7 +822,7 @@ switchtunnel () {
 #              dbms_dodump, dbms_usetunnel, dbms_user, dbms_pwfile,
 #              dbms_protocol, dbms_host, dbms_port, dbms_socketfile,
 #              dbms_connectdb, dbms_replstatus, dbms_dbmode, dbms_dblist,
-#              dbms_splitdbs, dbms_options, dbms_dumpoptions,
+#              dbms_globals, dbms_splitdbs, dbms_options, dbms_dumpoptions,
 #              dbms_dumponeoptions, dbms_dumpmultoptions,
 #              dbms_dumpalloptions, dbms_usealtopts, dbms_dumpdir,
 #              dbms_layout, dbms_fileprefix, dbms_filesuffix,
@@ -830,11 +835,11 @@ switchtunnel () {
 # config settings: [dbms]_dodump, [dbms]_usetunnel, [dbms]_user,
 #                  [dbms]_pwfile, [dbms]_protocol, [dbms]_host, [dbms]_port,
 #                  [dbms]_socketfile, [dbms]_connectdb, [dbms]_replstatus,
-#                  [dbms]_dbmode, [dbms]_dblist, [dbms]_splitdbs,
-#                  [dbms]_options, [dbms]_dumpoptions, [dbms]_dumponeoptions,
-#                  [dbms]_dumpmultoptions, [dbms]_dumpalloptions,
-#                  [dbms]_usealtopts, [dbms]_dumpdir, [dbms]_layout,
-#                  [dbms]_fileprefix, [dbms]_filesuffix,
+#                  [dbms]_dbmode, [dbms]_dblist, [dbms]_globals,
+#                  [dbms]_splitdbs, [dbms]_options, [dbms]_dumpoptions,
+#                  [dbms]_dumponeoptions, [dbms]_dumpmultoptions,
+#                  [dbms]_dumpalloptions, [dbms]_usealtopts, [dbms]_dumpdir,
+#                  [dbms]_layout, [dbms]_fileprefix, [dbms]_filesuffix,
 #                  [dbms]_subdirprefix, [dbms]_filedirsep,
 #                  [dbms]_filedirdate, [dbms]_numfiles, [dbms]_daysfiles,
 #                  [dbms]_zipmode, [dbms]_zipoptions, [dbms]_preserve,
@@ -858,12 +863,14 @@ switchdbms () {
   copyvar "${1}_replstatus" "dbms_replstatus" exact
   copyvar "${1}_dbmode" "dbms_dbmode" exact
   copyarray "${1}_dblist" "dbms_dblist" exact
+  copyvar "${1}_globals" "dbms_globals" exact
   copyvar "${1}_splitdbs" "dbms_splitdbs" exact
   copyarray "${1}_options" "dbms_options" exact
   copyarray "${1}_dumpoptions" "dbms_dumpoptions" exact
   copyarray "${1}_dumponeoptions" "dbms_dumponeoptions" exact
   copyarray "${1}_dumpmultoptions" "dbms_dumpmultoptions" exact
   copyarray "${1}_dumpalloptions" "dbms_dumpalloptions" exact
+  copyarray "${1}_dumpglobalsoptions" "dbms_dumpglobalsoptions" exact
   copyvar "${1}_usealtopts" "dbms_usealtopts" exact
   copyvar "${1}_dumpdir" "dbms_dumpdir" exact
   copyvar "${1}_layout" "dbms_layout" exact
@@ -1222,6 +1229,8 @@ applydefaults () {
       copyarray "postgres_dumponeoptions_default" "postgres_dumponeoptions"
   arrayisunset "postgres_dumpalloptions" && \
       copyarray "postgres_dumpalloptions_default" "postgres_dumpalloptions"
+  arrayisunset "postgres_dumpglobalsoptions" && \
+      copyarray "postgres_dumpglobalsoptions_default" "postgres_dumpglobalsoptions"
   [ "$postgres_usealtopts" = "" ] && postgres_usealtopts="$postgres_usealtopts_default"
   [ "${postgres_fileprefix+X}" = "" ] && postgres_fileprefix="$postgres_fileprefix_default"
   [ "${postgres_subdirprefix+X}" = "" ] && postgres_subdirprefix="$postgres_subdirprefix_default"
@@ -1406,7 +1415,13 @@ validconf () {
       fi  # if [ "$dbms_usetunnel" = "yes" ]
       [ "$dbms_pwfile" != "" ] && validreadfile "${dbms}_pwfile"
       validlist "${dbms}_dbmode" "all" "include" "exclude"
-      [ "$dbms_dbmode" != "all" ] && validarrnotvoid "${dbms}_dblist"
+      if { \
+           { [ "$dbms_dbmode" = "include" ] && [ "$dbms_globals" = "" ]; } \
+         || \
+           [ "$dbms_dbmode" = "exclude" ]; \
+         }; then
+        validarrnotvoid "${dbms}_dblist"
+      fi
       unsparsearray "${dbms}_dblist"
       unsparsearray "dbms_dblist"
       validlist "${dbms}_splitdbs" "yes" "no"
@@ -1420,6 +1435,8 @@ validconf () {
       unsparsearray "dbms_dumpmultoptions"
       unsparsearray "${dbms}_dumpalloptions"
       unsparsearray "dbms_dumpalloptions"
+      unsparsearray "${dbms}_dumpglobalsoptions"
+      unsparsearray "dbms_dumpglobalsoptions"
       validlist "${dbms}_usealtopts" "yes" "no"
       [ "$dbms_usealtopts" = "yes" ] && validfunction "${dbms}_altopts"
       validrwxdir "${dbms}_dumpdir"
@@ -1540,7 +1557,7 @@ validconf () {
 # run a command to dump a single database to stdout
 #
 # (may not be possible with all DBMSes; see also dbdumpmultcmd(),
-# dbdumpallcmd())
+# dbdumpallcmd(), dbdumpglobalscmd())
 #
 # $1 is the name of the database to dump
 #
@@ -1617,7 +1634,7 @@ dbdumponecmd () {
 # run a command to dump multiple databases to stdout
 #
 # (may not be possible with all DBMSes; see also dbdumponecmd(),
-# dbdumpallcmd())
+# dbdumpallcmd(), dbdumpglobalscmd())
 #
 # the names of the databases to dump must be in the dbnames array
 #
@@ -1672,7 +1689,7 @@ dbdumpmultcmd () {
 # run a command to dump all databases to stdout
 #
 # (may not be possible with all DBMSes; see also dbdumponecmd(),
-# dbdumpmultcmd())
+# dbdumpmultcmd(), dbdumpglobalscmd())
 #
 # dbms_prefix must be one of the accepted values (see dbmslist),
 # but not all of them will necessarily work; see the code
@@ -1719,6 +1736,56 @@ dbdumpallcmd () {
         ${postgres_host:+-h "$postgres_host"} \
         ${postgres_port:+-p "$postgres_port"} \
         "${postgres_dumpalloptions[@]}"
+      endcmdprint 2>/dev/null
+      ;;
+  esac
+
+  return "$cmdexitval"
+}
+
+#
+# run a command to dump non-database globals to stdout
+#
+# (may not be possible with all DBMSes; see also dbdumponecmd(),
+# dbdumpmultcmd(), dbdumpallcmd())
+#
+# dbms_prefix must be one of the accepted values (see dbmslist),
+# but not all of them will necessarily work; see the code
+#
+# when using an SSH tunnel, set host to "localhost" (or "127.0.0.1" /
+# "::1" / etc. as necessary) and port to the local port of the tunnel
+#
+# (in the notes below, [dbms] = the value of $dbms_prefix)
+#
+# [dbms]_dumpoptions/[dbms]_dumpglobalsoptions/etc. must be indexed,
+# non-sparse arrays
+#
+# global vars: dbms_prefix, internal_exitval, cmdexitval
+# config settings: [dbms]_user, [dbms]_pwfile, [dbms]_protocol, [dbms]_host,
+#                  [dbms]_port, [dbms]_socketfile,
+#                  [dbms]_dumpoptions/[dbms]_dumpglobalsoptions/etc.
+#                  (depending on the DBMS)
+# library vars: newline
+# library functions: begincmdprint(), endcmdprint(), sendalert(), do_exit()
+# utilities: pg_dumpall
+# files: $[dbms]_pwfile, $[dbms]_socketfile
+# bashisms: arrays
+#
+dbdumpglobalscmd () {
+  case "$dbms_prefix" in
+    mysql)
+      sendalert "Internal Error: MySQL cannot dump non-DB globals; exiting${newline}-> THERE IS A BUG IN THE SCRIPT! <-" log
+      do_exit "$internal_exitval"
+      ;;
+    postgres)
+      begincmdprint
+      PGPASSFILE=${postgres_pwfile:+"$postgres_pwfile"} \
+        pg_dumpall \
+        ${postgres_user:+-U "$postgres_user"} \
+        ${postgres_host:+-h "$postgres_host"} \
+        ${postgres_port:+-p "$postgres_port"} \
+        "${postgres_dumpglobalsoptions[@]}" \
+        -g
       endcmdprint 2>/dev/null
       ;;
   esac
@@ -2030,11 +2097,14 @@ getdumppaths () {
 # (one pass = one dump command, but may be more than one DB)
 #
 # $1 is "one", "mult", or "all" (how many DBs to dump; see dbdumponecmd(),
-# dbdumpmultcmd(), dbdumpallcmd())
+# dbdumpmultcmd(), dbdumpallcmd()), or "globals" to dump only non-database
+# globals (not available with all DBMSes)
 #
 # if $1 is "one", $2 is the name of the database to dump
 # if $1 is "mult", the names of the databases to dump must be in the dbnames
 # array
+# if $1 is "globals", $2 is the string to use in the dumpfile name in place
+# of a database name
 #
 # returns:
 # 1 to mean "abort this phase of the backup",
@@ -2074,20 +2144,32 @@ do_dbdump () {
   # \n causes problems with rotation in number mode; we'll disallow it
   #    in general to be on the safe side
   #
-  if [ "$dumptype" = "one" ] && \
+  if { [ "$dumptype" = "one" ] || [ "$dumptype" = "globals" ]; } && \
      [ "$(printf "%sX\n" "$dbname" | tr -d '/\n')" != "${dbname}X" ]; then
     case "$dbms_on_nameerr" in
       exit)
-        sendalert "$dbms_prefix database name '$dbname' contains a problematic character; exiting" log
+        if [ "$dumptype" = "globals" ]; then
+          sendalert "$dbms_prefix globals name '$dbname' contains a problematic character; exiting" log
+        else
+          sendalert "$dbms_prefix database name '$dbname' contains a problematic character; exiting" log
+        fi
         do_exit "$dbname_exitval"
         ;;
       phase)
-        sendalert "$dbms_prefix database name '$dbname' contains a problematic character;${newline}aborting $dbms_prefix dumps" log
+        if [ "$dumptype" = "globals" ]; then
+          sendalert "$dbms_prefix globals name '$dbname' contains a problematic character;${newline}aborting $dbms_prefix dumps" log
+        else
+          sendalert "$dbms_prefix database name '$dbname' contains a problematic character;${newline}aborting $dbms_prefix dumps" log
+        fi
         phaseerr="$dbname_exitval"
         return 1  # abort this phase of the backup
         ;;
       db)
-        sendalert "$dbms_prefix database name '$dbname' contains a problematic character;${newline}aborting this dump" log
+        if [ "$dumptype" = "globals" ]; then
+          sendalert "$dbms_prefix globals name '$dbname' contains a problematic character;${newline}aborting this dump" log
+        else
+          sendalert "$dbms_prefix database name '$dbname' contains a problematic character;${newline}aborting this dump" log
+        fi
         dberr="$dbname_exitval"
         return 2  # abort this dump
         ;;
@@ -2111,7 +2193,9 @@ do_dbdump () {
   if [ "$fileexists" = "yes" ]; then
     case "$dbms_on_duplerr" in
       exit)
-        if [ "$dbname" != "" ]; then
+        if [ "$dumptype" = "globals" ]; then
+          sendalert "dumpfile for $dbms_prefix globals already exists; exiting" log
+        elif [ "$dbname" != "" ]; then
           sendalert "dumpfile for $dbms_prefix database '$dbname' already exists; exiting" log
         else
           sendalert "dumpfile for $dbms_prefix database(s) already exists; exiting" log
@@ -2119,7 +2203,9 @@ do_dbdump () {
         do_exit "$dumpexists_exitval"
         ;;
       phase)
-        if [ "$dbname" != "" ]; then
+        if [ "$dumptype" = "globals" ]; then
+          sendalert "dumpfile for $dbms_prefix globals already exists;${newline}aborting $dbms_prefix dumps" log
+        elif [ "$dbname" != "" ]; then
           sendalert "dumpfile for $dbms_prefix database '$dbname' already exists;${newline}aborting $dbms_prefix dumps" log
         else
           sendalert "dumpfile for $dbms_prefix database(s) already exists;${newline}aborting $dbms_prefix dumps" log
@@ -2128,7 +2214,9 @@ do_dbdump () {
         return 1  # abort this phase of the backup
         ;;
       db)
-        if [ "$dbname" != "" ]; then
+        if [ "$dumptype" = "globals" ]; then
+          sendalert "dumpfile for $dbms_prefix globals already exists;${newline}aborting this dump" log
+        elif [ "$dbname" != "" ]; then
           sendalert "dumpfile for $dbms_prefix database '$dbname' already exists;${newline}aborting this dump" log
         else
           sendalert "dumpfile for $dbms_prefix database(s) already exists;${newline}aborting this dump" log
@@ -2137,7 +2225,9 @@ do_dbdump () {
         return 2  # abort this dump
         ;;
       warn)
-        if [ "$dbname" != "" ]; then
+        if [ "$dumptype" = "globals" ]; then
+          sendalert "warning: dumpfile for $dbms_prefix globals already exists; overwriting" log
+        elif [ "$dbname" != "" ]; then
           sendalert "warning: dumpfile for $dbms_prefix database '$dbname' already exists; overwriting" log
         else
           sendalert "warning: dumpfile for $dbms_prefix database(s) already exists; overwriting" log
@@ -2165,12 +2255,17 @@ do_dbdump () {
   fi
 
   # if we're dumping a single database, log the name
-  if [ "$dbname" != "" ]; then
+  if [ "$dumptype" = "globals" ]; then
+    logstatus "dumping $dbms_prefix globals"
+  elif [ "$dbname" != "" ]; then
     logstatus "dumping $dbms_prefix database '$dbname'"
   fi
 
   # log that we're running the command
-  if [ "$dbname" != "" ]; then
+  if [ "$dumptype" = "globals" ]; then
+    logstatusquiet "running $dbms_prefix dump command for globals"
+    printf "%s\n" "running $dbms_prefix dump command for globals" >&3
+  elif [ "$dbname" != "" ]; then
     logstatusquiet "running $dbms_prefix dump command for database '$dbname'"
     printf "%s\n" "running $dbms_prefix dump command for database '$dbname'" >&3
   else
@@ -2196,6 +2291,9 @@ do_dbdump () {
         all)
           dbdumpallcmd > "$dumpprefix$dumpsuffix$dumptmp" 2>&3
           ;;
+        globals)
+          dbdumpglobalscmd > "$dumpprefix$dbname$dumpsuffix$dumptmp" 2>&3
+          ;;
       esac
       ;;
     space)
@@ -2210,6 +2308,9 @@ do_dbdump () {
         all)
           dbdumpallcmd > "$dumpprefix$dumpsuffix" 2>&3
           ;;
+        globals)
+          dbdumpglobalscmd > "$dumpprefix$dbname$dumpsuffix" 2>&3
+          ;;
       esac
       ;;
   esac
@@ -2219,7 +2320,9 @@ do_dbdump () {
   if [ "$dumpexit" != "0" ]; then
     case "$dbms_on_dumperr" in
       exit)
-        if [ "$dbname" != "" ]; then
+        if [ "$dumptype" = "globals" ]; then
+          sendalert "error dumping $dbms_prefix globals (status code $dumpexit); exiting" log
+        elif [ "$dbname" != "" ]; then
           sendalert "error dumping $dbms_prefix database '$dbname' (status code $dumpexit); exiting" log
         else
           sendalert "error dumping $dbms_prefix database(s) (status code $dumpexit); exiting" log
@@ -2227,7 +2330,9 @@ do_dbdump () {
         do_exit "$dbdump_exitval"
         ;;
       phase)
-        if [ "$dbname" != "" ]; then
+        if [ "$dumptype" = "globals" ]; then
+          sendalert "error dumping $dbms_prefix globals (status code $dumpexit);${newline}aborting $dbms_prefix dumps" log
+        elif [ "$dbname" != "" ]; then
           sendalert "error dumping $dbms_prefix database '$dbname' (status code $dumpexit);${newline}aborting $dbms_prefix dumps" log
         else
           sendalert "error dumping $dbms_prefix database(s) (status code $dumpexit);${newline}aborting $dbms_prefix dumps" log
@@ -2236,7 +2341,9 @@ do_dbdump () {
         return 1  # abort this phase of the backup
         ;;
       db)
-        if [ "$dbname" != "" ]; then
+        if [ "$dumptype" = "globals" ]; then
+          sendalert "error dumping $dbms_prefix globals (status code $dumpexit);${newline}aborting this dump" log
+        elif [ "$dbname" != "" ]; then
           sendalert "error dumping $dbms_prefix database '$dbname' (status code $dumpexit);${newline}aborting this dump" log
         else
           sendalert "error dumping $dbms_prefix database(s) (status code $dumpexit);${newline}aborting this dump" log
@@ -2245,7 +2352,9 @@ do_dbdump () {
         return 2  # abort this dump
         ;;
       warn)
-        if [ "$dbname" != "" ]; then
+        if [ "$dumptype" = "globals" ]; then
+          sendalert "warning: error dumping $dbms_prefix globals (status code $dumpexit); continuing" log
+        elif [ "$dbname" != "" ]; then
           sendalert "warning: error dumping $dbms_prefix database '$dbname' (status code $dumpexit); continuing" log
         else
           sendalert "warning: error dumping $dbms_prefix database(s) (status code $dumpexit); continuing" log
@@ -2256,7 +2365,9 @@ do_dbdump () {
         ;;
     esac
   else
-    if [ "$dbname" != "" ]; then
+    if [ "$dumptype" = "globals" ]; then
+      logstatus "successfully dumped $dbms_prefix globals"
+    elif [ "$dbname" != "" ]; then
       logstatus "successfully dumped $dbms_prefix database '$dbname'"
     else
       logstatus "successfully dumped $dbms_prefix database(s)"
@@ -2308,7 +2419,9 @@ do_dbdump () {
     if [ "$zipexit" != "0" ]; then
       case "$dbms_on_ziperr" in
         exit)
-          if [ "$dbname" != "" ]; then
+          if [ "$dumptype" = "globals" ]; then
+            sendalert "error compressing $dbms_prefix globals (status code $zipexit); exiting" log
+          elif [ "$dbname" != "" ]; then
             sendalert "error compressing $dbms_prefix database '$dbname' (status code $zipexit); exiting" log
           else
             sendalert "error compressing $dbms_prefix database(s) (status code $zipexit); exiting" log
@@ -2316,7 +2429,9 @@ do_dbdump () {
           do_exit "$dbzip_exitval"
           ;;
         phase)
-          if [ "$dbname" != "" ]; then
+          if [ "$dumptype" = "globals" ]; then
+            sendalert "error compressing $dbms_prefix globals (status code $zipexit);${newline}aborting $dbms_prefix dumps" log
+          elif [ "$dbname" != "" ]; then
             sendalert "error compressing $dbms_prefix database '$dbname' (status code $zipexit);${newline}aborting $dbms_prefix dumps" log
           else
             sendalert "error compressing $dbms_prefix database(s) (status code $zipexit);${newline}aborting $dbms_prefix dumps" log
@@ -2325,7 +2440,9 @@ do_dbdump () {
           return 1  # abort this phase of the backup
           ;;
         db)
-          if [ "$dbname" != "" ]; then
+          if [ "$dumptype" = "globals" ]; then
+            sendalert "error compressing $dbms_prefix globals (status code $zipexit);${newline}aborting this dump" log
+          elif [ "$dbname" != "" ]; then
             sendalert "error compressing $dbms_prefix database '$dbname' (status code $zipexit);${newline}aborting this dump" log
           else
             sendalert "error compressing $dbms_prefix database(s) (status code $zipexit);${newline}aborting this dump" log
@@ -2334,7 +2451,9 @@ do_dbdump () {
           return 2  # abort this dump
           ;;
         warn)
-          if [ "$dbname" != "" ]; then
+          if [ "$dumptype" = "globals" ]; then
+            sendalert "warning: error compressing $dbms_prefix globals (status code $zipexit); continuing" log
+          elif [ "$dbname" != "" ]; then
             sendalert "warning: error compressing $dbms_prefix database '$dbname' (status code $zipexit); continuing" log
           else
             sendalert "warning: error compressing $dbms_prefix database(s) (status code $zipexit); continuing" log
@@ -2345,7 +2464,9 @@ do_dbdump () {
           ;;
       esac
     else
-      if [ "$dbname" != "" ]; then
+      if [ "$dumptype" = "globals" ]; then
+        logstatus "successfully compressed $dbms_prefix globals"
+      elif [ "$dbname" != "" ]; then
         logstatus "successfully compressed $dbms_prefix database '$dbname'"
       else
         logstatus "successfully compressed $dbms_prefix database(s)"
@@ -2409,6 +2530,13 @@ do_dbdump_wrapper () {
 #
 do_dbdumploop () {
   OLDIFS="$IFS"
+
+  # globals-only dump?
+  if [ "$dbms_dbmode" = "globals" ]; then  # internal-only pseudomode
+    do_dbdump_wrapper "globals" "$dbms_globals"
+    [ "$?" = "1" ] && return 1  # abort this phase of the backup
+    return 0
+  fi
 
   if [ "$dbms_splitdbs" = "no" ]; then
     case "$dbms_dbmode" in
@@ -2848,42 +2976,58 @@ for dbms in $dbmslist; do
         ;;
     esac
 
-    # get the path information for the DB dump(s), and create the
-    # subdirectory if necessary (including rotation)
-    getdumppaths
-
-    # prune old files ("dir" layouts, "space" preservation mode; see below)
-    if [ "$dbms_preserve" = "space" ]; then
-      case "$dbms_layout" in
-        numberdir|datedir)
-          prunefiles "$dbms_layout" "$rotateprefix" "$rotatesep" \
-                     "$rotatesuffix" "$dbms_numfiles" "$dbms_daysfiles"
+    for whichdump in "$dbms_dbmode" "globals"; do
+      case "$whichdump" in
+        include)  # make sure there are DBs to dump
+          if arrayisvoid "dbms_dblist"; then
+            logstatus "${dbms_prefix}_dblist is empty or unset; no databases to dump" log
+            continue
+          fi
+          ;;
+        globals)  # set up for globals dump
+          [ "$dbms_globals" = "" ] && continue
+          dbms_dbmode="globals"  # internal-only pseudomode
+          dbms_splitdbs="yes"
           ;;
       esac
-    fi
 
-    # do the actual dump(s)
-    do_dbdumploop
-    case "$?" in
-      1)  # abort this phase
-        endphase_dbms 1
-        continue
-        ;;
-      2)  # there are no DBs to dump; nothing else to do
-        endphase_dbms 0
-        continue
-        ;;
-    esac
+      # get the path information for the DB dump(s), and create the
+      # subdirectory if necessary (including rotation)
+      getdumppaths
 
-    # prune old files ("dir" layouts, "data" preservation mode; see above)
-    if [ "$dbms_preserve" = "data" ]; then
-      case "$dbms_layout" in
-        numberdir|datedir)
-          prunefiles "$dbms_layout" "$rotateprefix" "$rotatesep" \
-                     "$rotatesuffix" "$dbms_numfiles" "$dbms_daysfiles"
+      # prune old files ("dir" layouts, "space" preservation mode; see below)
+      if [ "$dbms_preserve" = "space" ]; then
+        case "$dbms_layout" in
+          numberdir|datedir)
+            prunefiles "$dbms_layout" "$rotateprefix" "$rotatesep" \
+                       "$rotatesuffix" "$dbms_numfiles" "$dbms_daysfiles"
+            ;;
+        esac
+      fi
+
+      # do the actual dump(s)
+      do_dbdumploop
+      case "$?" in
+        1)  # abort this phase
+          endphase_dbms 1
+          continue 2
+          ;;
+        2)  # there are no DBs to dump; nothing else to do
+          endphase_dbms 0
+          continue 2
           ;;
       esac
-    fi
+
+      # prune old files ("dir" layouts, "data" preservation mode; see above)
+      if [ "$dbms_preserve" = "data" ]; then
+        case "$dbms_layout" in
+          numberdir|datedir)
+            prunefiles "$dbms_layout" "$rotateprefix" "$rotatesep" \
+                       "$rotatesuffix" "$dbms_numfiles" "$dbms_daysfiles"
+            ;;
+        esac
+      fi
+    done  # fakemode
 
     # clean up
     endphase_dbms 0

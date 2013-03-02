@@ -417,8 +417,9 @@ CONTENTS
 -----------------
 
    a) For technical reasons, databases with names containing / or newline
-      characters will not be dumped when [dbms]_splitdbs=yes.  See
-      mysql_on_nameerr in the CONFIG.SAMPLE file for more information.
+      characters will not be dumped when [dbms]_splitdbs=yes.  (This also
+      applies to the string in [dbms]_globals.)  See mysql_on_nameerr in the
+      CONFIG.SAMPLE file for more information.
 
 
 7) Rsync Modes
