@@ -1160,7 +1160,7 @@ $             mysql_aftereach and mysql_runafter are called first, if
 #
 # * can be blank or unset if postgres_dbmode is "include" and
 #   postgres_globals is not blank or unset; this allows you to use the
-#   script to dump just the globals, no databases
+#   script to dump just the globals without any databases
 #
 ###postgres_dblist=()
 
