@@ -1442,7 +1442,7 @@ logalertquiet () {
 # note: even if suppressemail="yes", $1 is still logged
 # (if settings permit)
 #
-# config settings: suppressemail, mailto, subject
+# config settings: suppressemail, alertmailto, alertsubject
 # user-defined functions: sendalert_body()
 # library functions: logalert()
 # utilities: mailx, [
@@ -1450,7 +1450,7 @@ logalertquiet () {
 [ "${skip_sendalert+X}" = "" ] && \
 sendalert () {
   if [ "$suppressemail" != "yes" ]; then
-    mailx -s "$subject" $mailto <<-EOF
+    mailx -s "$alertsubject" $alertmailto <<-EOF
 	$1
 	$(sendalert_body)
 	EOF
@@ -1461,7 +1461,7 @@ sendalert () {
   fi
 
   if [ "$suppressemail" != "yes" ]; then
-    logalert "alert email sent to $mailto"
+    logalert "alert email sent to $alertmailto"
   fi
 }
 
