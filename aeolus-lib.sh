@@ -3926,7 +3926,9 @@ opensshtunnel () {
   # see http://mywiki.wooledge.org/ProcessManagement#Starting_a_.22daemon.22_and_checking_whether_it_started_successfully
   waited="1"  # will be 1 once we actually enter the loop
   while sleep 1; do
-    nc -z "$tun_localhost" "$tun_localport" && break
+    # some versions of nc print success messages; we don't want the
+    # clutter, especially if quiet="yes"
+    nc -z "$tun_localhost" "$tun_localport" > /dev/null 2>&1 && break
 
     # not working yet, but is it still running?
     if kill -0 "$tunpid_l" > /dev/null 2>&1; then  # quiet if already dead
