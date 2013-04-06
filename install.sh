@@ -6,7 +6,7 @@ case "$1" in
     chmod 755 /usr/local/lib/aeolus-lib.sh
     ;;
   user)
-    mkdir -p ~/bin
+    mkdir -p ~/bin  # don't complain if it exists
     chmod u=rwx ~/bin
     cp aeolus-lib.sh ~/bin/
     chmod u=rwx ~/bin/aeolus-lib.sh
