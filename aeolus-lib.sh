@@ -2,7 +2,7 @@
 
 #######################################################################
 # Aeolus library (originally factored out of the Aeolus backup script)
-# by Daniel Malament
+# by Danielle Malament
 #######################################################################
 
 #
@@ -1962,7 +1962,7 @@ escsedsubst () {
 ae_license () {
   cat <<EOF 1>&2
 
-Copyright 2011 Daniel Malament.  All rights reserved.
+Copyright 2011 Danielle Malament.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are
