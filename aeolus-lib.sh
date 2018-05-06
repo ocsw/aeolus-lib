@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 #######################################################################
 # Aeolus library (originally factored out of the Aeolus backup script)
